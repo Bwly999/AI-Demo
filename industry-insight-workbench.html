@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>THE DAILY INTELLIGENCE — 行业洞察工作台</title>
+
+<!-- Fonts: Fraunces (display serif), Newsreader (text serif), JetBrains Mono (data) -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Newsreader:opsz,wght@6..72,300..700&family=JetBrains+Mono:wght@300..700&family=Noto+Serif+SC:wght@300..900&display=swap" rel="stylesheet" />
+
+<!-- Tailwind Play CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Vue 3 global build -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          paper:    '#FBF3E8',
+          paperdk:  '#F3E7D4',
+          ink:      '#181410',
+          inksoft:  '#4A4137',
+          inkmute:  '#7A6F5F',
+          rule:     '#D9C7A8',
+          accent:   '#8B1A1A',
+          accentdk: '#5E1010',
+          pos:      '#1F4D38',
+          neg:      '#8B2C1A',
+          gold:     '#A87935',
+        },
+        fontFamily: {
+          display: ['Fraunces', 'Noto Serif SC', 'serif'],
+          serif:   ['Newsreader', 'Noto Serif SC', 'serif'],
+          mono:    ['JetBrains Mono', 'monospace'],
+          zh:      ['Noto Serif SC', 'serif'],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  :root{
+    --paper:#FBF3E8; --ink:#181410; --rule:#D9C7A8; --accent:#8B1A1A;
+  }
+
+  html,body{ background:var(--paper); color:var(--ink); }
+  body{ font-family:'Newsreader','Noto Serif SC',serif; -webkit-font-smoothing:antialiased; }
+
+  /* Paper grain + subtle warmth */
+  .grain::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:1;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.09  0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    opacity:.5; mix-blend-mode:multiply;
+  }
+  /* vignette warmth */
+  .warmth::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:radial-gradient(120% 90% at 50% -10%, rgba(168,121,53,.10), transparent 55%);
+  }
+
+  /* Selection */
+  ::selection{ background:rgba(139,26,26,.18); color:#181410; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:#C9B58E; border-radius:0; border:2px solid var(--paper); }
+  ::-webkit-scrollbar-thumb:hover{ background:#8B1A1A; }
+
+  /* Display numerals */
+  .num{ font-family:'Fraunces',serif; font-variant-numeric:lining-nums tabular-nums; font-feature-settings:"ss01"; }
+
+  /* Drop cap for report */
+  .dropcap::first-letter{
+    font-family:'Fraunces',serif; font-weight:700;
+    float:left; font-size:5.2rem; line-height:.78; padding:.18rem .7rem 0 0;
+    color:#8B1A1A;
+  }
+
+  /* Column rules for report */
+  .colrule{ column-rule:1px solid #D9C7A8; column-gap:2.2rem; }
+
+  /* Ticker */
+  @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  .ticker-track{ display:inline-flex; white-space:nowrap; animation:ticker 70s linear infinite; }
+
+  /* Stamp */
+  .stamp{
+    border:2px solid #8B1A1A; color:#8B1A1A; letter-spacing:.18em;
+    transform:rotate(-4deg); font-family:'JetBrains Mono',monospace;
+    box-shadow:inset 0 0 0 1px rgba(139,26,26,.25);
+  }
+
+  /* Entrance animations */
+  @keyframes rise { from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
+  .rise{ opacity:0; animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards; }
+
+  @keyframes fade { from{opacity:0} to{opacity:1} }
+  .fade{ opacity:0; animation:fade .9s ease forwards; }
+
+  @keyframes inkbleed { from{ opacity:0; filter:blur(6px); } to{ opacity:1; filter:blur(0)} }
+  .inkbleed{ opacity:0; animation:inkbleed 1s ease forwards; }
+
+  /* Card hover */
+  .lift{ transition:transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s, background .35s; }
+  .lift:hover{ transform:translateY(-3px); box-shadow:0 14px 30px -18px rgba(24,20,16,.45); }
+
+  /* Underline reveal for links */
+  .ulink{ background-image:linear-gradient(currentColor,currentColor); background-size:0% 1px; background-position:0 100%; background-repeat:no-repeat; transition:background-size .3s; }
+  .ulink:hover{ background-size:100% 1px; }
+
+  /* Spark path draw */
+  @keyframes draw { from{ stroke-dashoffset:400 } to{ stroke-dashoffset:0 } }
+  .spark-path{ stroke-dasharray:400; stroke-dashoffset:400; animation:draw 1.6s ease forwards; }
+
+  /* Pulse dot */
+  @keyframes pulsering { 0%{box-shadow:0 0 0 0 rgba(139,26,26,.55)} 70%{box-shadow:0 0 0 8px rgba(139,26,26,0)} 100%{box-shadow:0 0 0 0 rgba(139,26,26,0)} }
+  .pulse-dot{ animation:pulsering 1.8s infinite; }
+
+  /* Section ornament */
+  .orn{ display:flex; align-items:center; gap:.75rem; }
+  .orn::before,.orn::after{ content:""; flex:1; height:1px; background:#D9C7A8; }
+
+  [v-cloak]{ display:none; }
+
+  /* Nav active */
+  .nav-item{ position:relative; }
+  .nav-item.active::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:#8B1A1A; }
+</style>
+</head>
+
+<body class="grain warmth">
+<div id="app" v-cloak class="relative z-10">
+
+  <!-- ============ TICKER TAPE ============ -->
+  <div class="bg-ink text-paper text-[11px] font-mono overflow-hidden border-b border-ink">
+    <div class="flex items-center">
+      <div class="shrink-0 bg-accent text-paper px-3 py-[6px] flex items-center gap-2 font-bold tracking-[0.2em]">
+        <span class="w-1.5 h-1.5 rounded-full bg-paper pulse-dot"></span> LIVE
+      </div>
+      <div class="overflow-hidden flex-1 py-[6px]">
+        <div class="ticker-track">
+          <span v-for="(t,i) in (ticker.concat(ticker))" :key="i" class="px-6 inline-flex items-center gap-2">
+            <span class="text-gold">{{ t.sym }}</span>
+            <span :class="t.up ? 'text-[#9FD9B4]' : 'text-[#E39A8C]'" class="font-bold">{{ t.up ? '▲' : '▼' }}</span>
+            <span>{{ t.val }}</span>
+            <span :class="t.up ? 'text-[#9FD9B4]' : 'text-[#E39A8C]'">{{ t.up ? '+' : '' }}{{ t.chg }}%</span>
+            <span class="text-paper/30">|</span>
+          </span>
+        </div>
+      </div>
+      <div class="shrink-0 px-4 py-[6px] font-mono text-paper/70 hidden md:block border-l border-paper/15">
+        {{ clock }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MASTHEAD ============ -->
+  <header class="border-b-2 border-ink bg-paper/80 backdrop-blur-sm sticky top-0 z-40">
+    <div class="max-w-[1500px] mx-auto px-5 lg:px-10">
+      <!-- top meta row -->
+      <div class="flex items-center justify-between py-2 text-[10px] font-mono tracking-[0.18em] uppercase text-inksoft border-b border-rule">
+        <div class="flex items-center gap-4">
+          <span>第 XXVII 卷</span>
+          <span class="hidden sm:inline">·</span>
+          <span class="hidden sm:inline">编号 {{ editionNo }}</span>
+          <span class="hidden md:inline">·</span>
+          <span class="hidden md:inline text-accent">EST. 2024</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="hidden sm:inline">{{ today.full }}</span>
+          <span class="text-ink/40">|</span>
+          <span>{{ today.weekday }}</span>
+        </div>
+      </div>
+
+      <!-- title row -->
+      <div class="py-4 lg:py-5 text-center">
+        <div class="text-[10px] font-mono tracking-[0.45em] text-accent mb-2">AUTOMATED INDUSTRY INTELLIGENCE</div>
+        <h1 class="font-display font-black leading-none tracking-tight"
+            style="font-size:clamp(2.1rem,5.4vw,4.6rem); font-variation-settings:'opsz' 144,'SOFT' 30,'WONK' 1;">
+          THE DAILY <span class="italic font-light text-accent" style="font-variation-settings:'opsz' 144,'SOFT' 100;">Intelligence</span>
+        </h1>
+        <div class="mt-1 text-[11px] font-mono tracking-[0.3em] uppercase text-inksoft">行业 · 发展 · 新闻 — 自动洞察工作台</div>
+      </div>
+
+      <!-- nav -->
+      <nav class="flex items-stretch border-t border-ink -mx-5 lg:-mx-10">
+        <button v-for="(v,i) in views" :key="v.id" @click="view=v.id"
+          class="nav-item flex-1 px-4 py-3 text-left transition-colors"
+          :class="view===v.id ? 'active bg-ink text-paper' : 'hover:bg-paperdk text-ink'">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[9px] font-mono tracking-[0.25em] opacity-60">§0{{ i+1 }}</div>
+              <div class="font-display font-semibold text-[15px] mt-0.5">{{ v.label }}</div>
+            </div>
+            <div class="text-[9px] font-mono opacity-50 hidden lg:block">{{ v.en }}</div>
+          </div>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ============ MAIN ============ -->
+  <main class="max-w-[1500px] mx-auto px-5 lg:px-10 py-8 lg:py-10">
+
+    <transition name="swap" mode="out-in">
+
+      <!-- =========================================================== -->
+      <!-- ====================== WORKBENCH ========================== -->
+      <!-- =========================================================== -->
+      <section v-if="view==='workbench'" key="workbench">
+
+        <!-- headline strip -->
+        <div class="rise flex flex-wrap items-end justify-between gap-4 mb-8" style="animation-delay:.05s">
+          <div>
+            <div class="text-[10px] font-mono tracking-[0.3em] uppercase text-accent">§01 · Dashboard</div>
+            <h2 class="font-display font-semibold text-4xl lg:text-5xl mt-1" style="font-variation-settings:'opsz' 80;">今日工作台</h2>
+            <p class="font-serif text-inksoft text-lg mt-1 italic">自动聚合 · 信号识别 · 实时校准</p>
+          </div>
+          <div class="flex items-center gap-2 font-mono text-[11px]">
+            <span class="px-2 py-1 border border-ink/30">最后同步 {{ lastSync }}</span>
+            <span class="px-2 py-1 bg-pos text-paper flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-paper pulse-dot"></span>引擎运行中</span>
+          </div>
+        </div>
+
+        <!-- KPI strip -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 border border-ink mb-8">
+          <div v-for="(k,i) in kpis" :key="k.label" class="rise p-5 border-rule"
+               :class="[i<3?'border-r':'', i<2?'lg:border-r':'', 'border-b lg:border-b-0']"
+               :style="`animation-delay:${.1+i*.07}s`">
+            <div class="text-[10px] font-mono tracking-[0.2em] uppercase text-inksoft">{{ k.label }}</div>
+            <div class="flex items-end justify-between mt-2">
+              <div class="num font-display font-bold text-4xl lg:text-5xl leading-none">{{ k.val }}</div>
+              <div class="text-right">
+                <div :class="k.up?'text-pos':'text-accent'" class="font-mono text-xs font-bold">{{ k.up?'▲':'▼' }} {{ k.chg }}</div>
+                <div class="font-mono text-[9px] text-inkmute uppercase mt-0.5">vs 昨日</div>
+              </div>
+            </div>
+            <!-- mini sparkline -->
+            <svg :viewBox="'0 0 100 24'" class="w-full h-6 mt-3 overflow-visible">
+              <polyline :points="k.line" fill="none" :stroke="k.up?'#1F4D38':'#8B1A1A'" stroke-width="1.5" class="spark-path"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- featured + signals -->
+        <div class="grid lg:grid-cols-3 gap-8 mb-10">
+          <!-- featured insight -->
+          <div class="rise lg:col-span-2 border border-ink p-7 lg:p-9 bg-paperdk/40 lift relative overflow-hidden" style="animation-delay:.3s">
+            <div class="absolute top-5 right-5 stamp text-[9px] px-2 py-1">今日要览 · LEAD</div>
+            <div class="text-[10px] font-mono tracking-[0.25em] text-accent uppercase">TOP INSIGHT</div>
+            <h3 class="font-display font-bold leading-[1.05] mt-2" style="font-size:clamp(1.6rem,2.6vw,2.4rem); font-variation-settings:'opsz' 80,'SOFT' 40;">
+              {{ featured.title }}
+            </h3>
+            <p class="font-serif text-lg leading-relaxed text-inksoft mt-4">{{ featured.dek }}</p>
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mt-5 text-[11px] font-mono text-inkmute">
+              <span>来源 · {{ featured.source }}</span>
+              <span>·</span>
+              <span>{{ featured.time }}</span>
+              <span>·</span>
+              <span class="text-accent">置信度 {{ featured.confidence }}%</span>
+            </div>
+            <div class="mt-6 flex flex-wrap gap-2">
+              <span v-for="tg in featured.tags" :key="tg" class="px-2.5 py-1 border border-ink/40 text-[10px] font-mono uppercase tracking-wider">{{ tg }}</span>
+            </div>
+          </div>
+
+          <!-- AI signal monitor -->
+          <div class="rise border border-ink bg-ink text-paper p-6 relative overflow-hidden" style="animation-delay:.4s">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-mono tracking-[0.25em] text-gold">AI SIGNAL MONITOR</div>
+                <h3 class="font-display font-semibold text-2xl mt-1">异常信号监测</h3>
+              </div>
+              <div class="w-2.5 h-2.5 rounded-full bg-accent pulse-dot"></div>
+            </div>
+            <div class="mt-5 space-y-3">
+              <div v-for="s in signals" :key="s.id" class="border-l-2 pl-3 py-1" :style="`border-color:${s.color}`">
+                <div class="flex items-center justify-between">
+                  <span class="font-mono text-[10px] text-paper/50">{{ s.id }} · {{ s.industry }}</span>
+                  <span class="font-mono text-[10px] text-paper/60">{{ s.t }}</span>
+                </div>
+                <div class="font-serif text-[15px] leading-snug mt-0.5">{{ s.text }}</div>
+                <div class="flex items-center gap-2 mt-1.5">
+                  <div class="flex-1 h-1 bg-paper/15">
+                    <div class="h-full" :style="`width:${s.score}%;background:${s.color}`"></div>
+                  </div>
+                  <span class="font-mono text-[10px]" :style="`color:${s.color}`">{{ s.score }}</span>
+                </div>
+              </div>
+            </div>
+            <button class="mt-5 w-full border border-paper/30 py-2 font-mono text-[10px] tracking-[0.2em] hover:bg-paper hover:text-ink transition-colors">查看全部信号 →</button>
+          </div>
+        </div>
+
+        <!-- industry pulse -->
+        <div class="orn text-[10px] font-mono tracking-[0.3em] uppercase text-inksoft mb-5"><span>§ Industry Pulse · 行业脉搏</span></div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-rule border border-rule">
+          <button v-for="(ind,i) in industries" :key="ind.id"
+                  @click="openIndustry(ind)"
+                  class="rise group bg-paper p-6 text-left lift relative overflow-hidden"
+                  :style="`animation-delay:${.3+i*.06}s`">
+            <!-- corner number -->
+            <div class="absolute top-4 right-4 font-mono text-[9px] text-inkmute">N°{{ String(i+1).padStart(2,'0') }}</div>
+
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-mono tracking-[0.2em] uppercase" :class="ind.trend>0?'text-pos':'text-accent'">{{ ind.trend>0?'↑ 上升':'↓ 回调' }}</span>
+              <span class="w-1 h-1 rounded-full bg-inkmute"></span>
+              <span class="font-mono text-[10px] text-inkmute">{{ ind.code }}</span>
+            </div>
+            <h4 class="font-display font-bold text-2xl mt-2 group-hover:text-accent transition-colors" style="font-variation-settings:'opsz' 60;">{{ ind.name }}</h4>
+            <p class="font-serif italic text-inksoft text-[15px] mt-0.5">{{ ind.tagline }}</p>
+
+            <!-- pulse meter -->
+            <div class="mt-4 flex items-end justify-between">
+              <div>
+                <div class="font-mono text-[9px] text-inkmute uppercase tracking-wider">脉搏指数</div>
+                <div class="num font-display font-bold text-5xl leading-none" :class="ind.pulse>=75?'text-accent':ind.pulse>=55?'text-ink':'text-inksoft'">{{ ind.pulse }}</div>
+              </div>
+              <div class="text-right">
+                <div :class="ind.trend>0?'text-pos':'text-accent'" class="font-mono text-sm font-bold">{{ ind.trend>0?'+':'' }}{{ ind.trend }}%</div>
+                <svg viewBox="0 0 80 28" class="w-20 h-7 mt-1">
+                  <polyline :points="ind.spark" fill="none" :stroke="ind.trend>0?'#1F4D38':'#8B1A1A'" stroke-width="1.5" class="spark-path"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-rule flex items-center justify-between">
+              <div class="flex -space-x-1">
+                <span v-for="c in ind.companies.slice(0,3)" :key="c" class="w-6 h-6 border border-paper bg-ink text-paper font-mono text-[9px] flex items-center justify-center">{{ c[0] }}</span>
+              </div>
+              <span class="font-mono text-[10px] text-inksoft group-hover:text-accent transition-colors">{{ ind.events }} 条线索 →</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- live news feed -->
+        <div class="grid lg:grid-cols-3 gap-8 mt-12">
+          <div class="lg:col-span-2">
+            <div class="orn text-[10px] font-mono tracking-[0.3em] uppercase text-inksoft mb-4"><span>§ Live Wire · 实时资讯</span></div>
+            <div class="border-t-2 border-ink">
+              <article v-for="(n,i) in newsFeed" :key="n.id"
+                       class="rise grid grid-cols-[auto_1fr] gap-5 py-5 border-b border-rule group"
+                       :style="`animation-delay:${.2+i*.05}s`">
+                <div class="text-right">
+                  <div class="num font-display font-bold text-3xl leading-none text-ink/30 group-hover:text-accent transition-colors">{{ n.time }}</div>
+                  <div class="font-mono text-[9px] text-inkmute mt-1">{{ n.source }}</div>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <span v-if="n.breaking" class="px-1.5 py-0.5 bg-accent text-paper font-mono text-[9px] font-bold tracking-wider pulse-dot">BREAKING</span>
+                    <span v-else-if="n.developing" class="px-1.5 py-0.5 border border-accent text-accent font-mono text-[9px] font-bold tracking-wider">DEVELOPING</span>
+                    <span class="px-1.5 py-0.5 bg-ink/8 text-inksoft font-mono text-[9px] uppercase tracking-wider">{{ n.industry }}</span>
+                  </div>
+                  <h4 class="font-display font-semibold text-xl leading-tight group-hover:text-accent transition-colors">{{ n.headline }}</h4>
+                  <p class="font-serif text-inksoft text-[15px] mt-1 leading-snug">{{ n.summary }}</p>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <!-- sidebar: editor's picks / source map -->
+          <aside class="space-y-6">
+            <div class="border border-ink p-6 bg-paperdk/30">
+              <div class="text-[10px] font-mono tracking-[0.25em] text-accent uppercase">情报来源 · Sources</div>
+              <h3 class="font-display font-bold text-xl mt-1">监控网络</h3>
+              <div class="mt-4 space-y-3">
+                <div v-for="src in sources" :key="src.name" class="flex items-center justify-between">
+                  <span class="font-serif text-[15px]">{{ src.name }}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-[10px] text-inkmute">{{ src.count }}</span>
+                    <div class="w-16 h-1 bg-rule"><div class="h-full bg-ink" :style="`width:${src.pct}%`"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border border-ink p-6 bg-ink text-paper">
+              <div class="text-[10px] font-mono tracking-[0.25em] text-gold uppercase">值班编辑 · Editor</div>
+              <div class="mt-3 flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-gold/30 border border-paper/30 flex items-center justify-center font-display text-xl">智</div>
+                <div>
+                  <div class="font-display font-semibold text-lg">AI 编辑组</div>
+                  <div class="font-mono text-[10px] text-paper/60">v 4.2 · 持续学习中</div>
+                </div>
+              </div>
+              <p class="font-serif italic text-[14px] text-paper/75 mt-3 leading-relaxed">"今日共扫描 {{ totalScanned }} 条原始数据，识别 {{ signals.length }} 条高置信信号，已为 {{ industries.length }} 个行业生成脉搏评分。"</p>
+              <div class="mt-4 pt-4 border-t border-paper/20 grid grid-cols-3 gap-2 text-center">
+                <div><div class="num font-display font-bold text-2xl">{{ totalScanned }}</div><div class="font-mono text-[8px] text-paper/50 uppercase">扫描</div></div>
+                <div><div class="num font-display font-bold text-2xl text-gold">{{ dedup }}</div><div class="font-mono text-[8px] text-paper/50 uppercase">去重</div></div>
+                <div><div class="num font-display font-bold text-2xl text-[#9FD9B4]">{{ published }}</div><div class="font-mono text-[8px] text-paper/50 uppercase">发布</div></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- =========================================================== -->
+      <!-- ===================== INDUSTRY DETAIL ===================== -->
+      <!-- =========================================================== -->
+      <section v-else-if="view==='industry'" key="industry">
+        <!-- industry selector -->
+        <div class="rise mb-8 flex items-center gap-3 overflow-x-auto pb-2" style="animation-delay:.05s">
+          <span class="font-mono text-[10px] tracking-[0.2em] uppercase text-inksoft shrink-0">SELECT ›</span>
+          <button v-for="ind in industries" :key="ind.id" @click="current=ind"
+                  class="shrink-0 px-3 py-1.5 border font-mono text-[11px] tracking-wider transition-colors"
+                  :class="current.id===ind.id ? 'bg-ink text-paper border-ink' : 'border-ink/30 hover:border-ink'">
+            {{ ind.name }}
+          </button>
+        </div>
+
+        <!-- hero -->
+        <div class="rise grid lg:grid-cols-12 gap-8 border-b-2 border-ink pb-8 mb-10" style="animation-delay:.15s">
+          <div class="lg:col-span-7">
+            <div class="flex items-center gap-3 text-[10px] font-mono tracking-[0.25em] uppercase">
+              <span class="text-accent">{{ current.code }}</span>
+              <span class="w-1 h-1 bg-inkmute rounded-full"></span>
+              <span class="text-inksoft">{{ current.trend>0?'上升趋势':'回调中' }}</span>
+              <span class="w-1 h-1 bg-inkmute rounded-full"></span>
+              <span class="text-inksoft">深度档案</span>
+            </div>
+            <h2 class="font-display font-bold mt-2 leading-[0.95]" style="font-size:clamp(2.4rem,5vw,4.2rem); font-variation-settings:'opsz' 144,'SOFT' 20;">
+              {{ current.name }}
+            </h2>
+            <p class="font-display italic text-2xl text-accent mt-1" style="font-variation-settings:'opsz' 60;">{{ current.tagline }}</p>
+            <p class="font-serif text-lg text-inksoft leading-relaxed mt-5 max-w-2xl">{{ current.desc }}</p>
+
+            <div class="flex flex-wrap gap-2 mt-6">
+              <span v-for="kw in current.keywords" :key="kw" class="px-3 py-1 bg-paperdk border border-rule font-mono text-[10px] tracking-wider uppercase">{{ kw }}</span>
+            </div>
+          </div>
+
+          <!-- hero metrics -->
+          <div class="lg:col-span-5 grid grid-cols-2 gap-px bg-ink border border-ink">
+            <div class="bg-paper p-5">
+              <div class="font-mono text-[9px] text-inkmute uppercase tracking-wider">脉搏指数</div>
+              <div class="num font-display font-black text-5xl mt-1" :class="current.pulse>=75?'text-accent':'text-ink'">{{ current.pulse }}</div>
+              <div :class="current.trend>0?'text-pos':'text-accent'" class="font-mono text-xs font-bold mt-1">{{ current.trend>0?'▲':'▼' }} {{ Math.abs(current.trend) }}%</div>
+            </div>
+            <div class="bg-paper p-5">
+              <div class="font-mono text-[9px] text-inkmute uppercase tracking-wider">市场规模</div>
+              <div class="num font-display font-black text-5xl mt-1">{{ current.market }}</div>
+              <div class="font-mono text-xs text-inksoft mt-1">{{ current.marketUnit }}</div>
+            </div>
+            <div class="bg-paper p-5">
+              <div class="font-mono text-[9px] text-inkmute uppercase tracking-wider">年增速 CAGR</div>
+              <div class="num font-display font-black text-5xl mt-1 text-pos">{{ current.cagr }}<span class="text-2xl">%</span></div>
+              <div class="font-mono text-xs text-inksoft mt-1">2024 – 2030E</div>
+            </div>
+            <div class="bg-paper p-5">
+              <div class="font-mono text-[9px] text-inkmute uppercase tracking-wider">活跃信号</div>
+              <div class="num font-display font-black text-5xl mt-1">{{ current.events }}</div>
+              <div class="font-mono text-xs text-inksoft mt-1">近 24 小时</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- development timeline -->
+        <div class="grid lg:grid-cols-12 gap-10">
+          <div class="lg:col-span-7">
+            <div class="orn text-[10px] font-mono tracking-[0.3em] uppercase text-inksoft mb-6"><span>§ 发展脉络 · Timeline</span></div>
+
+            <div class="relative pl-8">
+              <!-- vertical line -->
+              <div class="absolute left-[7px] top-2 bottom-2 w-px bg-rule"></div>
+
+              <div v-for="(m,i) in current.timeline" :key="i"
+                   class="rise relative pb-8 last:pb-0" :style="`animation-delay:${.2+i*.08}s`">
+                <!-- node -->
+                <div class="absolute -left-8 top-1 w-4 h-4 rounded-full border-2 border-paper"
+                     :class="m.now ? 'bg-accent pulse-dot' : i===0 ? 'bg-ink' : 'bg-paperdk border-ink'"></div>
+                <div class="flex items-baseline gap-3">
+                  <span class="num font-display font-bold text-2xl text-accent" style="font-variation-settings:'opsz' 60;">{{ m.date }}</span>
+                  <span v-if="m.now" class="px-1.5 py-0.5 bg-accent text-paper font-mono text-[9px] font-bold tracking-wider">NOW</span>
+                  <span v-if="m.future" class="px-1.5 py-0.5 border border-ink/40 font-mono text-[9px] tracking-wider">预判</span>
+                </div>
+                <h4 class="font-display font-semibold text-xl mt-1.5">{{ m.title }}</h4>
+                <p class="font-serif text-inksoft text-[15px] leading-relaxed mt-1">{{ m.desc }}</p>
+                <div v-if="m.impact" class="mt-2 inline-flex items-center gap-2 font-mono text-[10px] text-inksoft">
+                  <span class="text-accent">影响 ›</span> {{ m.impact }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- right: companies + trends -->
+          <aside class="lg:col-span-5 space-y-8">
+            <div>
+              <div class="orn text-[10px] font-mono tracking-[0.3em] uppercase text-inksoft mb-4"><span>§ 关联企业 · Players</span></div>
+              <div class="space-y-3">
+                <div v-for="c in current.companies" :key="c.name"
+                     class="rise border border-rule p-4 bg-paper lift flex items-center gap-4" :style="`animation-delay:${.1+Math.random()*.3}s`">
+                  <div class="w-11 h-11 shrink-0 bg-ink text-paper font-display font-bold flex items-center justify-center text-lg">{{ c.name[0] }}</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="font-display font-semibold text-[17px] truncate">{{ c.name }}</span>
+                      <span class="font-mono text-[9px] text-inkmute shrink-0">{{ c.tag }}</span>
+                    </div>
+                    <div class="font-serif text-[13px] text-inksoft truncate">{{ c.role }}</div>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <div :class="c.up?'text-pos':'text-accent'" class="font-mono text-xs font-bold">{{ c.up?'▲':'▼' }} {{ c.chg }}%</div>
+                    <div class="font-mono text-[9px] text-inkmute">市值 {{ c.cap }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="orn text-[10px] font-mono tracking-[0.3em] uppercase text-inksoft mb-4"><span>§ 趋势指标 · Indicators</span></div>
+              <div class="border border-ink">
+                <div v-for="ind in current.metrics" :key="ind.label" class="flex items-center justify-between px-4 py-3 border-b border-rule last:border-b-0">
+                  <span class="font-serif text-[15px]">{{ ind.label }}</span>
+                  <div class="flex items-center gap-3">
+                    <span class="num font-display font-bold text-xl">{{ ind.val }}</span>
+                    <span :class="ind.up?'text-pos':'text-accent'" class="font-mono text-[10px] w-12 text-right">{{ ind.up?'+':'' }}{{ ind.delta }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border border-ink p-5 bg-accent/5">
+              <div class="text-[10px] font-mono tracking-[0.25em] text-accent uppercase">分析师视角 · View</div>
+              <p class="font-serif italic text-[15px] leading-relaxed mt-2 text-ink">"{{ current.analyst }}"</p>
+              <div class="font-mono text-[10px] text-inkmute mt-3">— AI 综合研判 · 置信度 {{ current.confidence }}%</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- =========================================================== -->
+      <!-- ====================== DAILY REPORT ======================= -->
+      <!-- =========================================================== -->
+      <section v-else key="report">
+        <!-- report masthead -->
+        <div class="rise text-center border-b-4 border-double border-ink pb-6 mb-8" style="animation-delay:.05s">
+          <div class="flex items-center justify-between text-[10px] font-mono tracking-[0.2em] uppercase text-inksoft mb-3">
+            <span>Vol. XXVII · No. {{ editionNo }}</span>
+            <span class="text-accent">DAILY EDITION</span>
+            <span>{{ today.en }}</span>
+          </div>
+          <div class="text-[10px] font-mono tracking-[0.45em] text-accent">AUTOMATED INDUSTRY INTELLIGENCE BRIEFING</div>
+          <h2 class="font-display font-black leading-none mt-2" style="font-size:clamp(2.2rem,5.5vw,4.8rem); font-variation-settings:'opsz' 144,'SOFT' 0,'WONK' 1;">
+            每 日 洞 察 <span class="italic font-light text-accent" style="font-variation-settings:'opsz' 144;">Dispatch</span>
+          </h2>
+          <div class="orn text-[11px] font-serif italic text-inksoft mt-3 max-w-md mx-auto"><span>由 AI 编辑组于 {{ lastSync }} 自动编纂 · 仅供决策参考</span></div>
+        </div>
+
+        <!-- lead story -->
+        <div class="rise mb-12" style="animation-delay:.2s">
+          <div class="text-[10px] font-mono tracking-[0.3em] text-accent uppercase mb-2">头条 · LEAD STORY</div>
+          <h3 class="font-display font-bold leading-[1.02]" style="font-size:clamp(2rem,4.2vw,3.6rem); font-variation-settings:'opsz' 144,'SOFT' 30;">
+            {{ report.lead.title }}
+          </h3>
+          <p class="font-display italic text-2xl text-inksoft mt-3 max-w-3xl" style="font-variation-settings:'opsz' 60;">{{ report.lead.dek }}</p>
+
+          <div class="grid lg:grid-cols-12 gap-8 mt-6">
+            <div class="lg:col-span-8">
+              <p class="dropcap font-serif text-[17px] leading-[1.85] text-ink" style="text-align:justify;">{{ report.lead.body }}</p>
+              <div class="mt-5 flex items-center gap-3 text-[10px] font-mono text-inkmute">
+                <span class="stamp text-[8px] px-2 py-0.5">FILED</span>
+                <span>{{ today.full }} · {{ lastSync }}</span>
+                <span>·</span>
+                <span>字数 {{ report.lead.words }}</span>
+                <span>·</span>
+                <span class="text-accent">阅读 {{ report.lead.read }}</span>
+              </div>
+            </div>
+            <aside class="lg:col-span-4 border-l border-rule pl-6">
+              <div class="text-[10px] font-mono tracking-[0.25em] text-accent uppercase mb-3">今日数据 · By Numbers</div>
+              <div class="space-y-4">
+                <div v-for="d in report.bynums" :key="d.label">
+                  <div class="num font-display font-bold text-4xl leading-none" :class="d.up===null?'text-ink':d.up?'text-pos':'text-accent'">{{ d.val }}</div>
+                  <div class="font-serif text-[13px] text-inksoft mt-1">{{ d.label }}</div>
+                  <div v-if="d.note" class="font-mono text-[10px] text-inkmute mt-0.5">{{ d.note }}</div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <!-- two columns -->
+        <div class="orn text-[10px] font-mono tracking-[0.3em] uppercase text-inksoft mb-6"><span>§ 分栏报道 · In Brief</span></div>
+        <div class="grid lg:grid-cols-2 gap-10 mb-12">
+          <article v-for="(col,i) in report.columns" :key="i" class="rise" :style="`animation-delay:${.3+i*.15}s`">
+            <div class="text-[10px] font-mono tracking-[0.25em] text-accent uppercase">{{ col.kicker }}</div>
+            <h4 class="font-display font-bold text-3xl mt-1 leading-tight" style="font-variation-settings:'opsz' 80;">{{ col.title }}</h4>
+            <p class="font-serif text-[16px] leading-[1.8] text-ink mt-3" style="text-align:justify;">{{ col.body }}</p>
+            <div class="mt-4 grid grid-cols-3 gap-2 text-center border-y border-rule py-3">
+              <div><div class="num font-display font-bold text-xl">{{ col.stats[0] }}</div><div class="font-mono text-[9px] text-inkmute uppercase">{{ col.statLabels[0] }}</div></div>
+              <div><div class="num font-display font-bold text-xl text-accent">{{ col.stats[1] }}</div><div class="font-mono text-[9px] text-inkmute uppercase">{{ col.statLabels[1] }}</div></div>
+              <div><div class="num font-display font-bold text-xl text-pos">{{ col.stats[2] }}</div><div class="font-mono text-[9px] text-inkmute uppercase">{{ col.statLabels[2] }}</div></div>
+            </div>
+          </article>
+        </div>
+
+        <!-- watch list table -->
+        <div class="orn text-[10px] font-mono tracking-[0.3em] uppercase text-inksoft mb-4"><span>§ 行业观察名单 · Watchlist</span></div>
+        <div class="border border-ink mb-12 overflow-x-auto">
+          <table class="w-full font-serif">
+            <thead>
+              <tr class="bg-ink text-paper text-[10px] font-mono tracking-wider uppercase">
+                <th class="text-left px-4 py-2.5 font-normal">行业</th>
+                <th class="text-right px-4 py-2.5 font-normal">脉搏</th>
+                <th class="text-right px-4 py-2.5 font-normal hidden sm:table-cell">增速</th>
+                <th class="text-left px-4 py-2.5 font-normal hidden md:table-cell">关键信号</th>
+                <th class="text-right px-4 py-2.5 font-normal">建议</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(ind,i) in industries" :key="ind.id" class="border-t border-rule hover:bg-paperdk/40 transition-colors">
+                <td class="px-4 py-3">
+                  <div class="font-display font-semibold text-[16px]">{{ ind.name }}</div>
+                  <div class="font-mono text-[9px] text-inkmute">{{ ind.code }}</div>
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <span class="num font-display font-bold text-xl" :class="ind.pulse>=75?'text-accent':'text-ink'">{{ ind.pulse }}</span>
+                </td>
+                <td class="px-4 py-3 text-right hidden sm:table-cell">
+                  <span :class="ind.trend>0?'text-pos':'text-accent'" class="font-mono text-sm font-bold">{{ ind.trend>0?'+':'' }}{{ ind.trend }}%</span>
+                </td>
+                <td class="px-4 py-3 hidden md:table-cell font-serif text-[14px] text-inksoft italic">{{ ind.watchSignal }}</td>
+                <td class="px-4 py-3 text-right">
+                  <span class="px-2 py-0.5 font-mono text-[9px] tracking-wider uppercase"
+                        :class="ind.pulse>=75?'bg-accent text-paper':ind.pulse>=55?'bg-gold/20 text-ink border border-gold/40':'bg-paperdk text-inksoft'">
+                    {{ ind.pulse>=75?'重点关注':ind.pulse>=55?'观察':'常规' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- editor's note -->
+        <div class="rise border-t-2 border-ink pt-8 grid lg:grid-cols-3 gap-8" style="animation-delay:.5s">
+          <div class="lg:col-span-2">
+            <div class="text-[10px] font-mono tracking-[0.3em] text-accent uppercase mb-2">编者按 · Editor's Note</div>
+            <p class="font-display italic text-2xl leading-relaxed text-ink" style="font-variation-settings:'opsz' 60;">
+              "本日简报由自动化引擎在 {{ totalScanned }} 条原始信号中筛选、去重、交叉验证后生成。我们呈现趋势，不下定论；提供线索，由你完成判断。明日同一时间，再会。"
+            </p>
+            <div class="mt-5 flex items-center gap-3">
+              <div class="font-display italic text-3xl text-accent" style="font-variation-settings:'opsz' 144;">AI 编辑组</div>
+              <div class="font-mono text-[10px] text-inkmute">— {{ today.full }}</div>
+            </div>
+          </div>
+          <aside class="border-l border-rule pl-6">
+            <div class="text-[10px] font-mono tracking-[0.25em] text-inksoft uppercase mb-3">明日预告 · Tomorrow</div>
+            <ul class="space-y-2.5">
+              <li v-for="t in report.tomorrow" :key="t" class="flex gap-2 font-serif text-[14px]">
+                <span class="text-accent font-mono text-xs mt-1">›</span>
+                <span class="text-inksoft">{{ t }}</span>
+              </li>
+            </ul>
+            <div class="mt-6 pt-4 border-t border-rule">
+              <div class="font-mono text-[9px] text-inkmute uppercase tracking-wider">订阅</div>
+              <div class="font-display font-semibold text-lg mt-1">每日 06:00 自动推送</div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- colophon -->
+        <div class="mt-12 pt-4 border-t border-rule flex flex-wrap items-center justify-between gap-3 text-[9px] font-mono tracking-[0.2em] uppercase text-inkmute">
+          <span>THE DAILY INTELLIGENCE · Automated Briefing</span>
+          <span>Set in Fraunces &amp; Newsreader</span>
+          <span>— END OF EDITION —</span>
+        </div>
+      </section>
+    </transition>
+  </main>
+
+  <!-- footer -->
+  <footer class="bg-ink text-paper/70 mt-16">
+    <div class="max-w-[1500px] mx-auto px-5 lg:px-10 py-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-[13px] font-serif">
+      <div>
+        <div class="font-display font-bold text-paper text-xl">The Daily Intelligence</div>
+        <p class="mt-2 leading-relaxed">自动化行业情报工作台。聚合 · 识别 · 研判 · 发布。</p>
+      </div>
+      <div>
+        <div class="font-mono text-[10px] text-gold uppercase tracking-wider mb-2">视图</div>
+        <ul class="space-y-1">
+          <li v-for="v in views" :key="v.id"><button @click="view=v.id" class="ulink hover:text-paper">{{ v.label }}</button></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-mono text-[10px] text-gold uppercase tracking-wider mb-2">数据</div>
+        <ul class="space-y-1">
+          <li>扫描源 · {{ sources.length }} 类</li>
+          <li>监控行业 · {{ industries.length }} 个</li>
+          <li>更新频率 · 实时</li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-mono text-[10px] text-gold uppercase tracking-wider mb-2">声明</div>
+        <p class="leading-relaxed">本平台为演示用概念工作台，所有数据为模拟生成，仅供产品形态展示。</p>
+      </div>
+    </div>
+    <div class="border-t border-paper/15 py-4 text-center font-mono text-[10px] tracking-[0.3em] uppercase text-paper/40">
+      © 2026 Daily Intelligence — Automated · v 4.2 · Built with Vue 3 + Tailwind
+    </div>
+  </footer>
+</div>
+
+<script>
+  const { createApp } = Vue;
+
+  // helpers
+  const spark = (seed, up) => {
+    let pts = []; let v = 14;
+    for (let i=0;i<10;i++){ v += (Math.sin(seed+i)*3) + (up? 1.1:-1.1) + (Math.random()*2-1); v = Math.max(4, Math.min(22,v)); pts.push(`${i*9},${28-v}`); }
+    return pts.join(' ');
+  };
+
+  createApp({
+    data(){
+      return {
+        view: 'workbench',
+        editionNo: '0427',
+        clock: '',
+        lastSync: '06:00:42',
+        views: [
+          { id:'workbench', label:'工作台',  en:'WORKBENCH' },
+          { id:'industry',  label:'行业详情', en:'INDUSTRY' },
+          { id:'report',    label:'每日报告', en:'DISPATCH' },
+        ],
+        today: { full:'2026年6月14日', weekday:'星期日', en:'SUN, 14 JUN 2026' },
+        ticker: [
+          { sym:'AI.CN',  val:'189.4', chg:'2.31', up:true },
+          { sym:'SEMCO',  val:'742.0', chg:'-0.84', up:false },
+          { sym:'NEWE',   val:'88.21', chg:'1.92', up:true },
+          { sym:'BIO.CN', val:'415.6', chg:'0.47', up:true },
+          { sym:'QBIT',   val:'31.08', chg:'5.74', up:true },
+          { sym:'SPACE',  val:'263.9', chg:'-1.23', up:false },
+          { sym:'ROBO',   val:'157.3', chg:'3.10', up:true },
+          { sym:'EDGE',   val:'64.55', chg:'0.92', up:true },
+        ],
+        kpis: [
+          { label:'今日洞察', val:'142', chg:'18', up:true,  line:spark(1,true) },
+          { label:'监控行业', val:'6',   chg:'0',  up:true,  line:spark(2,true) },
+          { label:'实时资讯', val:'1,284', chg:'7.2', up:true,  line:spark(3,true) },
+          { label:'待复核',  val:'23',  chg:'5',  up:false, line:spark(4,false) },
+        ],
+        featured: {
+          title: '国产大模型推理成本半年下挫 72%，端侧部署窗口正式开启',
+          dek: '过去六个月，主流国产大模型单 Token 推理成本从 0.012 元降至 0.0034 元，摩尔定律级别的下降正重塑消费电子与边缘设备的落地节奏。多家手机厂商已确认将在下半年旗舰机型中预置端侧 Agent。',
+          source:'AI 编辑组 · 综合 14 家信源',
+          time:'今日 05:48',
+          confidence:'94',
+          tags:['人工智能','边缘计算','消费电子','成本曲线'],
+        },
+        signals: [
+          { id:'SIG-0427-01', industry:'半导体', t:'05:12', text:'某晶圆厂 7nm 产线良率突破传闻，原文出现 3 次后撤稿', score:88, color:'#8B1A1A' },
+          { id:'SIG-0427-02', industry:'新能源', t:'04:55', text:'三家头部电池企业同周上调三元材料采购指引', score:76, color:'#A87935' },
+          { id:'SIG-0427-03', industry:'商业航天', t:'03:30', text:'可回收火箭海上回收许可文件短暂上线监管网站', score:81, color:'#8B1A1A' },
+          { id:'SIG-0427-04', industry:'量子计算', t:'02:18', text:'超导量子比特相干时间论文预印本刷新纪录', score:69, color:'#1F4D38' },
+        ],
+        industries: [
+          { id:'ai', code:'AI.CN', name:'人工智能', tagline:'推理成本坍缩，Agent 进入终端',
+            pulse:88, trend:2.31, spark:spark(11,true), events:48,
+            companies:[{name:'智源研究院',tag:'研究',role:'开源基座模型',up:true,chg:4.2,cap:'—'},{name:'某智能',tag:'模型',role:'通用大模型',up:true,chg:3.1,cap:'2.4T'},{name:'某芯科技',tag:'芯片',role:'推理加速',up:true,chg:5.8,cap:'880B'}],
+            desc:'以推理成本急剧下降为主线，行业重心从"模型竞赛"转向"应用落地"。端侧 Agent、企业 RAG 与垂直行业模型成为三条并行赛道，开源生态与闭源旗舰形成双轨格局。',
+            keywords:['大模型','Agent','端侧','RAG','多模态'],
+            market:'1.8T', marketUnit:'人民币 · 2025', cagr:34, confidence:92, watchSignal:'推理成本半年 -72%',
+            timeline:[
+              {date:'2024 Q4', title:'百模大战收敛', desc:'主流厂商收敛至 5 家旗舰，开源权重性能逼近闭源 90%。', impact:'推理算力需求转向边缘'},
+              {date:'2025 Q2', title:'Agent 协议标准化', desc:'多智能体协作协议草案获产业联盟采纳，互操作性大幅提升。', impact:'企业级落地门槛下降'},
+              {date:'2025 Q4', title:'端侧推理破局', desc:'手机端 7B 模型实时运行，功耗降至可日常使用区间。', impact:'催生全新交互范式'},
+              {date:'2026 Q2', title:'成本曲线加速', desc:'单 Token 推理成本较去年同期下降 72%，远超摩尔节奏。', impact:'现在', now:true },
+              {date:'2026 H2', title:'垂直 Agent 爆发', desc:'预计金融、医疗、法务三大垂直领域将出现日活过千万的 Agent 产品。', future:true, impact:'行业软件重构' },
+            ],
+            metrics:[
+              {label:'单 Token 推理成本', val:'0.0034', delta:-72, up:false},
+              {label:'开源模型占比', val:'47%', delta:11, up:true},
+              {label:'端侧设备渗透率', val:'8.4%', delta:6, up:true},
+              {label:'企业 RAG 部署数', val:'12,400', delta:38, up:true},
+            ],
+            analyst:'推理成本的坍缩是本轮最确定的趋势——它不创造新需求，而是把所有曾被"太贵"而搁置的需求一次性释放。下半年的胜负手在端侧。'
+          },
+          { id:'semi', code:'SEMCO', name:'半导体', tagline:'先进制程博弈与国产替代并行',
+            pulse:72, trend:-0.84, spark:spark(12,false), events:31,
+            companies:[{name:'某芯国际',tag:'晶圆',role:'先进制程代工',up:false,chg:-1.2,cap:'680B'},{name:'某华电子',tag:'存储',role:'DRAM/NAND',up:true,chg:2.1,cap:'520B'},{name:'某微科技',tag:'设计',role:'AI 加速芯片',up:true,chg:4.7,cap:'910B'}],
+            desc:'全球半导体进入库存周期尾声，先进制程地缘博弈加剧。国产替代在成熟制程取得实质进展，AI 算力需求持续拉动 HBM 与先进封装产能。',
+            keywords:['先进制程','HBM','先进封装','国产替代'],
+            market:'3.2T', marketUnit:'人民币 · 全球', cagr:12, confidence:85, watchSignal:'7nm 良率传闻撤稿',
+            timeline:[
+              {date:'2024 Q3', title:'库存周期触底', desc:'消费电子渠道库存回归正常水位，订单回暖信号出现。'},
+              {date:'2025 Q1', title:'HBM 产能瓶颈', desc:'AI 训练需求致 HBM 持续紧缺，价格上行。'},
+              {date:'2025 Q4', title:'成熟制程扩产', desc:'28nm 及以上国产产能集中释放，市占率提升。'},
+              {date:'2026 Q2', title:'7nm 传闻扰动', desc:'先进制程良率相关传闻频繁出现又撤稿，市场分歧加大。', now:true },
+              {date:'2026 H2', title:'先进封装放量', desc:'2.5D/3D 封装产能预计翻倍，缓解 AI 算力供给。', future:true },
+            ],
+            metrics:[
+              {label:'晶圆出货量(万片)', val:'1,240', delta:8, up:true},
+              {label:'HBM 价格指数', val:'186', delta:22, up:true},
+              {label:'设备国产化率', val:'38%', delta:5, up:true},
+              {label:'库存周转天数', val:'64', delta:-12, up:true},
+            ],
+            analyst:'短期的良率传闻制造噪音，但库存周期与 AI 算力的双重驱动是主线。关注先进封装这条被低估的暗线。'
+          },
+          { id:'energy', code:'NEWE', name:'新能源', tagline:'储能放量，材料指引上调',
+            pulse:64, trend:1.92, spark:spark(13,true), events:27,
+            companies:[{name:'某时代',tag:'电池',role:'动力+储能',up:true,chg:1.8,cap:'9.8T'},{name:'某迪股份',tag:'整车',role:'垂直整合',up:true,chg:2.4,cap:'7.2T'},{name:'某利能源',tag:'储能',role:'大型储能集成',up:true,chg:3.6,cap:'410B'}],
+            desc:'动力电池增速放缓但储能业务高速放量，成为第二增长曲线。材料端三元与磷酸铁锂路线分化加剧，海外市场打开新空间。',
+            keywords:['储能','磷酸铁锂','固态电池','海外建厂'],
+            market:'4.6T', marketUnit:'人民币', cagr:18, confidence:80, watchSignal:'三元采购指引齐升',
+            timeline:[
+              {date:'2024 Q2', title:'价格战见底', desc:'电芯价格触底企稳，行业出清进入尾声。'},
+              {date:'2025 Q1', title:'储能爆发', desc:'大型储能装机同比翻倍，成为盈利新支柱。'},
+              {date:'2025 Q4', title:'海外产能落地', desc:'欧洲与东南亚工厂集中投产，规避贸易壁垒。'},
+              {date:'2026 Q2', title:'材料指引上调', desc:'头部三家企业同周上调三元材料采购指引。', now:true },
+              {date:'2026 H2', title:'固态电池量产', desc:'半固态方案有望首次装车，开启下一代技术周期。', future:true },
+            ],
+            metrics:[
+              {label:'储能装机(GWh)', val:'186', delta:104, up:true},
+              {label:'电芯均价(元/Wh)', val:'0.42', delta:-11, up:false},
+              {label:'海外营收占比', val:'34%', delta:9, up:true},
+              {label:'固态专利数', val:'4,200', delta:31, up:true},
+            ],
+            analyst:'动力是基本盘，储能是弹性，固态是期权。三者叠加使新能源进入"高质量增长"阶段。'
+          },
+          { id:'bio', code:'BIO.CN', name:'生物医药', tagline:'ADC 与 GLP-1 双主线',
+            pulse:58, trend:0.47, spark:spark(14,true), events:19,
+            companies:[{name:'某明生物',tag:'CXO',role:'ADC 代工',up:true,chg:1.2,cap:'230B'},{name:'某泰医药',tag:'创新药',role:'GLP-1 减重',up:true,chg:3.4,cap:'410B'},{name:'某智康',tag:'诊断',role:'早筛',up:false,chg:-0.8,cap:'95B'}],
+            desc:'ADC 药物对外授权交易创历史新高，GLP-1 减重赛道持续扩容。CXO 行业受益于全球研发外包转移，但地缘审查风险上升。',
+            keywords:['ADC','GLP-1','CXO','License-out'],
+            market:'2.1T', marketUnit:'人民币', carg:14, confidence:78, watchSignal:'ADC 授权交易创新高',
+            timeline:[
+              {date:'2024 Q4', title:'ADC 交易潮', desc:'国产 ADC 海外授权金额刷新纪录，管线价值重估。'},
+              {date:'2025 Q2', title:'GLP-1 扩产', desc:'减重药产能大规模扩张，仿制竞争格局初现。'},
+              {date:'2026 Q2', title:'CXO 订单回流', desc:'海外 Biotech 融资回暖带动外包订单回升。', now:true },
+              {date:'2026 H2', title:'医保谈判', desc:'新一轮创新药医保谈判，关注降价幅度。', future:true },
+            ],
+            metrics:[
+              {label:'License-out 交易额($B)', val:'42', delta:58, up:true},
+              {label:'GLP-1 处方量(百万)', val:'18.6', delta:73, up:true},
+              {label:'CXO 在手订单', val:'580', delta:6, up:true},
+              {label:'创新药出海占比', val:'21%', delta:8, up:true},
+            ],
+            analyst:'ADC 的对外授权已从"个案"变成"常态"，这重塑了中国创新药的估值锚。下一个看点是 GLP-1 的国际化。'
+          },
+          { id:'quantum', code:'QBIT', name:'量子计算', tagline:'相干时间突破，纠错前夜',
+            pulse:81, trend:5.74, spark:spark(15,true), events:12,
+            companies:[{name:'某源量子',tag:'超导',role:'全栈量算',up:true,chg:6.1,cap:'—'},{name:'某弧量子',tag:'光量子',role:'光子路线',up:true,chg:4.8,cap:'—'},{name:'某循量子',tag:'离子阱',role:'离子阱路线',up:true,chg:3.2,cap:'—'}],
+            desc:'多技术路线并行推进，超导路线相干时间与门保真度持续刷新。产业仍处"含噪中等规模"(NISQ)阶段，但容错量子计算的关键拼图正在凑齐。',
+            keywords:['超导','纠错','光量子','量子优越性'],
+            market:'48B', marketUnit:'人民币 · 当前', cagr:42, confidence:71, watchSignal:'相干时间纪录刷新',
+            timeline:[
+              {date:'2024 Q3', title:'纠错原型', desc:'首个逻辑比特演示成功，纠错路径被验证可行。'},
+              {date:'2025 Q3', title:'比特数破百', desc:'超导路线物理比特数突破 500，门保真度提升。'},
+              {date:'2026 Q2', title:'相干时间纪录', desc:'超导量子比特相干时间论文预印本刷新纪录。', now:true },
+              {date:'2027', title:'容错里程碑', desc:'业界预计首个可实用容错逻辑比特将出现。', future:true },
+            ],
+            metrics:[
+              {label:'物理比特数', val:'512', delta:156, up:true},
+              {label:'门保真度', val:'99.7%', delta:0.6, up:true},
+              {label:'相干时间(μs)', val:'480', delta:80, up:true},
+              {label:'专利数', val:'3,800', delta:42, up:true},
+            ],
+            analyst:'量子计算还无法产生商业回报，但技术拐点的临近使其成为"未来贴现"最强烈的一条赛道。'
+          },
+          { id:'space', code:'SPACE', name:'商业航天', tagline:'可回收与星座组网竞速',
+            pulse:69, trend:-1.23, spark:spark(16,false), events:16,
+            companies:[{name:'某箭航天',tag:'发射',role:'可回收火箭',up:false,chg:-2.1,cap:'—'},{name:'某科航天',tag:'卫星',role:'星座组网',up:true,chg:1.9,cap:'—'},{name:'某瀚航天',tag:'发射',role:'商业发射服务',up:false,chg:-1.4,cap:'—'}],
+            desc:'可回收火箭技术进入关键验证窗口，低轨星座大规模组网启动。下游卫星互联网与遥感应用逐步打开商业化空间，但发射成本仍是核心瓶颈。',
+            keywords:['可回收','星座','卫星互联网','商业发射'],
+            market:'320B', marketUnit:'人民币', carg:28, confidence:74, watchSignal:'海上回收许可文件短暂上线',
+            timeline:[
+              {date:'2024 Q4', title:'星座首批发射', desc:'低轨通信星座首批卫星入轨，开始组网。'},
+              {date:'2025 Q3', title:'海上回收试验', desc:'可回收火箭一级海上回收关键技术验证。'},
+              {date:'2026 Q2', title:'许可文件扰动', desc:'回收相关许可文件短暂出现在监管网站后下线。', now:true },
+              {date:'2026 H2', title:'首飞回收', desc:'业界期待首枚国产可回收火箭完整回收。', future:true },
+            ],
+            metrics:[
+              {label:'年发射次数', val:'68', delta:36, up:true},
+              {label:'在轨卫星数', val:'1,240', delta:88, up:true},
+              {label:'单公斤发射成本($K)', val:'2.8', delta:-14, up:true},
+              {label:'商业订单额(亿元)', val:'186', delta:24, up:true},
+            ],
+            analyst:'可回收是改变成本结构的"奇点"——它一旦实现，整个星座经济的 ROI 模型都要重写。当前正处在奇点的前夜。'
+          },
+        ],
+        newsFeed: [
+          { id:1, time:'05:48', source:'综合', industry:'人工智能', breaking:true, headline:'推理成本半年下挫 72%，端侧部署窗口正式开启', summary:'主流国产大模型单 Token 成本从 0.012 元降至 0.0034 元，多家手机厂商确认下半年旗舰预置端侧 Agent。' },
+          { id:2, time:'05:12', source:'产业', industry:'半导体', breaking:false, developing:true, headline:'7nm 良率突破传闻现身三分钟后撤稿，市场剧烈波动', summary:'某晶圆厂先进制程良率相关稿件在产业媒体短暂上线后删除，盘前期货出现显著异动。' },
+          { id:3, time:'04:55', source:'公司', industry:'新能源', breaking:false, headline:'三家头部电池企业同周上调三元材料采购指引', summary:'市场解读为高端动力与储能需求共振，材料环节盈利预期上修。' },
+          { id:4, time:'03:30', source:'监管', industry:'商业航天', breaking:false, developing:true, headline:'可回收火箭海上回收许可文件短暂上线监管网站', summary:'文件涉及某商业航天企业近海回收作业许可，发布数小时后被下架，原因未说明。' },
+          { id:5, time:'02:18', source:'学术', industry:'量子计算', breaking:false, headline:'超导量子比特相干时间论文预印本刷新纪录', summary:'研究团队报告相干时间达 480 微秒，为容错量子计算提供关键参数支撑。' },
+          { id:6, time:'01:42', source:'交易', industry:'生物医药', breaking:false, headline:'国产 ADC 药物海外授权再创新高，单笔超 8 亿美元', summary:'生物科技公司将其 ADC 管线授权给跨国药企，首付款与里程碑金额合计刷新纪录。' },
+          { id:7, time:'00:15', source:'综合', industry:'人工智能', breaking:false, headline:'多智能体协作协议草案获产业联盟采纳', summary:'协议旨在打通不同厂商 Agent 之间的互操作性，企业级落地门槛有望进一步降低。' },
+        ],
+        sources: [
+          { name:'官方公告 / 监管', count:'412', pct:92 },
+          { name:'上市公司披露', count:'386', pct:86 },
+          { name:'产业媒体', count:'294', pct:72 },
+          { name:'学术论文 / 预印本', count:'128', pct:41 },
+          { name:'社交舆情', count:'64',  pct:22 },
+        ],
+        totalScanned: '12,840',
+        dedup: '3,180',
+        published: '142',
+        report: {
+          lead: {
+            title: '推理成本坍缩之年：AI 从云端走向掌心的拐点',
+            dek: '当单 Token 推理成本半年下跌 72%，"太贵"不再是借口——所有曾被搁置的需求正被一次性释放。',
+            body: '过去六个月，一个被市场严重低估的变量正在重塑整个科技版图：主流国产大模型的单 Token 推理成本从 0.012 元骤降至 0.0034 元，跌幅高达 72%，远超摩尔定律的传统节奏。这并非孤立事件，而是芯片制程迭代、模型架构优化与推理框架工程三者共振的结果。其直接后果是，一度被视为"太贵而无法落地"的端侧 Agent 正在获得真正的商业可行性。多家手机厂商已确认将在下半年的旗舰机型中预置 7B 参数级别的本地 Agent，这意味着人工智能正在经历从"云端订阅"到"掌心原生"的范式迁移。更深远的影响在于成本曲线的斜率本身——当算力以这种速度变便宜，所有基于旧成本假设的产品规划都需要重写。我们正站在一个"需求释放"的奇点上：不是新需求被创造，而是被压抑的旧需求被一次性解放。',
+            words:'486 字', read:'约 2 分钟',
+          },
+          bynums: [
+            { val:'-72%', label:'推理成本半年降幅', note:'0.012 → 0.0034 元/Token', up:false },
+            { val:'142',  label:'今日生成洞察', note:'去重后有效条目', up:null },
+            { val:'94%',  label:'头条置信度', note:'AI 编辑组综合研判', up:null },
+            { val:'6',    label:'监控行业', note:'全部生成脉搏评分', up:null },
+          ],
+          columns: [
+            { kicker:'半导体 · 观察笔记', title:'良率传闻、撤稿与市场的真实温度',
+              body:'一则关于 7nm 良率的稿件在产业媒体上线三分钟后被删除，盘前期货随即出现剧烈波动。这种"出现—消失—震荡"的剧本，恰恰折射出当前半导体板块最真实的情绪温度：市场对国产先进制程的进展极度敏感，却又缺乏可信的官方锚点。在我们的信号监测中，类似"撤稿型"线索本月已是第四次出现。它不构成结论，但构成信号——当一类信息反复出现又被反复撤回，往往意味着真实的进展正在水面之下酝酿。建议投资者与产业观察者将"撤稿频率"作为一个非传统的领先指标纳入观察框架，同时避免对单一传闻做出线性反应。',
+              stats:['1,240','+8%','38%'], statLabels:['晶圆出货(万片)','同比增速','设备国产化率'] },
+            { kicker:'新能源 · 行业纵览', title:'储能不是配角，而是新的弹性来源',
+              body:'当市场仍把目光锁定在动力电池的价格战时，储能业务正悄然完成从"配角"到"第二增长曲线"的身份转换。本季度大型储能装机量同比增长 104%，多家头部企业的储能业务营收占比首次突破三成。更深层的结构性变化发生在海外：欧洲与东南亚的本地化产能陆续投产，正在重塑全球供应链的地理格局。三家头部企业同周上调三元材料采购指引，被市场解读为高端动力与高端储能需求共振的信号。值得强调的是，电芯价格的企稳并不意味着价格战的终结——它意味着行业正在从"以价换量"过渡到"以技术与规模换利润"的新阶段，而这通常才是龙头真正拉开身位的窗口。',
+              stats:['186','104%','34%'], statLabels:['储能装机(GWh)','同比增速','海外营收占比'] },
+          ],
+          tomorrow: [
+            '美联储利率决议对科技股估值的传导分析',
+            '某商业航天企业可回收火箭关键节点跟进',
+            'ADC 领域 Q3 License-out 交易全景复盘',
+            '量子计算纠错路线成本曲线更新',
+          ],
+        },
+        current: null,
+      };
+    },
+    created(){
+      this.current = this.industries[0];
+      this.tick();
+      setInterval(this.tick, 1000);
+    },
+    methods: {
+      tick(){
+        const d = new Date();
+        const p = n => String(n).padStart(2,'0');
+        this.clock = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())} CST`;
+      },
+      openIndustry(ind){ this.current = ind; this.view = 'industry'; },
+    },
+  }).mount('#app');
+</script>
+
+<style>
+  /* view swap transition */
+  .swap-enter-active{ transition:opacity .35s ease, transform .35s cubic-bezier(.2,.7,.2,1); }
+  .swap-leave-active{ transition:opacity .2s ease, transform .2s ease; }
+  .swap-enter-from{ opacity:0; transform:translateY(10px); }
+  .swap-leave-to{ opacity:0; transform:translateY(-6px); }
+</style>
+</body>
+</html>

@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>墨韻 · Ink Wash Canvas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Long+Cang&family=Noto+Serif+SC:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:        #ede0c4;
+    --paper-light:  #f4e9d2;
+    --paper-dark:   #e0d0ab;
+    --ink:          #15110b;
+    --ink-soft:     #2a241c;
+    --seal:         #a8201a;
+    --seal-deep:    #7d1611;
+    --ui-ink:       #2a241c;
+    --ui-line:      rgba(42,36,28,0.16);
+    --ui-panel:     rgba(247,238,217,0.82);
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    width:100%; height:100%; overflow:hidden;
+    font-family:"Noto Serif SC","Cormorant Garamond",serif;
+    color:var(--ui-ink);
+    background:var(--paper);
+    cursor:none;
+  }
+
+  /* ====== 宣纸纹理背景 ====== */
+  .stage{
+    position:fixed; inset:0;
+    background:
+      radial-gradient(120% 90% at 18% 12%, var(--paper-light) 0%, var(--paper) 42%, var(--paper-dark) 100%);
+    overflow:hidden;
+  }
+  .stage::before{
+    content:""; position:absolute; inset:-20%;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0 0.03  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.22'/></svg>");
+    mix-blend-mode:multiply; opacity:0.5; pointer-events:none;
+  }
+  .stage::after{
+    content:""; position:absolute; inset:0;
+    background:
+      radial-gradient(40% 30% at 80% 88%, rgba(120,90,40,0.10), transparent 70%),
+      radial-gradient(30% 25% at 8% 78%, rgba(90,70,30,0.08), transparent 70%),
+      radial-gradient(25% 20% at 92% 18%, rgba(140,100,40,0.07), transparent 70%);
+    mix-blend-mode:multiply; pointer-events:none;
+  }
+
+  #ink, #paperTex{
+    position:absolute; inset:0; width:100%; height:100%;
+    display:block;
+  }
+  #paperTex{ z-index:1; mix-blend-mode:multiply; opacity:0.85; pointer-events:none; }
+  #ink{ z-index:2; }
+
+  /* ====== 顶部标题 ====== */
+  .brand{
+    position:fixed; top:30px; left:42px; z-index:30;
+    pointer-events:none; user-select:none;
+  }
+  .brand .mark{
+    font-family:"Ma Shan Zheng",serif;
+    font-size:54px; line-height:1; color:var(--ink);
+    letter-spacing:6px;
+    text-shadow:0 1px 0 rgba(255,255,255,0.25);
+  }
+  .brand .sub{
+    margin-top:6px;
+    font-family:"Cormorant Garamond",serif;
+    font-style:italic; font-weight:300;
+    font-size:15px; letter-spacing:5px;
+    color:var(--ink-soft); opacity:0.7;
+    text-transform:uppercase;
+  }
+  .brand .sub b{ font-weight:400; color:var(--seal); font-style:normal; }
+
+  /* ====== 右侧控制卷轴 ====== */
+  .panel{
+    position:fixed; right:26px; top:50%; transform:translateY(-50%);
+    z-index:30; width:74px;
+    background:var(--ui-panel);
+    backdrop-filter:blur(10px) saturate(1.1);
+    -webkit-backdrop-filter:blur(10px) saturate(1.1);
+    border:1px solid var(--ui-line);
+    border-radius:18px;
+    padding:14px 0;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.6) inset,
+      0 18px 50px -20px rgba(60,40,15,0.35);
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+  }
+  .panel .group{ display:flex; flex-direction:column; align-items:center; gap:9px; }
+  .panel .lbl{
+    font-family:"Noto Serif SC",serif; font-weight:500;
+    font-size:11px; letter-spacing:2px; color:var(--ink-soft);
+    writing-mode:vertical-rl; opacity:0.55;
+  }
+  .divider{ width:34px; height:1px; background:var(--ui-line); }
+
+  .slider-wrap{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .vslider{
+    -webkit-appearance:none; appearance:none;
+    width:140px; height:4px;
+    transform:rotate(-90deg);
+    background:linear-gradient(90deg,var(--ink-soft),var(--ink));
+    border-radius:4px; outline:none; cursor:pointer;
+  }
+  .vslider::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:16px; height:16px; border-radius:50%;
+    background:var(--paper-light);
+    border:2px solid var(--ink);
+    cursor:grab;
+    box-shadow:0 2px 4px rgba(0,0,0,0.25);
+  }
+  .vslider::-moz-range-thumb{
+    width:16px; height:16px; border-radius:50%;
+    background:var(--paper-light); border:2px solid var(--ink); cursor:grab;
+  }
+
+  .brushes{ display:flex; flex-direction:column; gap:5px; }
+  .brush-btn{
+    width:40px; height:40px; border-radius:11px;
+    border:1px solid var(--ui-line); background:rgba(255,255,255,0.3);
+    color:var(--ink-soft); cursor:pointer;
+    font-family:"Ma Shan Zheng",serif; font-size:22px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .2s; padding-bottom:2px;
+  }
+  .brush-btn:hover{ background:rgba(255,255,255,0.6); transform:translateY(-1px); }
+  .brush-btn.active{
+    background:var(--ink); color:var(--paper-light);
+    border-color:var(--ink); box-shadow:0 4px 10px -2px rgba(0,0,0,0.4);
+  }
+
+  .actions{ display:flex; flex-direction:column; gap:7px; align-items:center; }
+  .act{
+    width:40px; height:34px; border-radius:10px;
+    border:1px solid var(--ui-line); background:rgba(255,255,255,0.35);
+    color:var(--ink-soft); cursor:pointer;
+    font-family:"Noto Serif SC",serif; font-size:13px; font-weight:500;
+    letter-spacing:1px;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .2s;
+  }
+  .act:hover{ background:var(--ink); color:var(--paper-light); border-color:var(--ink); }
+  .act.seal-btn{ color:var(--seal); border-color:rgba(168,32,26,0.4); }
+  .act.seal-btn:hover{ background:var(--seal); color:#fff5e8; border-color:var(--seal); }
+
+  /* ====== 底部调色盘 ====== */
+  .palette{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
+    z-index:30;
+    display:flex; align-items:center; gap:18px;
+    background:var(--ui-panel);
+    backdrop-filter:blur(12px) saturate(1.1);
+    -webkit-backdrop-filter:blur(12px) saturate(1.1);
+    border:1px solid var(--ui-line);
+    border-radius:54px;
+    padding:12px 24px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.6) inset,
+      0 20px 50px -22px rgba(60,40,15,0.4);
+  }
+  .palette .pl-label{
+    font-family:"Noto Serif SC",serif; font-weight:500;
+    font-size:12px; letter-spacing:3px; color:var(--ink-soft);
+    opacity:0.6;
+  }
+  .swatches{ display:flex; gap:11px; align-items:center; }
+  .swatch{
+    width:30px; height:30px; border-radius:50%;
+    background:var(--c);
+    border:1px solid rgba(0,0,0,0.25);
+    cursor:pointer; position:relative;
+    transition:transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s;
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.2),
+      inset 0 1px 1px rgba(255,255,255,0.25);
+  }
+  .swatch::after{
+    content:""; position:absolute; left:5px; top:4px;
+    width:9px; height:6px; border-radius:50%;
+    background:radial-gradient(ellipse,rgba(255,255,255,0.55),transparent 70%);
+    pointer-events:none;
+  }
+  .swatch:hover{ transform:translateY(-4px) scale(1.12); }
+  .swatch.active{
+    transform:translateY(-3px) scale(1.08);
+    box-shadow:
+      0 0 0 2px var(--paper-light),
+      0 0 0 3.5px var(--c),
+      0 4px 10px rgba(0,0,0,0.25);
+  }
+  .swatch .tip{
+    position:absolute; bottom:42px; left:50%; transform:translateX(-50%) translateY(4px);
+    background:var(--ui-ink); color:var(--paper-light);
+    font-family:"Noto Serif SC",serif; font-size:12px; letter-spacing:2px;
+    padding:4px 11px; border-radius:6px; white-space:nowrap;
+    opacity:0; pointer-events:none; transition:all .25s;
+  }
+  .swatch:hover .tip{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .palette .pl-name{
+    font-family:"Ma Shan Zheng",serif;
+    font-size:22px; color:var(--ink);
+    min-width:64px; text-align:center;
+    letter-spacing:2px;
+    border-left:1px solid var(--ui-line);
+    padding-left:18px;
+  }
+
+  /* ====== 自定义笔尖光标 ====== */
+  .cursor{
+    position:fixed; z-index:40; pointer-events:none;
+    border:1.5px solid rgba(20,17,11,0.5);
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    transition:width .12s, height .12s, opacity .2s, border-color .3s;
+    mix-blend-mode:multiply;
+  }
+  .cursor::after{
+    content:""; position:absolute; left:50%; top:50%;
+    width:3px; height:3px; border-radius:50%;
+    background:var(--ink); transform:translate(-50%,-50%);
+  }
+
+  .hint{
+    position:fixed; bottom:30px; left:42px; z-index:30;
+    font-family:"Noto Serif SC",serif; font-weight:300;
+    font-size:12px; letter-spacing:3px; color:var(--ink-soft);
+    opacity:0.5; pointer-events:none; user-select:none;
+    max-width:200px; line-height:1.9;
+  }
+  .hint kbd{
+    font-family:"Cormorant Garamond",serif; font-style:italic;
+    border:1px solid var(--ui-line); border-radius:4px;
+    padding:1px 6px; margin:0 2px; font-size:11px;
+    background:rgba(255,255,255,0.4);
+  }
+
+  .signature{
+    position:fixed; right:120px; bottom:96px; z-index:30;
+    display:flex; align-items:flex-end; gap:6px;
+    pointer-events:none; opacity:0; transition:opacity .8s;
+  }
+  .signature.show{ opacity:1; }
+  .seal{
+    width:54px; height:54px;
+    background:var(--seal);
+    border:2.5px solid var(--seal-deep);
+    border-radius:7px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"Ma Shan Zheng",serif;
+    color:#fff3df; font-size:34px; line-height:1;
+    transform:rotate(-4deg);
+    box-shadow:0 4px 14px -4px rgba(125,22,17,0.6);
+    position:relative;
+  }
+  .seal::before{
+    content:""; position:absolute; inset:0; border-radius:5px;
+    background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.4 -0.2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
+    mix-blend-mode:screen; opacity:0.7; pointer-events:none;
+  }
+  .signature .verse{
+    font-family:"Long Cang",cursive; color:var(--ink-soft);
+    font-size:18px; line-height:1.2; opacity:0.6;
+    writing-mode:vertical-rl; letter-spacing:4px;
+    padding-bottom:4px;
+  }
+
+  .toast{
+    position:fixed; left:50%; top:34px; transform:translateX(-50%) translateY(-20px);
+    z-index:60; background:var(--ink); color:var(--paper-light);
+    font-family:"Noto Serif SC",serif; font-size:13px; letter-spacing:3px;
+    padding:9px 22px; border-radius:30px;
+    box-shadow:0 12px 30px -10px rgba(0,0,0,0.5);
+    opacity:0; pointer-events:none; transition:all .35s cubic-bezier(.2,.8,.2,1);
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:none;} }
+  @keyframes fadeUpPanel{ from{opacity:0; transform:translateY(-50%) translateX(20px);} to{opacity:1; transform:translateY(-50%) translateX(0);} }
+  @keyframes fadeUpPalette{ from{opacity:0; transform:translateX(-50%) translateY(20px);} to{opacity:1; transform:translateX(-50%) translateY(0);} }
+  .brand{ animation:fadeUp .9s .15s both cubic-bezier(.2,.8,.2,1); }
+  .panel{ animation:fadeUpPanel .9s .25s both cubic-bezier(.2,.8,.2,1); }
+  .palette{ animation:fadeUpPalette .9s .35s both cubic-bezier(.2,.8,.2,1); }
+  .hint{ animation:fadeUp .9s .5s both cubic-bezier(.2,.8,.2,1); }
+
+  @media (max-width:720px){
+    .brand .mark{ font-size:38px; }
+    .brand{ top:18px; left:22px; }
+    .brand .sub{ font-size:12px; letter-spacing:3px; }
+    .panel{ right:12px; width:60px; padding:10px 0; gap:12px; }
+    .brush-btn,.act{ width:34px; }
+    .palette{ padding:9px 14px; gap:10px; bottom:14px; }
+    .swatch{ width:24px; height:24px; }
+    .swatches{ gap:7px; }
+    .palette .pl-name{ font-size:17px; min-width:48px; padding-left:10px; }
+    .palette .pl-label{ display:none; }
+    .hint{ display:none; }
+    .signature{ right:84px; bottom:84px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <canvas id="paperTex"></canvas>
+  <canvas id="ink"></canvas>
+</div>
+
+<div class="brand">
+  <div class="mark">墨韻</div>
+  <div class="sub">Ink Wash · <b>水</b> 與 <b>彩</b> 之 間</div>
+</div>
+
+<div class="cursor" id="cursor"></div>
+
+<aside class="panel" aria-label="画具">
+  <div class="group">
+    <div class="lbl">笔锋</div>
+    <div class="slider-wrap">
+      <input type="range" min="6" max="90" value="34" class="vslider" id="sizeSlider">
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="group">
+    <div class="lbl">笔法</div>
+    <div class="brushes" id="brushes">
+      <button class="brush-btn active" data-brush="wet" title="润笔 · 晕染丰润">润</button>
+      <button class="brush-btn" data-brush="dry" title="枯笔 · 飞白苍劲">枯</button>
+      <button class="brush-btn" data-brush="splash" title="泼墨 · 点溅淋漓">泼</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="actions">
+    <button class="act" id="undoBtn" title="撤销">藏</button>
+    <button class="act seal-btn" id="sealBtn" title="落款">印</button>
+    <button class="act" id="saveBtn" title="留存">存</button>
+    <button class="act" id="clearBtn" title="洗纸">洗</button>
+  </div>
+</aside>
+
+<div class="palette" aria-label="调色">
+  <div class="pl-label">調 色</div>
+  <div class="swatches" id="swatches">
+    <button class="swatch active" data-rgb="21,17,11"     data-ink="0.95" data-water="0.12" data-name="焦墨" style="--c:#15110b"><span class="tip">焦 墨</span></button>
+    <button class="swatch"        data-rgb="58,52,42"     data-ink="0.80" data-water="0.24" data-name="浓墨" style="--c:#3a342a"><span class="tip">浓 墨</span></button>
+    <button class="swatch"        data-rgb="176,48,40"    data-ink="0.82" data-water="0.30" data-name="朱砂" style="--c:#b03028"><span class="tip">朱 砂</span></button>
+    <button class="swatch"        data-rgb="158,42,90"    data-ink="0.80" data-water="0.32" data-name="胭脂" style="--c:#9e2a5a"><span class="tip">胭 脂</span></button>
+    <button class="swatch"        data-rgb="212,160,42"   data-ink="0.78" data-water="0.34" data-name="藤黄" style="--c:#d4a02a"><span class="tip">藤 黃</span></button>
+    <button class="swatch"        data-rgb="154,90,46"    data-ink="0.80" data-water="0.32" data-name="赭石" style="--c:#9a5a2e"><span class="tip">赭 石</span></button>
+    <button class="swatch"        data-rgb="74,140,90"    data-ink="0.78" data-water="0.34" data-name="石绿" style="--c:#4a8c5a"><span class="tip">石 綠</span></button>
+    <button class="swatch"        data-rgb="42,107,156"   data-ink="0.80" data-water="0.32" data-name="石青" style="--c:#2a6b9c"><span class="tip">石 青</span></button>
+    <button class="swatch"        data-rgb="46,58,122"    data-ink="0.82" data-water="0.30" data-name="花青" style="--c:#2e3a7a"><span class="tip">花 青</span></button>
+  </div>
+  <div class="pl-name" id="paletteName">焦墨</div>
+</div>
+
+<div class="signature" id="signature">
+  <div class="verse">墨痕未乾</div>
+  <div class="seal">墨</div>
+</div>
+
+<div class="hint">拖曳運筆 · <kbd>Z</kbd> 撤銷 · <kbd>C</kbd> 洗紙 · <kbd>S</kbd> 留存 · <kbd>P</kbd> 落款</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   墨韻 · Ink Wash Canvas  —— 性能优化版
+   核心优化：精灵缓存 + 缩放扩散
+   每种颜色预渲染一张完成态墨点精灵（含墨核/沉淀环/外渗/水雾晕/墨丝），
+   绘制时仅一次 drawImage 配合缩放与随机旋转，彻底消除逐帧渐变计算。
+   ========================================================= */
+
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+const inkCanvas  = document.getElementById('ink');
+const paperCanvas= document.getElementById('paperTex');
+const ictx = inkCanvas.getContext('2d', { alpha:true });
+const pctx = paperCanvas.getContext('2d', { alpha:true });
+
+let W = 0, H = 0;
+let bakedCanvas, bctx;   // 已沉淀墨层
+
+function resize(){
+  W = window.innerWidth; H = window.innerHeight;
+  for(const c of [inkCanvas, paperCanvas]){
+    c.width  = W * DPR; c.height = H * DPR;
+  }
+  ictx.setTransform(DPR,0,0,DPR,0,0);
+  pctx.setTransform(DPR,0,0,DPR,0,0);
+  const old = bakedCanvas;
+  bakedCanvas = document.createElement('canvas');
+  bakedCanvas.width = W * DPR; bakedCanvas.height = H * DPR;
+  bctx = bakedCanvas.getContext('2d');
+  bctx.setTransform(DPR,0,0,DPR,0,0);
+  if(old){ bctx.drawImage(old, 0,0, W, H); }
+  drawPaperTexture();
+}
+window.addEventListener('resize', resize);
+
+/* ---------- 噪声 ---------- */
+function hash(n){ const s = Math.sin(n*127.1+311.7)*43758.5453; return s-Math.floor(s); }
+function noise1(x){
+  const i=Math.floor(x), f=x-i, u=f*f*(3-2*f);
+  return hash(i)*(1-u)+hash(i+1)*u;
+}
+
+/* =========================================================
+   精灵缓存 —— 性能关键
+   每种颜色懒生成一张完成态墨点精灵，绘制时只 drawImage
+   ========================================================= */
+const SPRITE = 200;                 // 精灵画布尺寸
+const SPRITE_MAIN_R = SPRITE * 0.36; // 精灵中"墨核"半径所占像素
+const sprites = {};                  // rgb -> canvas
+
+function buildSprite(rgb){
+  if(sprites[rgb]) return sprites[rgb];
+  const c = document.createElement('canvas');
+  c.width = c.height = SPRITE;
+  const x = c.getContext('2d');
+  const cx = SPRITE/2, cy = SPRITE/2;
+  const R = SPRITE_MAIN_R;
+  const seed = Math.random()*1000;   // 每个色系精灵的有机边缘各不相同
+
+  // 1. 水雾晕（最外层、最淡）
+  const haloR = R * 1.45;
+  const halo = x.createRadialGradient(cx,cy, R*0.5, cx,cy, haloR);
+  halo.addColorStop(0,  `rgba(${rgb},0)`);
+  halo.addColorStop(0.5,`rgba(${rgb},0.07)`);
+  halo.addColorStop(1,  `rgba(${rgb},0)`);
+  x.fillStyle = halo;
+  blobPath(x, cx, cy, haloR, seed, 30, 0.16);
+  x.fill();
+
+  // 2. 外渗层
+  const outerR = R * 1.06;
+  const outer = x.createRadialGradient(cx,cy, R*0.55, cx,cy, outerR);
+  outer.addColorStop(0,  `rgba(${rgb},0.34)`);
+  outer.addColorStop(0.7,`rgba(${rgb},0.18)`);
+  outer.addColorStop(1,  `rgba(${rgb},0)`);
+  x.fillStyle = outer;
+  blobPath(x, cx, cy, outerR, seed+20, 28, 0.12);
+  x.fill();
+
+  // 3. 墨核 + 沉淀环（咖啡环效应）
+  const core = x.createRadialGradient(cx,cy, 0, cx,cy, R*0.86);
+  core.addColorStop(0,    `rgba(${rgb},0.98)`);
+  core.addColorStop(0.45, `rgba(${rgb},0.88)`);
+  core.addColorStop(0.72, `rgba(${rgb},0.76)`);
+  core.addColorStop(0.82, `rgba(${rgb},0.96)`); // 沉淀环（边缘加深）
+  core.addColorStop(0.93, `rgba(${rgb},0.38)`);
+  core.addColorStop(1,    `rgba(${rgb},0)`);
+  x.fillStyle = core;
+  blobPath(x, cx, cy, R*0.86, seed, 26, 0.09);
+  x.fill();
+
+  // 4. 毛细墨丝（融入精灵，绘制时随机旋转让方向各异）
+  const tcount = 9;
+  x.lineCap = 'round';
+  for(let i=0;i<tcount;i++){
+    const ang = (i/tcount)*Math.PI*2 + (Math.random()-0.5)*0.7;
+    const len = R * (0.45 + Math.random()*1.0);
+    const curve = (Math.random()-0.5)*0.9;
+    const startR = R*0.55;
+    const sx = cx+Math.cos(ang)*startR, sy = cy+Math.sin(ang)*startR;
+    const ex = cx+Math.cos(ang+curve*0.5)*(startR+len);
+    const ey = cy+Math.sin(ang+curve*0.5)*(startR+len);
+    const grad = x.createLinearGradient(sx,sy,ex,ey);
+    grad.addColorStop(0,   `rgba(${rgb},0.42)`);
+    grad.addColorStop(0.55,`rgba(${rgb},0.16)`);
+    grad.addColorStop(1,   `rgba(${rgb},0)`);
+    x.strokeStyle = grad;
+    x.lineWidth = R*0.045 * (0.6+Math.random()*0.7);
+    const ox = Math.cos(ang+1.57)*curve*len*0.3;
+    const oy = Math.sin(ang+1.57)*curve*len*0.3;
+    x.beginPath();
+    x.moveTo(sx,sy);
+    x.quadraticCurveTo((sx+ex)/2+ox, (sy+ey)/2+oy, ex, ey);
+    x.stroke();
+  }
+
+  sprites[rgb] = c;
+  return c;
+}
+
+/* 构建一条噪声扰动的有机闭合路径 */
+function blobPath(ctx, cx, cy, baseR, seed, steps, amp){
+  ctx.beginPath();
+  for(let i=0;i<=steps;i++){
+    const a = i/steps*Math.PI*2;
+    const nr = baseR * (1
+      + (noise1(a*1.4+seed)-0.5)*amp
+      + (noise1(a*4.0-seed)-0.5)*amp*0.4);
+    const px = cx+Math.cos(a)*nr, py = cy+Math.sin(a)*nr;
+    i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+  }
+  ctx.closePath();
+}
+
+/* ---------- 宣纸纹理 ---------- */
+function drawPaperTexture(){
+  pctx.clearRect(0,0,W,H);
+  const img = pctx.createImageData(W, H);
+  const d = img.data;
+  for(let y=0;y<H;y+=2){
+    for(let x=0;x<W;x+=2){
+      const n = noise1(x*0.06)*0.5 + noise1(y*0.06+100)*0.5;
+      const v = Math.floor(255 - n*22);
+      for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
+        const idx = ((y+dy)*W+(x+dx))*4;
+        d[idx]=v; d[idx+1]=v-4; d[idx+2]=v-12; d[idx+3]=28;
+      }
+    }
+  }
+  pctx.putImageData(img,0,0);
+  pctx.strokeStyle = 'rgba(120,95,50,0.05)';
+  pctx.lineWidth = 0.6;
+  for(let i=0;i<240;i++){
+    const x=Math.random()*W, y=Math.random()*H;
+    const len=8+Math.random()*40, ang=Math.random()*Math.PI*2;
+    pctx.beginPath();
+    pctx.moveTo(x,y);
+    pctx.lineTo(x+Math.cos(ang)*len, y+Math.sin(ang)*len);
+    pctx.stroke();
+  }
+  const vg = pctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.75);
+  vg.addColorStop(0,'rgba(0,0,0,0)');
+  vg.addColorStop(1,'rgba(70,50,20,0.18)');
+  pctx.fillStyle=vg; pctx.fillRect(0,0,W,H);
+}
+
+/* =========================================================
+   墨点系统（轻量数据）
+   ========================================================= */
+const active = [];
+const MAX_ACTIVE = 260;              // 活跃池上限（从 650 降到 260）
+const SETTLE_T = 0.82;               // 扩散到 82% 即烘焙（easeOutCubic 下视觉差<2%）
+
+let dabId = 0;
+function makeDab(x,y,r,inkAmt,water,brush,speed,rgb){
+  const life = 700 + water*1000;     // 略缩短寿命
+  const spread = r * (0.55 + water*1.95);
+  const d = {
+    x, y,
+    r0: r*0.40,
+    r1: r*0.40 + spread,
+    ink: inkAmt,
+    water,
+    brush,
+    rgb,
+    rot: Math.random()*Math.PI*2,    // 随机旋转 → 墨丝方向各异
+    seed: Math.random()*1000,
+    born: performance.now(),
+    life,
+    drift: (Math.random()-0.5)*water*9,
+    driftY:(Math.random()-0.5)*water*5 + water*3,
+    gran: null
+  };
+  /* 颗粒/飞白（枯笔/泼墨）—— 用简单数据，绘制时 fillRect */
+  if(brush==='dry' || brush==='splash'){
+    const count = brush==='splash' ? 10+Math.floor(Math.random()*12) : 4+Math.floor(Math.random()*4);
+    d.gran = new Float32Array(count*4);
+    for(let i=0;i<count;i++){
+      d.gran[i*4]   = Math.random()*Math.PI*2;
+      d.gran[i*4+1] = r*(0.3+Math.random()*1.4);
+      d.gran[i*4+2] = 0.4+Math.random()*(brush==='splash'?2.2:1.3);
+      d.gran[i*4+3] = Math.random()*inkAmt*0.6;
+    }
+  }
+  active.push(d);
+  if(active.length>MAX_ACTIVE) settleOldest();
+}
+
+function easeOutCubic(t){ return 1-Math.pow(1-t,3); }
+
+/* 绘制单个墨点 —— 仅一次 drawImage（核心性能优化） */
+function paintDab(ctx, d, t, e){
+  const sprite = buildSprite(d.rgb);
+  const curR = d.r0 + (d.r1-d.r0)*e;
+  // 让精灵的"墨核半径"对应 curR：drawSize = curR * (SPRITE / SPRITE_MAIN_R)
+  const drawSize = curR * (SPRITE / SPRITE_MAIN_R);
+  const cx = d.x + d.drift*e;
+  const cy = d.y + d.driftY*e;
+
+  // alpha：淡入(前12%) → 满值 → 略淡沉淀
+  let alpha;
+  if(t < 0.12) alpha = (t/0.12) * d.ink;
+  else         alpha = d.ink * (1 - (t-0.12)*0.22);
+
+  ctx.globalAlpha = alpha < 0 ? 0 : (alpha > 1 ? 1 : alpha);
+  ctx.setTransform(DPR, 0, 0, DPR, cx*DPR, cy*DPR);
+  ctx.rotate(d.rot);
+  ctx.drawImage(sprite, -drawSize/2, -drawSize/2, drawSize, drawSize);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.globalAlpha = 1;
+
+  // 颗粒（枯笔/泼墨）—— fillRect 比 arc 快
+  if(d.gran){
+    const rgb = d.rgb;
+    for(let i=0;i<d.gran.length;i+=4){
+      const a = d.gran[i], dist = d.gran[i+1], sz = d.gran[i+2], op = d.gran[i+3]*(1-t*0.5);
+      const gx = cx+Math.cos(a)*dist*(0.6+e*0.8);
+      const gy = cy+Math.sin(a)*dist*(0.6+e*0.8);
+      ctx.fillStyle = `rgba(${rgb},${op.toFixed(3)})`;
+      ctx.fillRect(gx-sz, gy-sz, sz*2, sz*2);
+    }
+  }
+}
+
+function settleOldest(){
+  const d = active.shift();
+  paintDab(bctx, d, SETTLE_T+0.001, easeOutCubic(SETTLE_T+0.001));
+}
+
+/* =========================================================
+   笔触
+   ========================================================= */
+let state = {
+  rgb:'21,17,11', ink:0.95, water:0.12, brush:'wet', size:34,
+  drawing:false, lastX:0, lastY:0, lastT:0, lastSpeed:8
+};
+const history = [];
+const MAX_HISTORY = 8;
+
+function startStroke(x,y){
+  saveHistory();
+  state.drawing=true; state.lastX=x; state.lastY=y;
+  state.lastT=performance.now(); state.lastSpeed=8;
+  stampAt(x,y, 1.0);
+}
+function moveStroke(x,y){
+  if(!state.drawing) return;
+  const dx=x-state.lastX, dy=y-state.lastY;
+  const dist=Math.hypot(dx,dy);
+  if(dist<1) return;
+  const now=performance.now();
+  const dt=Math.max(now-state.lastT,1);
+  const speed=dist/dt;
+  state.lastSpeed = state.lastSpeed*0.6 + speed*0.4;
+  // 间距随大小；快速运笔时增大间距以减少墨点数
+  const spacing = Math.max(state.size*0.16, 2.4) * (1 + Math.min(speed,2)*0.25);
+  const steps = Math.max(1, Math.floor(dist/spacing));
+  for(let i=1;i<=steps;i++){
+    const t=i/steps;
+    stampAt(state.lastX+dx*t, state.lastY+dy*t, undefined, speed);
+  }
+  state.lastX=x; state.lastY=y; state.lastT=now;
+}
+function endStroke(){ state.drawing=false; }
+
+function stampAt(x,y, forcePressure, speedArg){
+  const speed = speedArg!=null?speedArg:state.lastSpeed;
+  let pressure = forcePressure!=null?forcePressure : Math.max(0.32, 1 - speed*0.06);
+  pressure *= 0.9 + Math.random()*0.2;
+
+  let r = state.size * (0.5 + pressure*0.7);
+  let inkAmt = state.ink * (0.7 + pressure*0.4);
+  let water = state.water;
+
+  if(state.brush==='dry'){
+    r *= 0.78; inkAmt *= 0.8; water *= 0.45;
+  } else if(state.brush==='splash'){
+    r *= 0.7 + Math.random()*0.9;
+    makeDab(x,y, r, inkAmt*0.9, water, 'splash', speed, state.rgb);
+    const splashes = 2+Math.floor(Math.random()*4);
+    for(let i=0;i<splashes;i++){
+      const a=Math.random()*Math.PI*2, d=r*(0.6+Math.random()*1.8);
+      makeDab(x+Math.cos(a)*d, y+Math.sin(a)*d, r*(0.1+Math.random()*0.3), inkAmt*0.6, water*0.7, 'splash', speed, state.rgb);
+    }
+    return;
+  }
+  makeDab(x,y, Math.max(2,r), Math.min(1,inkAmt), water, state.brush, speed, state.rgb);
+}
+
+function saveHistory(){
+  try{
+    const snap = bctx.getImageData(0,0,bakedCanvas.width,bakedCanvas.height);
+    history.push(snap);
+    if(history.length>MAX_HISTORY) history.shift();
+  }catch(e){}
+}
+function undo(){
+  if(!history.length){ toast('已无可藏之墨'); return; }
+  const snap = history.pop();
+  bctx.putImageData(snap,0,0);
+  active.length=0;
+  toast('已藏一笔');
+}
+
+/* =========================================================
+   渲染循环 —— 活跃墨点逐帧缩放，超阈值即烘焙
+   ========================================================= */
+function loop(){
+  const now = performance.now();
+  ictx.clearRect(0,0,W,H);
+  ictx.drawImage(bakedCanvas, 0,0, W, H);
+  for(let i=active.length-1;i>=0;i--){
+    const d=active[i];
+    const t=(now-d.born)/d.life;
+    if(t>=SETTLE_T){
+      // 烘焙完成态后移除（视觉上 easeOutCubic(0.82)≈0.995，几乎无差）
+      paintDab(bctx, d, 1, 1);
+      active.splice(i,1);
+    }else{
+      paintDab(ictx, d, t, easeOutCubic(t));
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================
+   指针事件
+   ========================================================= */
+const cursorEl = document.getElementById('cursor');
+function updateCursor(x,y){
+  cursorEl.style.left=x+'px'; cursorEl.style.top=y+'px';
+  const s = state.size;
+  cursorEl.style.width=s+'px'; cursorEl.style.height=s+'px';
+  cursorEl.style.borderColor = `rgba(${state.rgb},0.55)`;
+}
+
+let rafPending = false;
+let lastMove = {x:0,y:0};
+inkCanvas.addEventListener('pointerdown', e=>{
+  inkCanvas.setPointerCapture(e.pointerId);
+  startStroke(e.clientX, e.clientY);
+});
+window.addEventListener('pointermove', e=>{
+  updateCursor(e.clientX, e.clientY);
+  if(state.drawing) moveStroke(e.clientX, e.clientY);
+});
+window.addEventListener('pointerup', endStroke);
+window.addEventListener('pointercancel', endStroke);
+window.addEventListener('pointerleave', endStroke);
+inkCanvas.addEventListener('touchstart', e=>e.preventDefault(), {passive:false});
+inkCanvas.addEventListener('touchmove',  e=>e.preventDefault(), {passive:false});
+document.addEventListener('mouseleave', ()=>cursorEl.style.opacity=0);
+document.addEventListener('mouseenter', ()=>cursorEl.style.opacity=1);
+
+/* =========================================================
+   UI 绑定
+   ========================================================= */
+const paletteName = document.getElementById('paletteName');
+document.querySelectorAll('.swatch').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('.swatch').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    state.rgb   = el.dataset.rgb;
+    state.ink   = parseFloat(el.dataset.ink);
+    state.water = parseFloat(el.dataset.water);
+    paletteName.textContent = el.dataset.name;
+    document.documentElement.style.setProperty('--ink', `rgb(${state.rgb})`);
+  });
+});
+document.getElementById('sizeSlider').addEventListener('input', e=>{
+  state.size = parseFloat(e.target.value);
+});
+document.querySelectorAll('.brush-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.brush-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    state.brush = b.dataset.brush;
+  });
+});
+document.getElementById('undoBtn').addEventListener('click', undo);
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  saveHistory();
+  bctx.clearRect(0,0,bakedCanvas.width,bakedCanvas.height);
+  active.length=0;
+  document.getElementById('signature').classList.remove('show');
+  toast('素紙重來');
+});
+document.getElementById('saveBtn').addEventListener('click', savePNG);
+document.getElementById('sealBtn').addEventListener('click', stampSeal);
+
+function savePNG(){
+  const out = document.createElement('canvas');
+  out.width=W*DPR; out.height=H*DPR;
+  const o=out.getContext('2d');
+  o.drawImage(paperCanvas,0,0);
+  o.globalCompositeOperation='multiply';
+  o.drawImage(inkCanvas,0,0);
+  o.globalCompositeOperation='source-over';
+  const a=document.createElement('a');
+  a.download=`墨韻-${Date.now()}.png`;
+  a.href=out.toDataURL('image/png');
+  a.click();
+  toast('已藏於匣中');
+}
+
+/* 朱砂印章落款 */
+function stampSeal(){
+  const x = W-150 + (Math.random()*30-15);
+  const y = H-180 + (Math.random()*30-15);
+  const sz = 60;
+  bctx.save();
+  bctx.translate(x,y);
+  bctx.rotate(-0.06 + Math.random()*0.04);
+  const g = bctx.createRadialGradient(0,0,sz*0.2, 0,0,sz*0.62);
+  g.addColorStop(0,'rgba(168,32,26,0.96)');
+  g.addColorStop(1,'rgba(125,22,17,0.9)');
+  bctx.fillStyle=g;
+  bctx.beginPath();
+  const half=sz/2, stp=12;
+  for(let i=0;i<=stp;i++){
+    const t=i/stp; const px=-half+sz*t; const no=2*noise1(t*10);
+    i===0?bctx.moveTo(px,-half-no):bctx.lineTo(px,-half-no);
+  }
+  for(let i=0;i<=stp;i++){
+    const t=i/stp; const py=-half+sz*t; const no=2*noise1(t*10+50);
+    bctx.lineTo(half+no,py);
+  }
+  for(let i=0;i<=stp;i++){
+    const t=i/stp; const px=half-sz*t; const no=2*noise1(t*10+100);
+    bctx.lineTo(px,half+no);
+  }
+  for(let i=0;i<=stp;i++){
+    const t=i/stp; const py=half-sz*t; const no=2*noise1(t*10+150);
+    bctx.lineTo(-half-no,py);
+  }
+  bctx.closePath();
+  bctx.fill();
+  bctx.globalCompositeOperation='destination-out';
+  bctx.font = `bold ${sz*0.62}px "Ma Shan Zheng", serif`;
+  bctx.textAlign='center'; bctx.textBaseline='middle';
+  bctx.fillText('墨', 0, sz*0.04);
+  for(let i=0;i<40;i++){
+    const a=Math.random()*Math.PI*2, d=Math.random()*sz*0.5;
+    bctx.beginPath();
+    bctx.arc(Math.cos(a)*d,Math.sin(a)*d, Math.random()*1.6, 0,Math.PI*2);
+    bctx.fill();
+  }
+  bctx.restore();
+  document.getElementById('signature').classList.add('show');
+  toast('落款已成');
+}
+
+/* Toast */
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+/* 快捷键 */
+window.addEventListener('keydown', e=>{
+  if(e.target.tagName==='INPUT') return;
+  const k=e.key.toLowerCase();
+  if(k==='z'){ undo(); }
+  else if(k==='c'){ document.getElementById('clearBtn').click(); }
+  else if(k==='s'){ e.preventDefault(); savePNG(); }
+  else if(k==='p'){ stampSeal(); }
+  else if(k>='1' && k<='9'){
+    const idx = parseInt(k)-1;
+    const sw = document.querySelectorAll('.swatch')[idx];
+    if(sw) sw.click();
+  }
+});
+
+/* =========================================================
+   启动
+   ========================================================= */
+resize();
+requestAnimationFrame(loop);
+setTimeout(()=>{
+  const cx=W*0.5, cy=H*0.46;
+  const demoRgb = '42,107,156'; // 石青
+  for(let i=0;i<16;i++){
+    const t=i/15;
+    const x=cx-200+ t*400 + Math.sin(t*Math.PI)*45;
+    const y=cy + Math.sin(t*Math.PI*2.2)*36;
+    makeDab(x,y, 30-i*0.4, 0.72-i*0.02, 0.42, 'wet', 6, demoRgb);
+  }
+  makeDab(cx+150, cy-60, 22, 0.65, 0.5, 'wet', 4, '158,42,90');
+  makeDab(cx-170, cy+70, 18, 0.6, 0.55, 'splash', 4, '212,160,42');
+  toast('請運筆 · 數字鍵 1-9 換色');
+}, 400);
+</script>
+</body>
+</html>
