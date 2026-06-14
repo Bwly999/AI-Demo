@@ -1,307 +1,290 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Quant Studio — Data Analysis Agent IDE</title>
+<title>Quant Studio — 数据分析 Agent IDE</title>
 
-<!-- Fonts: Instrument Serif (display) · Geist (ui) · JetBrains Mono (code/data) -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-<!-- Vue 3 + Tailwind -->
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
-
 <script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        fontFamily: {
-          serif: ['"Instrument Serif"', 'serif'],
-          sans: ['Geist', 'ui-sans-serif', 'system-ui'],
-          mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-        },
-        colors: {
-          ink: {
-            900: '#0a0d0c',
-            850: '#0d1211',
-            800: '#101615',
-            750: '#141b1a',
-            700: '#1a2221',
-            650: '#212a29',
-            600: '#293432',
-            500: '#3a4744',
-          },
-          mint: {
-            50: '#e7fff7',
-            100: '#c2ffe9',
-            200: '#86f7d4',
-            300: '#48ebbd',
-            400: '#1fd9a4',
-            500: '#0bb889',
-            600: '#079270',
-            700: '#0a735c',
-            800: '#0c5b4a',
-          },
-          amber: {
-            300: '#ffd483',
-            400: '#fbbf52',
-            500: '#f59e0b',
-          },
-          rose: { 400: '#fb7185', 500: '#f43f5e' },
-        },
-      },
+  tailwind.config = { darkMode: 'class', theme: { extend: {
+    fontFamily: {
+      serif: ['"Instrument Serif"', 'serif'],
+      sans: ['Geist', 'ui-sans-serif', 'system-ui'],
+      mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
     },
-  };
+  } } };
 </script>
 
 <style>
   :root {
-    --bg: #0a0d0c;
-    --grid: rgba(120, 230, 200, 0.04);
-    --scan: rgba(120, 230, 200, 0.025);
+    --bg: #f4efe4;
+    --bg-2: #efe8da;
+    --paper: #fbf7ee;
+    --surface: #ffffff;
+    --surface-2: #f7f2e7;
+    --ink: #1c2620;
+    --ink-soft: #4a564f;
+    --ink-faint: #8a958e;
+    --line: #e2d9c6;
+    --line-soft: #ece4d2;
+    --brand: #1f5d3a;
+    --brand-2: #2d8a55;
+    --brand-soft: #e6f0e9;
+    --coral: #d94f3a;
+    --amber: #c98a1a;
+    --plum: #6b3a8a;
+    --grid: rgba(31, 93, 58, 0.05);
   }
-  html, body { height: 100%; }
+  html.dark {
+    --bg: #0b110e;
+    --bg-2: #0e1612;
+    --paper: #131c18;
+    --surface: #161f1b;
+    --surface-2: #1b2521;
+    --ink: #e6efe9;
+    --ink-soft: #a8b8b0;
+    --ink-faint: #6b7872;
+    --line: rgba(120, 230, 200, 0.10);
+    --line-soft: rgba(120, 230, 200, 0.06);
+    --brand: #48ebbd;
+    --brand-2: #1fd9a4;
+    --brand-soft: rgba(72, 235, 189, 0.10);
+    --coral: #fb7185;
+    --amber: #ffd483;
+    --plum: #c084fc;
+    --grid: rgba(120, 230, 200, 0.04);
+  }
+  html, body { height: 100%; margin: 0; }
   body {
     background: var(--bg);
-    color: #d7e3df;
+    color: var(--ink);
     overflow: hidden;
-    font-feature-settings: 'ss01', 'cv11';
+    font-family: 'Geist', ui-sans-serif, system-ui;
+    font-size: 13px;
     -webkit-font-smoothing: antialiased;
+    transition: background .4s ease, color .4s ease;
   }
 
-  /* Atmospheric layered background */
   .app-bg {
-    position: relative;
-    background-color: #0a0d0c;
+    background-color: var(--bg);
     background-image:
-      radial-gradient(900px 600px at 12% -5%, rgba(11, 184, 137, 0.10), transparent 60%),
-      radial-gradient(800px 500px at 95% 110%, rgba(245, 158, 11, 0.06), transparent 55%),
+      radial-gradient(900px 600px at 10% -8%, var(--brand-soft), transparent 55%),
+      radial-gradient(700px 500px at 100% 110%, rgba(201, 138, 26, 0.10), transparent 55%),
       linear-gradient(var(--grid) 1px, transparent 1px),
       linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 26px 26px, 26px 26px;
+    background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
   }
-  .app-bg::before {
+  html.dark .app-bg::before {
     content: '';
-    position: absolute; inset: 0;
-    background-image: repeating-linear-gradient(0deg, var(--scan) 0px, var(--scan) 1px, transparent 1px, transparent 3px);
-    pointer-events: none;
-    opacity: 0.5;
-    mix-blend-mode: screen;
-  }
-  .app-bg::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.9 0 0 0 0 0.8 0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-    pointer-events: none;
-    opacity: 0.5;
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(0deg, rgba(120,230,200,.03) 0, rgba(120,230,200,.03) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode: screen; opacity: .6;
   }
 
+  .surface { background: var(--surface); border: 1px solid var(--line); }
+  .surface-2 { background: var(--surface-2); }
+  .hairline { border-color: var(--line); }
+  .hairline-soft { border-color: var(--line-soft); }
   .glass {
-    background: linear-gradient(180deg, rgba(20, 27, 26, 0.82), rgba(13, 18, 17, 0.82));
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(120, 230, 200, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(6px);
   }
-  .hairline { border-color: rgba(120, 230, 200, 0.08); }
+  html.dark .glass { background: rgba(22,31,27,.82); }
 
-  /* Scrollbars */
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  .text-ink { color: var(--ink); }
+  .text-soft { color: var(--ink-soft); }
+  .text-faint { color: var(--ink-faint); }
+  .text-brand { color: var(--brand); }
+  .text-coral { color: var(--coral); }
+  .text-amber2 { color: var(--amber); }
+  .bg-brand { background: var(--brand); }
+  .bg-brand-soft { background: var(--brand-soft); }
+
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(120, 230, 200, 0.14); border-radius: 999px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(120, 230, 200, 0.28); }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+  ::selection { background: var(--brand-soft); color: var(--brand); }
 
-  /* Caret blink */
-  .caret::after {
-    content: '▍';
-    margin-left: 1px;
-    color: #48ebbd;
-    animation: blink 1.05s steps(2) infinite;
-  }
+  .caret::after { content:'▍'; margin-left:1px; color: var(--brand); animation: blink 1.05s steps(2) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
 
-  /* Pulse dot */
   .pulse-dot { position: relative; }
-  .pulse-dot::after {
-    content: ''; position: absolute; inset: -4px; border-radius: 999px;
-    box-shadow: 0 0 0 0 rgba(72, 235, 189, 0.55);
-    animation: pulse 1.8s ease-out infinite;
-  }
+  .pulse-dot::after { content:''; position:absolute; inset:-4px; border-radius:999px; animation: pulse 1.8s ease-out infinite; }
   @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(72, 235, 189, 0.5); }
-    70% { box-shadow: 0 0 0 10px rgba(72, 235, 189, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(72, 235, 189, 0); }
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 50%, transparent); }
+    70% { box-shadow: 0 0 0 9px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
   }
 
-  /* Message enter */
-  .msg-in { animation: msgIn .42s cubic-bezier(.2,.7,.2,1) both; }
-  @keyframes msgIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  .msg-in { animation: msgIn .4s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes msgIn { from { opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
 
-  /* Stagger reveal for stat cards */
-  .stagger > * { opacity: 0; animation: rise .5s cubic-bezier(.2,.7,.2,1) forwards; }
-  @keyframes rise { to { opacity: 1; transform: translateY(0); } from { opacity: 0; transform: translateY(10px); } }
+  .stagger > * { opacity:0; animation: rise .5s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes rise { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
 
-  /* Tab underline sweep */
-  .tab-active { color: #c2ffe9; }
+  .grow-bar { transform-origin: bottom; animation: grow .9s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes grow { from { transform: scaleY(0);} to { transform: scaleY(1);} }
+  .grow-x { transform-origin: left; animation: growX .8s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes growX { from { transform: scaleX(0);} to { transform: scaleX(1);} }
+
+  .draw-line { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: draw 1.8s ease forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  .spin { animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg);} }
+
+  .tab-active { color: var(--ink); }
   .tab-active .tab-bar { transform: scaleX(1); }
   .tab-bar { transform: scaleX(0); transform-origin: left; transition: transform .28s cubic-bezier(.2,.7,.2,1); }
 
-  /* Code block */
-  .codeblk {
-    background: linear-gradient(180deg, #07100e, #0a1413);
-    border: 1px solid rgba(120, 230, 200, 0.10);
-    border-radius: 10px;
-  }
-  .tok-kw { color: #48ebbd; }
-  .tok-fn { color: #ffd483; }
-  .tok-str { color: #86f7d4; }
-  .tok-num { color: #fb7185; }
-  .tok-com { color: #4a5957; font-style: italic; }
-  .tok-id { color: #d7e3df; }
+  .chip { border: 1px solid var(--line); background: var(--surface-2); transition: all .15s; }
+  .chip:hover { background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand) 35%, var(--line)); }
+  .chip-on { background: var(--brand); color: var(--paper); border-color: var(--brand); }
+  html.dark .chip-on { color:#0b110e; }
 
-  /* Status bar ticker */
-  .ticker { animation: tick 14s linear infinite; }
-  @keyframes tick { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .run-glow { box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent), 0 8px 28px -10px color-mix(in srgb, var(--brand) 40%, transparent); }
 
-  /* Glow ring for active run */
-  .run-glow { box-shadow: 0 0 0 1px rgba(72, 235, 189, 0.35), 0 0 30px -6px rgba(72, 235, 189, 0.35); }
+  .ticker { animation: tick 26s linear infinite; }
+  @keyframes tick { from { transform: translateX(0);} to { transform: translateX(-50%);} }
 
-  /* Spinner */
-  .spin { animation: spin 0.9s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .seg-btn { transition: all .15s; }
+  .seg-on { background: var(--ink); color: var(--paper); }
+  html.dark .seg-on { background: var(--brand); color:#0b110e; }
 
-  /* Marquee chips */
-  .chip {
-    border: 1px solid rgba(120, 230, 200, 0.16);
-    background: rgba(120, 230, 200, 0.04);
-  }
-  .chip:hover { background: rgba(120, 230, 200, 0.10); border-color: rgba(120, 230, 200, 0.32); }
+  .reasoning { color: var(--ink-soft); font-style: italic; }
 
-  /* selection */
-  ::selection { background: rgba(72, 235, 189, 0.28); color: #e7fff7; }
+  /* toast */
+  .toast-in { animation: toastIn .3s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes toastIn { from {opacity:0; transform: translateY(10px) scale(.96);} to {opacity:1; transform:translateY(0) scale(1);} }
 
-  /* fade-in for whole mount */
-  #app { animation: appIn .6s ease both; }
-  @keyframes appIn { from { opacity: 0; } to { opacity: 1; } }
+  /* drawer */
+  .drawer-mask { animation: fadeIn .2s ease both; }
+  .drawer-panel { animation: drawerIn .32s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+  @keyframes drawerIn { from {opacity:0; transform: translateX(20px);} to{opacity:1; transform:translateX(0);} }
 
-  /* bar grow */
-  .grow-bar { transform-origin: bottom; animation: grow 0.9s cubic-bezier(.2,.8,.2,1) both; }
-  @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-
-  /* line draw for charts */
-  .draw-line { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw 1.8s ease forwards; }
-  @keyframes draw { to { stroke-dashoffset: 0; } }
-
-  /* Typewriter reasoning */
-  .reasoning { color: #8aa39d; font-style: italic; }
-
-  /* tooltip */
-  .tooltip { position: absolute; pointer-events: none; opacity: 0; transition: opacity .12s; }
+  /* palette */
+  .palette-in { animation: palIn .25s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes palIn { from {opacity:0; transform: translateY(-8px) scale(.98);} to {opacity:1; transform:translateY(0) scale(1);} }
 
   [v-cloak] { display: none; }
+  #app { animation: appIn .5s ease both; }
+  @keyframes appIn { from {opacity:0;} to{opacity:1;} }
+
+  .row-hover:hover { background: var(--brand-soft); }
+  .row-sel { background: var(--brand-soft) !important; }
+
+  .brand-grad { background: linear-gradient(135deg, var(--brand), var(--brand-2)); }
+  .coral-grad { background: linear-gradient(135deg, #e96a52, var(--coral)); }
+  .amber-grad { background: linear-gradient(135deg, #e0a530, var(--amber)); }
+  .plum-grad { background: linear-gradient(135deg, #7d4ba0, var(--plum)); }
 </style>
 </head>
 <body>
-<div id="app" v-cloak class="app-bg h-screen w-screen flex flex-col text-[13px]">
+<div id="app" v-cloak class="app-bg h-screen w-screen flex flex-col relative">
 
   <!-- ============ TOP BAR ============ -->
-  <header class="relative z-20 flex items-center justify-between h-12 px-4 border-b hairline bg-ink-900/70 backdrop-blur">
-    <div class="flex items-center gap-3">
-      <!-- Logo -->
-      <div class="flex items-center gap-2.5">
-        <div class="relative w-7 h-7 grid place-items-center rounded-md bg-gradient-to-br from-mint-400 to-mint-700 run-glow">
-          <svg viewBox="0 0 24 24" class="w-4 h-4 text-ink-900" fill="none" stroke="currentColor" stroke-width="2.4">
-            <path d="M4 17 V9 M9 17 V5 M14 17 V11 M19 17 V7" stroke-linecap="round"/>
-            <path d="M3 20 H21" stroke-linecap="round"/>
+  <header class="relative z-30 flex items-center justify-between h-12 px-4 border-b hairline" style="background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(8px);">
+    <div class="flex items-center gap-3 min-w-0">
+      <button @click="newAnalysis" class="flex items-center gap-2.5 group shrink-0">
+        <div class="relative w-7 h-7 grid place-items-center rounded-md brand-grad run-glow">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" :style="{ color: 'var(--paper)' }" fill="none" stroke="currentColor" stroke-width="2.4">
+            <path d="M4 17 V9 M9 17 V5 M14 17 V11 M19 17 V7" stroke-linecap="round"/><path d="M3 20 H21" stroke-linecap="round"/>
           </svg>
         </div>
         <div class="leading-none">
-          <div class="font-serif italic text-[19px] text-mint-50 tracking-tight">Quant<span class="text-mint-300"> Studio</span></div>
+          <span class="font-serif italic text-[19px] tracking-tight" style="color: var(--ink);">Quant<span :style="{color:'var(--brand)'}">&nbsp;Studio</span></span>
         </div>
-      </div>
-      <span class="text-ink-500">/</span>
-      <div class="flex items-center gap-2 text-ink-500 font-mono text-[12px]">
-        <span class="text-mint-300/80">workspace</span>
-        <span>›</span>
-        <span class="text-stone-300">q3-revenue-analysis</span>
-      </div>
-      <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono chip text-mint-200">draft</span>
+      </button>
+      <span class="text-faint">/</span>
+      <button @click="openPalette" class="flex items-center gap-2 text-[12px] font-mono group">
+        <span class="text-faint">工作区 ›</span>
+        <span class="text-soft group-hover:text-brand transition">{{ currentDataset.name }}</span>
+        <span class="px-1.5 py-0.5 rounded text-[10px] chip" style="color: var(--brand)">{{ currentDataset.rows }}</span>
+      </button>
     </div>
 
     <div class="flex items-center gap-1.5">
-      <!-- Status pill -->
-      <div class="flex items-center gap-2 px-2.5 py-1 rounded-md chip text-[11px] font-mono">
-        <span class="w-1.5 h-1.5 rounded-full bg-mint-300 pulse-dot"></span>
-        <span class="text-mint-100">agent · {{ running ? 'thinking' : 'idle' }}</span>
-        <span class="text-ink-500">·</span>
-        <span class="text-amber-300">{{ model }}</span>
+      <div class="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-md chip text-[11px] font-mono">
+        <span class="w-1.5 h-1.5 rounded-full pulse-dot" :style="{background:'var(--brand)'}"></span>
+        <span style="color: var(--brand)">{{ running ? '助手 · 思考中' : '助手 · 就绪' }}</span>
+        <span class="text-faint">·</span>
+        <span style="color: var(--amber)">{{ model }}</span>
       </div>
-      <button class="h-8 px-3 rounded-md chip text-stone-300 hover:text-mint-100 text-[12px] flex items-center gap-1.5">
+
+      <!-- Theme toggle -->
+      <button @click="toggleTheme" class="w-8 h-8 grid place-items-center rounded-md chip text-soft hover:text-brand" title="切换主题 (⌘D)">
+        <svg v-if="!dark" viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg v-else viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke-linecap="round"/></svg>
+      </button>
+      <!-- Command palette -->
+      <button @click="openPalette" class="h-8 px-2.5 rounded-md chip text-[12px] text-soft hover:text-brand flex items-center gap-1.5" title="命令面板 (⌘K)">
+        <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+        <span class="hidden lg:inline">搜索</span>
+        <kbd class="hidden lg:inline px-1 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[10px] font-mono text-faint">⌘K</kbd>
+      </button>
+      <button @click="exportData" class="h-8 px-3 rounded-md chip text-[12px] text-soft hover:text-brand flex items-center gap-1.5">
         <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Export
+        导出
       </button>
-      <button class="h-8 px-3 rounded-md chip text-stone-300 hover:text-mint-100 text-[12px] flex items-center gap-1.5">
-        <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        Settings
-      </button>
-      <div class="ml-1 w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-rose-500 grid place-items-center text-ink-900 font-mono text-[12px] font-bold">YA</div>
+      <div class="ml-1 w-8 h-8 rounded-full amber-grad grid place-items-center font-mono text-[12px] font-bold" style="color: var(--paper)">YA</div>
     </div>
   </header>
 
-  <!-- ============ MAIN 3-COLUMN ============ -->
+  <!-- ============ MAIN ============ -->
   <div class="flex-1 flex min-h-0 relative z-10">
 
-    <!-- ===== LEFT SIDEBAR ===== -->
-    <aside class="w-60 shrink-0 border-r hairline bg-ink-900/50 backdrop-blur flex flex-col">
-      <!-- New analysis -->
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="w-60 shrink-0 border-r hairline flex flex-col" style="background: color-mix(in srgb, var(--bg) 55%, transparent);">
       <div class="p-3">
-        <button class="w-full h-9 rounded-md bg-gradient-to-b from-mint-400 to-mint-600 text-ink-900 font-medium text-[13px] flex items-center justify-center gap-2 hover:brightness-110 transition run-glow">
+        <button @click="newAnalysis" class="w-full h-9 rounded-md brand-grad font-medium text-[13px] flex items-center justify-center gap-2 hover:brightness-105 transition run-glow" style="color: var(--paper)">
           <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
-          New Analysis
+          新建分析
         </button>
       </div>
 
       <!-- Datasets -->
       <div class="px-3 pb-2">
         <div class="flex items-center justify-between px-1 mb-1.5">
-          <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-ink-500">Datasets</span>
-          <button class="text-ink-500 hover:text-mint-300">
-            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
-          </button>
+          <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-faint">数据集</span>
+          <button @click="addDatasetToast" class="text-faint hover:text-brand"><svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button>
         </div>
         <div class="space-y-0.5">
           <button v-for="d in datasets" :key="d.id" @click="selectDataset(d.id)"
-            :class="['group w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition', d.active ? 'bg-mint-500/12 text-mint-50' : 'text-stone-300 hover:bg-ink-700/50']">
-            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 shrink-0" :class="d.active ? 'text-mint-300' : 'text-ink-500'" fill="none" stroke="currentColor" stroke-width="2">
-              <ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>
-            </svg>
-            <span class="flex-1 truncate font-mono text-[12px]">{{ d.name }}</span>
-            <span class="text-[10px] font-mono" :class="d.active ? 'text-mint-300/80' : 'text-ink-500'">{{ d.rows }}</span>
+            :class="['group w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition', d.active ? 'bg-brand-soft' : 'hover:bg-black/[0.03]']"
+            :style="d.active ? {'box-shadow':'inset 0 0 0 1px color-mix(in srgb, var(--brand) 25%, transparent)'} : {}">
+            <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{background: d.color}"></span>
+            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 shrink-0" :style="{color: d.active ? 'var(--brand)' : 'var(--ink-faint)'}" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+            <span class="flex-1 truncate font-mono text-[12px]" :style="{color: d.active ? 'var(--ink)' : 'var(--ink-soft)'}">{{ d.name }}</span>
+            <span class="text-[10px] font-mono text-faint">{{ d.rows }}</span>
           </button>
         </div>
       </div>
 
-      <!-- Conversations -->
+      <!-- Sessions -->
       <div class="px-3 mt-2 flex-1 overflow-y-auto">
         <div class="flex items-center justify-between px-1 mb-1.5">
-          <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-ink-500">Sessions</span>
-          <span class="text-[10px] font-mono text-ink-500">{{ sessions.length }}</span>
+          <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-faint">会话</span>
+          <span class="text-[10px] font-mono text-faint">{{ sessions.length }}</span>
         </div>
         <div class="space-y-0.5">
           <button v-for="s in sessions" :key="s.id" @click="selectSession(s.id)"
-            :class="['w-full text-left px-2 py-2 rounded-md transition group', s.active ? 'bg-ink-700/70' : 'hover:bg-ink-750/60']">
+            :class="['w-full text-left px-2 py-2 rounded-md transition group', s.active ? 'surface-2' : 'hover:bg-black/[0.03]']"
+            :style="s.active ? {'box-shadow':'inset 0 0 0 1px var(--line)'} : {}">
             <div class="flex items-start gap-2">
-              <span :class="['mt-1 w-1.5 h-1.5 rounded-full shrink-0', s.active ? 'bg-mint-300' : 'bg-ink-500']"></span>
+              <span class="mt-1 w-1.5 h-1.5 rounded-full shrink-0" :style="{background: s.active ? 'var(--brand)' : 'var(--ink-faint)'}"></span>
               <div class="min-w-0 flex-1">
-                <div :class="['text-[12px] truncate', s.active ? 'text-mint-50' : 'text-stone-300']">{{ s.title }}</div>
-                <div class="text-[10px] font-mono text-ink-500 mt-0.5 flex items-center gap-1.5">
-                  <span>{{ s.time }}</span>
-                  <span>·</span>
-                  <span>{{ s.steps }} steps</span>
+                <div class="text-[12px] truncate" :style="{color: s.active ? 'var(--ink)' : 'var(--ink-soft)'}">{{ s.title }}</div>
+                <div class="text-[10px] font-mono text-faint mt-0.5 flex items-center gap-1.5">
+                  <span>{{ s.time }}</span><span>·</span><span>{{ s.steps }} 步</span>
                 </div>
               </div>
             </div>
@@ -309,17 +292,19 @@
         </div>
       </div>
 
-      <!-- Footer / model -->
+      <!-- Footer: reasoning budget -->
       <div class="p-3 border-t hairline">
         <div class="rounded-md glass p-2.5">
           <div class="flex items-center justify-between mb-1.5">
-            <span class="text-[10px] font-mono uppercase tracking-wider text-ink-500">Reasoning</span>
-            <span class="text-[10px] font-mono text-mint-300">{{ reasoningEffort }}</span>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-faint">推理强度</span>
+            <select v-model="reasoningEffort" @change="effortToast" class="text-[10px] font-mono bg-transparent text-brand outline-none cursor-pointer">
+              <option value="low">低</option><option value="medium">中</option><option value="high">高</option>
+            </select>
           </div>
-          <div class="h-1 rounded-full bg-ink-700 overflow-hidden">
-            <div class="h-full bg-gradient-to-r from-mint-400 to-mint-300" :style="{ width: reasoningPct + '%' }"></div>
+          <div class="h-1 rounded-full overflow-hidden" :style="{background:'var(--line)'}">
+            <div class="h-full brand-grad grow-x" :style="{ width: reasoningPct + '%' }"></div>
           </div>
-          <div class="mt-2 flex items-center justify-between text-[10px] font-mono text-ink-500">
+          <div class="mt-2 flex items-center justify-between text-[10px] font-mono text-faint">
             <span>tokens {{ tokensUsed.toLocaleString() }}</span>
             <span>{{ (tokensUsed / 200000 * 100).toFixed(1) }}%</span>
           </div>
@@ -327,151 +312,139 @@
       </div>
     </aside>
 
-    <!-- ===== CENTER: AGENT CONVERSATION ===== -->
-    <section class="w-[440px] shrink-0 border-r hairline flex flex-col bg-ink-900/30">
-      <!-- Session header -->
+    <!-- ===== AGENT CHAT ===== -->
+    <section class="w-[440px] shrink-0 border-r hairline flex flex-col" style="background: color-mix(in srgb, var(--bg) 35%, transparent);">
       <div class="h-11 px-4 border-b hairline flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2 min-w-0">
-          <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-mint-300 shrink-0" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span class="text-[12px] text-stone-300 truncate">Why did Q3 revenue drop in EMEA?</span>
+          <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 shrink-0" style="color: var(--brand)" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="text-[12px] text-soft truncate">{{ activeSession?.title || '新分析' }}</span>
         </div>
         <div class="flex items-center gap-1">
-          <button class="w-7 h-7 grid place-items-center rounded text-ink-500 hover:text-mint-200 hover:bg-ink-700/50">
-            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 9h8M8 15h8M8 12h8" stroke-linecap="round"/></svg>
+          <button @click="regenerate" :disabled="!messages.length" class="w-7 h-7 grid place-items-center rounded text-faint hover:text-brand disabled:opacity-30" title="重新生成">
+            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.4L3 16M3 21v-5h5" stroke-linecap="round"/></svg>
           </button>
-          <button class="w-7 h-7 grid place-items-center rounded text-ink-500 hover:text-mint-200 hover:bg-ink-700/50">
-            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round"/></svg>
+          <button @click="clearChat" class="w-7 h-7 grid place-items-center rounded text-faint hover:text-coral" title="清空">
+            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
       </div>
 
-      <!-- Messages -->
       <div ref="scrollEl" class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        <!-- Intro card -->
+        <!-- Intro -->
         <div class="msg-in">
           <div class="flex items-center gap-2 mb-2">
-            <div class="w-6 h-6 rounded-full bg-gradient-to-br from-mint-400 to-mint-700 grid place-items-center">
-              <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-ink-900" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 17 V9 M9 17 V5 M14 17 V11 M19 17 V7" stroke-linecap="round"/></svg>
+            <div class="w-6 h-6 rounded-full brand-grad grid place-items-center" style="color: var(--paper)">
+              <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 17 V9 M9 17 V5 M14 17 V11 M19 17 V7" stroke-linecap="round"/></svg>
             </div>
-            <span class="font-serif italic text-[18px] text-mint-50">Quant</span>
-            <span class="text-[10px] font-mono text-ink-500">your analysis partner</span>
+            <span class="font-serif italic text-[18px]" style="color: var(--ink)">Quant</span>
+            <span class="text-[10px] font-mono text-faint">已连接 {{ currentDataset.name }}</span>
           </div>
-          <p class="text-stone-300 leading-relaxed">
-            I can <span class="text-mint-200">read your datasets</span>, run statistics, build charts, and explain the
-            <span class="font-serif italic text-amber-300">"why"</span> behind the numbers. Ask me anything — or pick a starter below.
+          <p class="text-soft leading-relaxed">
+            我可以<span style="color: var(--brand)">读取数据集</span>、运行统计、绘制图表，并解释数字背后的
+            <span class="font-serif italic" style="color: var(--amber)">"为什么"</span>。选择一个起点，或直接提问。
           </p>
-          <div class="mt-3 flex flex-wrap gap-1.5">
-            <button v-for="q in starters" :key="q" @click="quickAsk(q)"
-              class="chip px-2.5 py-1.5 rounded-md text-[11.5px] text-stone-300 hover:text-mint-100 transition text-left">
+          <div class="mt-3 grid grid-cols-1 gap-1.5">
+            <button v-for="q in currentDataset.starters" :key="q" @click="quickAsk(q)"
+              class="chip px-2.5 py-2 rounded-md text-[11.5px] text-left text-soft hover:text-brand transition flex items-center gap-2 group">
+              <svg viewBox="0 0 24 24" class="w-3 h-3 text-faint group-hover:text-brand" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7" stroke-linecap="round"/></svg>
               {{ q }}
             </button>
           </div>
         </div>
 
-        <!-- Message loop -->
+        <!-- messages -->
         <template v-for="m in messages" :key="m.id">
-          <!-- USER -->
           <div v-if="m.role === 'user'" class="msg-in flex gap-3">
-            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-amber-300 to-rose-500 grid place-items-center text-ink-900 font-mono text-[11px] font-bold shrink-0 mt-0.5">YA</div>
+            <div class="w-7 h-7 rounded-full amber-grad grid place-items-center shrink-0 mt-0.5 font-mono text-[11px] font-bold" style="color: var(--paper)">YA</div>
             <div class="flex-1 min-w-0">
-              <div class="text-[10px] font-mono text-ink-500 mb-1">you · {{ m.time }}</div>
-              <p class="text-stone-200 leading-relaxed">{{ m.text }}</p>
+              <div class="text-[10px] font-mono text-faint mb-1">我 · {{ m.time }}</div>
+              <p class="text-ink leading-relaxed">{{ m.text }}</p>
             </div>
           </div>
 
-          <!-- AGENT -->
           <div v-else class="msg-in flex gap-3">
-            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-mint-400 to-mint-700 grid place-items-center shrink-0 mt-0.5 run-glow">
-              <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-ink-900" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 17 V9 M9 17 V5 M14 17 V11 M19 17 V7" stroke-linecap="round"/></svg>
+            <div class="w-7 h-7 rounded-full brand-grad grid place-items-center shrink-0 mt-0.5 run-glow" style="color: var(--paper)">
+              <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 17 V9 M9 17 V5 M14 17 V11 M19 17 V7" stroke-linecap="round"/></svg>
             </div>
             <div class="flex-1 min-w-0 space-y-3">
-              <div class="text-[10px] font-mono text-ink-500 flex items-center gap-1.5">
-                <span>quant</span>
-                <span>·</span>
-                <span>{{ m.time }}</span>
-                <span v-if="m.duration" class="text-mint-300/70">· {{ m.duration }}s</span>
+              <div class="text-[10px] font-mono text-faint flex items-center gap-1.5">
+                <span>quant</span><span>·</span><span>{{ m.time }}</span>
+                <span v-if="m.duration" style="color: var(--brand)">· {{ m.duration }}秒</span>
               </div>
 
-              <!-- Reasoning trace -->
               <details v-if="m.reasoning" open class="group rounded-md glass overflow-hidden">
-                <summary class="cursor-pointer list-none px-3 py-2 flex items-center gap-2 text-[11px] font-mono text-ink-500 hover:text-mint-200">
+                <summary class="cursor-pointer list-none px-3 py-2 flex items-center gap-2 text-[11px] font-mono text-faint hover:text-brand">
                   <svg class="w-3 h-3 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6" stroke-linecap="round"/></svg>
-                  <span>reasoning trace</span>
-                  <span class="ml-auto text-[10px] text-ink-500">{{ m.reasoningSteps }} steps</span>
+                  <span>推理过程</span>
+                  <span class="ml-auto text-[10px]">{{ m.reasoningSteps }} 步</span>
                 </summary>
-                <div class="px-3 pb-3 pt-1 reasoning text-[12px] leading-relaxed font-mono whitespace-pre-line">{{ m.reasoning }}<span v-if="m.streaming" class="caret"></span></div>
+                <div class="px-3 pb-3 pt-1 reasoning text-[12px] leading-relaxed font-mono whitespace-pre-line">{{ m.reasoning }}<span v-if="m.streaming && !m.text" class="caret"></span></div>
               </details>
 
-              <!-- Tool call cards -->
               <div v-for="(t, ti) in m.tools" :key="ti" class="rounded-md glass overflow-hidden">
-                <div class="px-3 py-2 flex items-center gap-2 border-b hairline">
-                  <span :class="['w-1.5 h-1.5 rounded-full', toolDotColor(t.status)]"></span>
-                  <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-mint-300" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                  <span class="font-mono text-[11.5px] text-mint-100">{{ t.name }}</span>
-                  <span class="text-[10px] font-mono text-ink-500">·</span>
-                  <span class="text-[10px] font-mono text-ink-500 truncate">{{ t.detail }}</span>
-                  <span v-if="t.status === 'running'" class="ml-auto text-[10px] font-mono text-amber-300 flex items-center gap-1">
-                    <svg class="w-3 h-3 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.2-8.5" stroke-linecap="round"/></svg>
-                    running
+                <div class="px-3 py-2 flex items-center gap-2 border-b hairline-soft">
+                  <span class="w-1.5 h-1.5 rounded-full" :style="{background: toolDotColor(t.status)}"></span>
+                  <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" style="color: var(--brand)" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                  <span class="font-mono text-[11.5px] text-ink">{{ t.name }}</span>
+                  <span class="text-[10px] font-mono text-faint">·</span>
+                  <span class="text-[10px] font-mono text-faint truncate">{{ t.detail }}</span>
+                  <span v-if="t.status === 'running'" class="ml-auto text-[10px] font-mono flex items-center gap-1" style="color: var(--amber)">
+                    <svg class="w-3 h-3 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.2-8.5" stroke-linecap="round"/></svg> 运行中
                   </span>
-                  <span v-else class="ml-auto text-[10px] font-mono text-mint-300">{{ t.ms }}ms</span>
+                  <span v-else class="ml-auto text-[10px] font-mono" style="color: var(--brand)">{{ t.ms }}毫秒</span>
                 </div>
                 <div v-if="t.preview" class="px-3 py-2.5">
-                  <!-- mini data preview -->
                   <div v-if="t.preview.type === 'table'" class="font-mono text-[11px]">
-                    <div class="grid grid-cols-3 gap-x-3 text-ink-500 border-b hairline pb-1 mb-1">
+                    <div class="grid gap-x-3 text-faint border-b hairline-soft pb-1 mb-1" :style="{gridTemplateColumns: 'repeat('+t.preview.headers.length+', minmax(0,1fr))'}">
                       <span v-for="h in t.preview.headers" :key="h">{{ h }}</span>
                     </div>
-                    <div v-for="(row, ri) in t.preview.rows" :key="ri" class="grid grid-cols-3 gap-x-3 py-0.5">
-                      <span class="text-stone-300">{{ row[0] }}</span>
-                      <span :class="row[2] && row[2].startsWith('-') ? 'text-rose-400' : 'text-mint-200'">{{ row[1] }}</span>
-                      <span :class="row[2] && row[2].startsWith('-') ? 'text-rose-400' : 'text-mint-200'">{{ row[2] }}</span>
+                    <div v-for="(row, ri) in t.preview.rows" :key="ri" class="grid gap-x-3 py-0.5" :style="{gridTemplateColumns: 'repeat('+t.preview.headers.length+', minmax(0,1fr))'}">
+                      <span v-for="(cell, ci) in row" :key="ci" :style="isNeg(cell) ? {color:'var(--coral)'} : (ci>0 ? {color:'var(--brand)'} : {color:'var(--ink-soft)'})">{{ cell }}</span>
                     </div>
                   </div>
-                  <pre v-else class="font-mono text-[11px] text-stone-300 whitespace-pre-wrap">{{ t.preview.text }}</pre>
+                  <pre v-else class="font-mono text-[11px] text-soft whitespace-pre-wrap">{{ t.preview.text }}</pre>
                 </div>
               </div>
 
-              <!-- Prose answer -->
-              <div v-if="m.text" class="text-stone-200 leading-relaxed">
+              <div v-if="m.text" class="text-ink leading-relaxed">
                 <p v-html="renderInline(m.text)"></p>
                 <span v-if="m.streaming" class="caret"></span>
               </div>
 
-              <!-- Quick findings (chips) -->
               <div v-if="m.findings && !m.streaming" class="flex flex-wrap gap-1.5 pt-1">
                 <span v-for="(f, fi) in m.findings" :key="fi"
                   class="chip px-2 py-1 rounded font-mono text-[11px]"
-                  :class="f.tone === 'neg' ? 'text-rose-400' : f.tone === 'pos' ? 'text-mint-200' : 'text-amber-300'">
+                  :style="f.tone === 'neg' ? {color:'var(--coral)'} : (f.tone === 'pos' ? {color:'var(--brand)'} : {color:'var(--amber)'})">
                   {{ f.label }}
                 </span>
               </div>
 
-              <!-- Action row -->
               <div v-if="!m.streaming && m.text" class="flex items-center gap-1 pt-1">
-                <button class="text-[10px] font-mono text-ink-500 hover:text-mint-200 px-1.5 py-1 rounded hover:bg-ink-700/50 flex items-center gap-1">
-                  <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-6 0v4M5 9h14l1 12H4z"/></svg> save
+                <button @click="copyMsg(m)" class="text-[10px] font-mono text-faint hover:text-brand px-1.5 py-1 rounded hover:bg-black/[0.04] flex items-center gap-1">
+                  <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> 复制
                 </button>
-                <button @click="rerun(m)" class="text-[10px] font-mono text-ink-500 hover:text-mint-200 px-1.5 py-1 rounded hover:bg-ink-700/50 flex items-center gap-1">
-                  <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.4L3 16M3 21v-5h5" stroke-linecap="round"/></svg> rerun
+                <button @click="rerun(m)" class="text-[10px] font-mono text-faint hover:text-brand px-1.5 py-1 rounded hover:bg-black/[0.04] flex items-center gap-1">
+                  <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.4L3 16M3 21v-5h5" stroke-linecap="round"/></svg> 重跑
                 </button>
-                <button class="text-[10px] font-mono text-ink-500 hover:text-mint-200 px-1.5 py-1 rounded hover:bg-ink-700/50 flex items-center gap-1">
-                  <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> fork
+                <button @click="pinMsg(m)" class="text-[10px] font-mono text-faint hover:text-brand px-1.5 py-1 rounded hover:bg-black/[0.04] flex items-center gap-1">
+                  <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5M9 10.76V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4.76l2 4.24H7z"/></svg> {{ m.pinned ? '已置顶' : '置顶' }}
+                </button>
+                <button @click="forkMsg(m)" class="text-[10px] font-mono text-faint hover:text-brand px-1.5 py-1 rounded hover:bg-black/[0.04] flex items-center gap-1">
+                  <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M6 9v6M18 6h-6a2 2 0 0 0-2 2v4"/></svg> 分叉
                 </button>
               </div>
             </div>
           </div>
         </template>
 
-        <!-- live tool progress (when running & not yet a message) -->
         <div v-if="running && !lastStreamingMsg" class="msg-in flex gap-3">
-          <div class="w-7 h-7 rounded-full bg-gradient-to-br from-mint-400 to-mint-700 grid place-items-center shrink-0 mt-0.5 run-glow">
-            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-ink-900 spin" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-6.2-8.5" stroke-linecap="round"/></svg>
+          <div class="w-7 h-7 rounded-full brand-grad grid place-items-center shrink-0 mt-0.5 run-glow" style="color: var(--paper)">
+            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 spin" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-6.2-8.5" stroke-linecap="round"/></svg>
           </div>
           <div class="flex-1 space-y-2 pt-1">
-            <div class="font-mono text-[11px] text-mint-200">{{ phaseLabel }}</div>
-            <div class="h-1 rounded-full bg-ink-700 overflow-hidden max-w-xs">
-              <div class="h-full bg-gradient-to-r from-mint-400 to-mint-300 transition-all duration-500" :style="{ width: phasePct + '%' }"></div>
+            <div class="font-mono text-[11px]" style="color: var(--brand)">{{ phaseLabel }}</div>
+            <div class="h-1 rounded-full overflow-hidden max-w-xs" :style="{background:'var(--line)'}">
+              <div class="h-full brand-grad transition-all duration-500" :style="{ width: phasePct + '%' }"></div>
             </div>
           </div>
         </div>
@@ -480,183 +453,185 @@
       <!-- Composer -->
       <div class="p-3 border-t hairline shrink-0">
         <div class="rounded-lg glass focus-within:run-glow transition-shadow">
-          <textarea
-            v-model="input" @keydown.enter.exact.prevent="send" @keydown.enter.shift.exact="input += '\n'"
-            rows="2" placeholder="Ask Quant to analyze, plot, or explain…"
-            class="w-full bg-transparent px-3 py-2.5 text-[13px] text-stone-100 placeholder-ink-500 resize-none focus:outline-none">
-          </textarea>
+          <textarea v-model="input" @keydown.enter.exact.prevent="send" @keydown.enter.shift.exact="input += '\n'"
+            rows="2" :placeholder="'就 ' + currentDataset.short + ' 向 Quant 提问…'"
+            class="w-full bg-transparent px-3 py-2.5 text-[13px] text-ink placeholder-[color:var(--ink-faint)] resize-none focus:outline-none"></textarea>
           <div class="flex items-center justify-between px-2.5 pb-2">
             <div class="flex items-center gap-1">
-              <button class="w-7 h-7 grid place-items-center rounded text-ink-500 hover:text-mint-200 hover:bg-ink-700/50" title="Attach dataset">
+              <button @click="toast('已附加数据集：' + currentDataset.name)" class="w-7 h-7 grid place-items-center rounded text-faint hover:text-brand hover:bg-black/[0.04]" title="附加">
                 <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.4 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
-              <button class="w-7 h-7 grid place-items-center rounded text-ink-500 hover:text-mint-200 hover:bg-ink-700/50" title="Code">
-                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-              <button @click="mode = mode === 'analysis' ? 'explore' : 'analysis'"
-                class="h-7 px-2 rounded text-[11px] font-mono chip text-stone-300 hover:text-mint-100 flex items-center gap-1.5">
+              <button @click="toggleMode" class="h-7 px-2 rounded text-[11px] font-mono chip text-soft flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
-                {{ mode }}
+                {{ mode === 'analysis' ? '分析' : '探索' }}
               </button>
-              <span class="text-[10px] font-mono text-ink-500 ml-1">⏎ send · ⇧⏎ newline</span>
+              <span class="text-[10px] font-mono text-faint ml-1">⏎ 发送 · ⇧⏎ 换行</span>
             </div>
             <button @click="send" :disabled="running || !input.trim()"
               :class="['h-8 px-3 rounded-md text-[12px] font-medium flex items-center gap-1.5 transition',
-                (running || !input.trim()) ? 'bg-ink-700 text-ink-500 cursor-not-allowed' : 'bg-gradient-to-b from-mint-400 to-mint-600 text-ink-900 hover:brightness-110']">
-              <span v-if="running" class="w-3 h-3 border-[1.5px] border-ink-500 border-t-transparent rounded-full spin"></span>
+                (running || !input.trim()) ? 'opacity-40 cursor-not-allowed chip' : 'brand-grad hover:brightness-105']"
+              :style="!(running || !input.trim()) ? {color:'var(--paper)'} : {}">
+              <span v-if="running" class="w-3 h-3 rounded-full spin" :style="'border:1.5px solid var(--ink-faint); border-top-color:transparent'"></span>
               <svg v-else viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m22 2-7 20-4-9-9-4 20-7z" stroke-linejoin="round"/></svg>
-              {{ running ? 'Running' : 'Run' }}
+              {{ running ? '运行中' : '运行' }}
             </button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ===== RIGHT: WORKSPACE ===== -->
+    <!-- ===== WORKSPACE ===== -->
     <section class="flex-1 flex flex-col min-w-0">
-      <!-- Tabs -->
+      <!-- Tabs + controls -->
       <div class="h-11 px-3 border-b hairline flex items-center justify-between shrink-0">
         <div class="flex items-center h-full">
           <button v-for="t in tabs" :key="t.id" @click="activeTab = t.id"
-            :class="['relative h-full px-3.5 text-[12px] flex items-center gap-1.5 transition tab', activeTab === t.id ? 'tab-active' : 'text-ink-500 hover:text-stone-300']">
+            :class="['relative h-full px-3.5 text-[12px] flex items-center gap-1.5 transition tab', activeTab === t.id ? 'tab-active' : 'text-faint hover:text-soft']">
             <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><component :is="t.icon"/></svg>
             <span>{{ t.label }}</span>
-            <span v-if="t.count" class="text-[10px] font-mono text-ink-500">{{ t.count }}</span>
-            <span class="tab-bar absolute left-2 right-2 bottom-0 h-[2px] bg-mint-300 rounded-full"></span>
+            <span v-if="t.count" class="text-[10px] font-mono text-faint">{{ t.count }}</span>
+            <span class="tab-bar absolute left-2 right-2 bottom-0 h-[2px] rounded-full" :style="{background:'var(--brand)'}"></span>
           </button>
         </div>
-        <div class="flex items-center gap-1">
-          <span class="text-[10px] font-mono text-ink-500 mr-2">live · synced</span>
-          <button class="w-7 h-7 grid place-items-center rounded text-ink-500 hover:text-mint-200 hover:bg-ink-700/50" title="Refresh">
-            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8M21 3v5h-5" stroke-linecap="round"/></svg>
-          </button>
-          <button class="w-7 h-7 grid place-items-center rounded text-ink-500 hover:text-mint-200 hover:bg-ink-700/50" title="Expand">
-            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" stroke-linecap="round"/></svg>
+        <div class="flex items-center gap-1.5">
+          <span v-if="activeTab==='overview'" class="text-[10px] font-mono text-faint mr-1">视图</span>
+          <!-- time range -->
+          <div v-if="activeTab==='overview'||activeTab==='charts'" class="flex items-center rounded-md chip overflow-hidden text-[11px] font-mono">
+            <button v-for="r in timeRanges" :key="r.id" @click="timeRange = r.id"
+              :class="['seg-btn px-2 py-1', timeRange === r.id ? 'seg-on' : 'text-soft hover:text-ink']">{{ r.label }}</button>
+          </div>
+          <button @click="refresh" class="w-7 h-7 grid place-items-center rounded text-faint hover:text-brand hover:bg-black/[0.04]" title="刷新">
+            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" :class="{'spin': refreshing}" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8M21 3v5h-5M3 12a9 9 0 0 1 15.5 6.4L3 16M3 21v-5h5" stroke-linecap="round"/></svg>
           </button>
         </div>
       </div>
 
-      <!-- Tab content -->
       <div class="flex-1 overflow-auto">
 
         <!-- ===== OVERVIEW ===== -->
         <div v-show="activeTab === 'overview'" class="p-5 space-y-5">
-          <!-- Hero -->
           <div class="flex items-end justify-between gap-4">
             <div>
-              <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-mint-300/80 mb-1">executive overview</div>
-              <h1 class="font-serif italic text-[42px] leading-none text-mint-50">Q3 Revenue <span class="text-amber-300">Anomaly</span></h1>
-              <p class="text-stone-400 mt-2 text-[13px] max-w-xl">Auto-generated from <span class="font-mono text-mint-200">revenue_2024.csv</span> · last refresh 2 min ago · 14,820 rows.</p>
+              <div class="text-[10px] font-mono uppercase tracking-[0.2em] mb-1" style="color: var(--brand)">{{ currentDataset.heroTag }}</div>
+              <h1 class="font-serif italic text-[42px] leading-none" style="color: var(--ink)">{{ currentDataset.heroTitle }}</h1>
+              <p class="text-soft mt-2 text-[13px] max-w-xl">{{ currentDataset.heroSub }}</p>
             </div>
             <div class="text-right">
-              <div class="text-[10px] font-mono text-ink-500">vs Q2 2024</div>
-              <div class="font-mono text-[36px] text-rose-400 leading-none">−12.4%</div>
-              <div class="text-[11px] font-mono text-ink-500 mt-1">€4.2M gap to target</div>
+              <div class="text-[10px] font-mono text-faint">{{ rangeLabel }} · 环比上期</div>
+              <div class="font-mono text-[36px] leading-none" :style="{color: heroDelta.startsWith('−') || heroDelta.startsWith('-') ? 'var(--coral)' : 'var(--brand)'}">{{ heroDelta }}</div>
+              <div class="text-[11px] font-mono text-faint mt-1">{{ currentDataset.heroFoot }}</div>
             </div>
           </div>
 
           <!-- KPI grid -->
           <div class="grid grid-cols-4 gap-3 stagger">
-            <div v-for="(k, i) in kpis" :key="i" class="rounded-lg glass p-3.5 relative overflow-hidden" :style="{ animationDelay: (i*0.06)+'s' }">
+            <button v-for="(k, i) in kpis" :key="i" @click="drillKpi(k)"
+              class="text-left rounded-lg glass p-3.5 relative overflow-hidden hover:run-glow transition" :style="{animationDelay:(i*0.06)+'s'}">
               <div class="flex items-center justify-between">
-                <span class="text-[10px] font-mono uppercase tracking-wider text-ink-500">{{ k.label }}</span>
-                <span :class="['text-[10px] font-mono px-1.5 py-0.5 rounded', k.up ? 'text-mint-200 bg-mint-500/10' : 'text-rose-400 bg-rose-500/10']">{{ k.delta }}</span>
+                <span class="text-[10px] font-mono uppercase tracking-wider text-faint">{{ k.label }}</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded" :style="k.up ? {color:'var(--brand)', background:'var(--brand-soft)'} : {color:'var(--coral)', background:'color-mix(in srgb, var(--coral) 10%, transparent)'}">{{ k.delta }}</span>
               </div>
-              <div class="font-mono text-[26px] mt-1.5" :class="k.up ? 'text-mint-100' : 'text-rose-400'">{{ k.value }}</div>
-              <!-- sparkline -->
-              <svg :viewBox="'0 0 100 28'" class="w-full h-7 mt-2" preserveAspectRatio="none">
-                <polyline :points="k.spark" fill="none" :stroke="k.up ? '#48ebbd' : '#fb7185'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <polyline :points="k.spark" fill="none" :stroke="k.up ? '#48ebbd' : '#fb7185'" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.12"/>
+              <div class="font-mono text-[26px] mt-1.5" :style="{color: k.up ? 'var(--ink)' : 'var(--coral)'}">{{ k.value }}</div>
+              <svg viewBox="0 0 100 28" class="w-full h-7 mt-2" preserveAspectRatio="none">
+                <polyline :points="k.spark" fill="none" :stroke="k.up ? 'var(--brand)' : 'var(--coral)'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline :points="k.spark" fill="none" :stroke="k.up ? 'var(--brand)' : 'var(--coral)'" stroke-width="6" stroke-linecap="round" opacity="0.12"/>
               </svg>
-            </div>
+            </button>
           </div>
 
-          <!-- Chart + drivers -->
+          <!-- Main chart + drivers -->
           <div class="grid grid-cols-3 gap-3">
-            <!-- Monthly revenue line chart -->
             <div class="col-span-2 rounded-lg glass p-4">
-              <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <div>
-                  <div class="text-[11px] font-mono text-ink-500">monthly_net_revenue · by region</div>
-                  <div class="font-serif italic text-[20px] text-mint-50">Revenue trajectory</div>
+                  <div class="text-[11px] font-mono text-faint">{{ currentDataset.lineLabel }}</div>
+                  <div class="font-serif italic text-[20px]" style="color: var(--ink)">{{ currentDataset.lineTitle }}</div>
                 </div>
-                <div class="flex items-center gap-3 text-[11px] font-mono">
-                  <span v-for="(r, i) in regions" :key="i" class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full" :style="{ background: r.color }"></span>
-                    <span class="text-stone-300">{{ r.name }}</span>
-                  </span>
+                <div class="flex items-center gap-3">
+                  <!-- region toggles -->
+                  <div class="flex items-center gap-2">
+                    <button v-for="(r, i) in regions" :key="i" @click="toggleSeries(i)"
+                      class="flex items-center gap-1.5 text-[11px] font-mono px-1.5 py-0.5 rounded transition"
+                      :style="seriesOn[i] ? {color:'var(--ink)'} : {color:'var(--ink-faint)', opacity:.4}">
+                      <span class="w-2 h-2 rounded-full" :style="{background: r.color}"></span>{{ r.name }}
+                    </button>
+                  </div>
+                  <!-- chart type -->
+                  <div class="flex items-center rounded-md chip overflow-hidden text-[11px] font-mono">
+                    <button v-for="c in chartTypes" :key="c.id" @click="chartType = c.id"
+                      :class="['seg-btn px-2 py-1', chartType === c.id ? 'seg-on' : 'text-soft hover:text-ink']">{{ c.labelCn }}</button>
+                  </div>
                 </div>
               </div>
               <svg viewBox="0 0 600 220" class="w-full h-56">
-                <!-- grid -->
-                <g stroke="rgba(120,230,200,0.06)" stroke-width="1">
+                <g stroke="var(--line)" stroke-width="1">
                   <line v-for="gy in [40,90,140,190]" :key="gy" x1="40" :y1="gy" x2="580" :y2="gy"/>
                 </g>
-                <!-- y axis labels -->
-                <g font-family="JetBrains Mono" font-size="9" fill="#4a5957">
-                  <text v-for="(ly, i) in [180,135,90,45,0]" :key="i" x="34" :y="40 + i*40" text-anchor="end">€{{ ly }}k</text>
+                <g font-family="JetBrains Mono" font-size="9" fill="var(--ink-faint)">
+                  <text v-for="(ly, i) in yTicks" :key="i" x="34" :y="40 + i*40" text-anchor="end">{{ ly }}</text>
                 </g>
-                <!-- EMEA area + line -->
-                <polyline :points="sparkPoints(lineData.emea, 40, 580, 30, 200)" fill="none" stroke="#fb7185" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="draw-line"/>
-                <polyline :points="sparkPoints(lineData.emea, 40, 580, 30, 200)" fill="none" stroke="#fb7185" stroke-width="2.2" stroke-linecap="round" opacity="0.18"/>
-                <!-- APAC -->
-                <polyline :points="sparkPoints(lineData.apac, 40, 580, 30, 200)" fill="none" stroke="#48ebbd" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="draw-line"/>
-                <!-- AMER -->
-                <polyline :points="sparkPoints(lineData.amer, 40, 580, 30, 200)" fill="none" stroke="#ffd483" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="draw-line"/>
-                <!-- x labels -->
-                <g font-family="JetBrains Mono" font-size="9" fill="#4a5957" text-anchor="middle">
+                <!-- bar mode -->
+                <g v-if="chartType==='bar'">
+                  <g v-for="(pt, i) in barSeries" :key="'b'+i">
+                    <rect v-for="(s, si) in pt.vals" :key="si"
+                      :x="xForBar(i, si, pt.vals.length)" :y="180 - s*1.2" :width="barW(pt.vals.length)" :height="s*1.2" rx="1.5"
+                      :fill="regions[si].color" :opacity="seriesOn[si] ? 0.85 : 0.18" class="grow-bar" :style="{animationDelay:(i*0.05)+'s'}"/>
+                  </g>
+                </g>
+                <!-- line / area mode -->
+                <g v-else>
+                  <template v-for="(s, si) in visibleSeries" :key="'s'+si">
+                    <polygon v-if="chartType==='area'" :points="areaPoints(s)" :fill="regions[s.idx].color" opacity="0.12"/>
+                    <polyline :points="linePoints(s)" fill="none" :stroke="regions[s.idx].color" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="draw-line"/>
+                    <polyline :points="linePoints(s)" fill="none" :stroke="regions[s.idx].color" stroke-width="2.2" opacity="0.15"/>
+                  </template>
+                  <circle :cx="annot.x" :cy="annot.y" r="4" :style="{fill:'var(--coral)'}"/>
+                  <circle :cx="annot.x" :cy="annot.y" r="8" fill="none" :style="{stroke:'var(--coral)'}" stroke-width="1" opacity="0.4"/>
+                  <line :x1="annot.x" :y1="annot.y" :x2="annot.x" y2="40" :style="{stroke:'var(--coral)'}" stroke-width="1" stroke-dasharray="2 3" opacity="0.5"/>
+                  <rect :x="annot.x-45" y="20" width="120" height="22" rx="4" :style="{fill:'var(--coral)'}" opacity="0.12"/>
+                  <text :x="annot.x+15" y="35" font-family="JetBrains Mono" font-size="9" :style="{fill:'var(--coral)'}" text-anchor="middle">{{ annot.label }}</text>
+                </g>
+                <g font-family="JetBrains Mono" font-size="9" fill="var(--ink-faint)" text-anchor="middle">
                   <text v-for="(m, i) in months" :key="i" :x="40 + i*((580-40)/(months.length-1))" y="214">{{ m }}</text>
-                </g>
-                <!-- annotation -->
-                <g>
-                  <circle cx="475" cy="115" r="4" fill="#fb7185"/>
-                  <circle cx="475" cy="115" r="8" fill="none" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
-                  <line x1="475" y1="115" x2="475" y2="40" stroke="#fb7185" stroke-width="1" stroke-dasharray="2 3" opacity="0.5"/>
-                  <rect x="430" y="20" width="120" height="22" rx="4" fill="#fb7185" opacity="0.12"/>
-                  <text x="490" y="35" font-family="JetBrains Mono" font-size="9" fill="#fb7185" text-anchor="middle">EMEA cliff · Aug</text>
                 </g>
               </svg>
             </div>
 
-            <!-- Drivers -->
             <div class="rounded-lg glass p-4">
-              <div class="text-[11px] font-mono text-ink-500 mb-1">contribution_to_drop</div>
-              <div class="font-serif italic text-[20px] text-mint-50 mb-3">Top drivers</div>
+              <div class="text-[11px] font-mono text-faint mb-1">变化贡献度</div>
+              <div class="font-serif italic text-[20px] mb-3" style="color: var(--ink)">主要驱动因素</div>
               <div class="space-y-3">
                 <div v-for="(d, i) in drivers" :key="i">
                   <div class="flex items-center justify-between text-[12px] mb-1">
-                    <span class="text-stone-300">{{ d.label }}</span>
-                    <span class="font-mono" :class="d.neg ? 'text-rose-400' : 'text-mint-200'">{{ d.val }}</span>
+                    <span class="text-soft">{{ d.label }}</span>
+                    <span class="font-mono" :style="d.neg ? {color:'var(--coral)'} : {color:'var(--brand)'}">{{ d.val }}</span>
                   </div>
-                  <div class="h-1.5 rounded-full bg-ink-700 overflow-hidden">
-                    <div class="h-full rounded-full grow-bar" :style="{ width: Math.abs(d.pct) + '%', background: d.neg ? 'linear-gradient(90deg,#f43f5e,#fb7185)' : 'linear-gradient(90deg,#0bb889,#48ebbd)', animationDelay: (i*0.08)+'s' }"></div>
+                  <div class="h-1.5 rounded-full overflow-hidden" :style="{background:'var(--line)'}">
+                    <div class="h-full rounded-full grow-x" :style="{width: Math.abs(d.pct)+'%', background: d.neg ? 'linear-gradient(90deg, var(--coral), #e96a52)' : 'linear-gradient(90deg, var(--brand), var(--brand-2))', animationDelay:(i*0.08)+'s'}"></div>
                   </div>
                 </div>
               </div>
-              <div class="mt-4 pt-3 border-t hairline">
-                <div class="text-[10px] font-mono text-ink-500 mb-1.5">root cause hypothesis</div>
-                <p class="text-[12px] text-stone-300 leading-relaxed">
-                  EMEA enterprise deal slippage concentrated in <span class="text-amber-300 font-mono">DACH</span> region —
-                  correlates with <span class="text-mint-200 font-mono">+34%</span> sales-cycle length.
-                </p>
+              <div class="mt-4 pt-3 border-t hairline-soft">
+                <div class="text-[10px] font-mono text-faint mb-1.5">根因假设</div>
+                <p class="text-[12px] text-soft leading-relaxed" v-html="currentDataset.hypothesis"></p>
               </div>
             </div>
           </div>
 
-          <!-- Suggested next -->
+          <!-- Suggestions -->
           <div class="rounded-lg glass p-4">
             <div class="flex items-center gap-2 mb-3">
-              <svg viewBox="0 0 24 24" class="w-4 h-4 text-mint-300" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round"/></svg>
-              <span class="font-serif italic text-[18px] text-mint-50">Suggested next steps</span>
+              <svg viewBox="0 0 24 24" class="w-4 h-4" style="color: var(--brand)" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round"/></svg>
+              <span class="font-serif italic text-[18px]" style="color: var(--ink)">建议的下一步</span>
             </div>
             <div class="grid grid-cols-3 gap-2">
-              <button v-for="(s, i) in suggestions" :key="i" @click="quickAsk(s.q)"
+              <button v-for="(s, i) in currentDataset.suggestions" :key="i" @click="quickAsk(s.q)"
                 class="text-left rounded-md chip p-3 hover:run-glow transition group">
                 <div class="flex items-center gap-2 mb-1">
-                  <span class="font-mono text-[10px] text-mint-300">{{ s.tag }}</span>
-                  <svg viewBox="0 0 24 24" class="w-3 h-3 text-ink-500 group-hover:text-mint-200 ml-auto transition" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7" stroke-linecap="round"/></svg>
+                  <span class="font-mono text-[10px]" style="color: var(--brand)">{{ s.tag }}</span>
+                  <svg viewBox="0 0 24 24" class="w-3 h-3 text-faint group-hover:text-brand ml-auto transition" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7" stroke-linecap="round"/></svg>
                 </div>
-                <div class="text-[12.5px] text-stone-200 leading-snug">{{ s.q }}</div>
+                <div class="text-[12.5px] text-ink leading-snug">{{ s.q }}</div>
               </button>
             </div>
           </div>
@@ -664,19 +639,24 @@
 
         <!-- ===== TABLE ===== -->
         <div v-show="activeTab === 'table'" class="p-5">
-          <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div>
-              <div class="font-serif italic text-[24px] text-mint-50">revenue_by_region</div>
-              <div class="text-[11px] font-mono text-ink-500">{{ tableData.length }} rows · 6 columns · filtered by Q3 2024</div>
+              <div class="font-serif italic text-[24px]" style="color: var(--ink)">{{ currentDataset.tableTitle }}</div>
+              <div class="text-[11px] font-mono text-faint">{{ currentTable.length }} 行 · {{ tableHeaders.length }} 列 · {{ rangeLabel }}</div>
             </div>
             <div class="flex items-center gap-2">
               <div class="relative">
-                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-ink-500 absolute left-2 top-2" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3" stroke-linecap="round"/></svg>
-                <input v-model="tableSearch" placeholder="filter rows…" class="h-8 pl-7 pr-3 w-52 rounded-md bg-ink-800 border hairline text-[12px] font-mono text-stone-200 placeholder-ink-500 focus:outline-none focus:border-mint-400/50">
+                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 absolute left-2 top-2 text-faint" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3" stroke-linecap="round"/></svg>
+                <input v-model="tableSearch" placeholder="筛选行…" class="h-8 pl-7 pr-3 w-52 rounded-md surface text-[12px] font-mono text-ink focus:outline-none" :style="{borderColor:'var(--line)'}">
               </div>
-              <button class="h-8 px-3 rounded-md chip text-[12px] text-stone-300 hover:text-mint-100 flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 12h12M10 18h4" stroke-linecap="round"/></svg>
-                Filter
+              <select v-model="statusFilter" class="h-8 px-2 rounded-md surface text-[12px] font-mono text-soft" :style="{borderColor:'var(--line)'}">
+                <option value="all">全部状态</option>
+                <option value="risk">风险</option>
+                <option value="watch">观察</option>
+                <option value="ok">正常</option>
+              </select>
+              <button @click="exportData" class="h-8 px-3 rounded-md chip text-[12px] text-soft hover:text-brand flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>导出
               </button>
             </div>
           </div>
@@ -684,45 +664,44 @@
             <table class="w-full text-[12px] font-mono">
               <thead>
                 <tr class="border-b hairline text-left">
-                  <th v-for="(h, i) in tableHeaders" :key="i" class="px-4 py-2.5 text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+                  <th v-for="(h, i) in tableHeaders" :key="i" @click="sortBy(h.key)" :class="['px-4 py-2.5 text-[10px] uppercase tracking-wider font-medium text-faint cursor-pointer select-none hover:text-brand transition', h.key ? '' : 'cursor-default']">
                     <div class="flex items-center gap-1.5">
                       {{ h.label }}
-                      <svg v-if="h.sorted" viewBox="0 0 24 24" class="w-3 h-3 text-mint-300" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6" stroke-linecap="round"/></svg>
+                      <svg v-if="sortKey===h.key && sortDir==='asc'" viewBox="0 0 24 24" class="w-3 h-3" style="color: var(--brand)" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 15-6-6-6 6" stroke-linecap="round"/></svg>
+                      <svg v-else-if="sortKey===h.key && sortDir==='desc'" viewBox="0 0 24 24" class="w-3 h-3" style="color: var(--brand)" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6" stroke-linecap="round"/></svg>
                     </div>
                   </th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(row, ri) in filteredTable" :key="ri" class="border-b hairline/50 hover:bg-mint-500/5 transition group">
-                  <td class="px-4 py-2.5 text-stone-200">{{ row.region }}</td>
-                  <td class="px-4 py-2.5 text-stone-300">{{ row.q2 }}</td>
-                  <td class="px-4 py-2.5">{{ row.q3 }}</td>
+                <tr v-for="(row, ri) in filteredTable" :key="ri" @click="openRow(row)"
+                  :class="['border-b hairline-soft cursor-pointer transition row-hover', selectedRow?.id===row.id ? 'row-sel' : '']">
+                  <td class="px-4 py-2.5 text-ink">{{ row.region }}</td>
+                  <td class="px-4 py-2.5 text-soft">{{ row.q2 }}</td>
+                  <td class="px-4 py-2.5 text-ink">{{ row.q3 }}</td>
                   <td class="px-4 py-2.5">
-                    <span :class="row.delta.startsWith('-') ? 'text-rose-400' : 'text-mint-200'">{{ row.delta }}</span>
+                    <span :style="row.delta.startsWith('-')||row.delta.startsWith('−') ? {color:'var(--coral)'} : {color:'var(--brand)'}">{{ row.delta }}</span>
                   </td>
                   <td class="px-4 py-2.5">
                     <div class="flex items-center gap-2">
-                      <div class="w-20 h-1.5 rounded-full bg-ink-700 overflow-hidden">
-                        <div class="h-full rounded-full" :style="{ width: row.bar + '%', background: row.delta.startsWith('-') ? 'linear-gradient(90deg,#f43f5e,#fb7185)' : 'linear-gradient(90deg,#0bb889,#48ebbd)' }"></div>
+                      <div class="w-20 h-1.5 rounded-full overflow-hidden" :style="{background:'var(--line)'}">
+                        <div class="h-full rounded-full" :style="{width: row.bar + '%', background: (row.delta.startsWith('-')||row.delta.startsWith('−')) ? 'linear-gradient(90deg, var(--coral), #e96a52)' : 'linear-gradient(90deg, var(--brand), var(--brand-2))'}"></div>
                       </div>
-                      <span class="text-ink-500 text-[11px]">{{ row.deals }}</span>
+                      <span class="text-faint text-[11px]">{{ row.deals }}</span>
                     </div>
                   </td>
                   <td class="px-4 py-2.5">
-                    <span :class="row.status === 'risk' ? 'text-rose-400' : row.status === 'watch' ? 'text-amber-300' : 'text-mint-200'"
-                      class="px-1.5 py-0.5 rounded text-[10px]" :style="{ background: row.status === 'risk' ? 'rgba(244,63,94,0.1)' : row.status === 'watch' ? 'rgba(245,158,11,0.1)' : 'rgba(11,184,137,0.1)'}">
-                      {{ row.status }}
-                    </span>
+                    <span :style="statusStyle(row.status)" class="px-1.5 py-0.5 rounded text-[10px]">{{ statusLabel(row.status) }}</span>
                   </td>
                 </tr>
               </tbody>
             </table>
-            <div class="px-4 py-2.5 border-t hairline flex items-center justify-between text-[11px] font-mono text-ink-500">
-              <span>showing {{ filteredTable.length }} of {{ tableData.length }}</span>
+            <div class="px-4 py-2.5 border-t hairline flex items-center justify-between text-[11px] font-mono text-faint">
+              <span>显示 {{ filteredTable.length }} / {{ currentTable.length }} · 点击行查看详情</span>
               <div class="flex items-center gap-1">
-                <button class="w-6 h-6 grid place-items-center rounded hover:bg-ink-700/50 hover:text-mint-200">‹</button>
+                <button class="w-6 h-6 grid place-items-center rounded hover:bg-black/5">‹</button>
                 <span class="px-2">1 / 1</span>
-                <button class="w-6 h-6 grid place-items-center rounded hover:bg-ink-700/50 hover:text-mint-200">›</button>
+                <button class="w-6 h-6 grid place-items-center rounded hover:bg-black/5">›</button>
               </div>
             </div>
           </div>
@@ -730,89 +709,77 @@
 
         <!-- ===== CHARTS ===== -->
         <div v-show="activeTab === 'charts'" class="p-5 grid grid-cols-2 gap-3">
-          <!-- Bar chart -->
           <div class="rounded-lg glass p-4">
             <div class="flex items-center justify-between mb-3">
               <div>
-                <div class="text-[11px] font-mono text-ink-500">bar · revenue_by_segment</div>
-                <div class="font-serif italic text-[18px] text-mint-50">Segment performance</div>
+                <div class="text-[11px] font-mono text-faint">柱状图 · {{ currentDataset.short }}_by_segment</div>
+                <div class="font-serif italic text-[18px]" style="color: var(--ink)">分群表现</div>
               </div>
-              <span class="text-[10px] font-mono text-mint-300">€ thousands</span>
+              <span class="text-[10px] font-mono text-faint">{{ currentDataset.unit }}</span>
             </div>
             <svg viewBox="0 0 360 200" class="w-full h-48">
-              <g stroke="rgba(120,230,200,0.06)" stroke-width="1">
-                <line v-for="gy in [40,80,120,160]" :key="gy" x1="34" :y1="gy" x2="350" :y2="gy"/>
-              </g>
+              <g stroke="var(--line)" stroke-width="1"><line v-for="gy in [40,80,120,160]" :key="gy" x1="34" :y1="gy" x2="350" :y2="gy"/></g>
               <g v-for="(b, i) in bars" :key="i">
-                <rect :x="50 + i*55" :y="180 - b.val*1.3" width="34" :height="b.val*1.3" rx="2"
-                  :fill="'url(#barGrad' + i + ')'" class="grow-bar" :style="{ animationDelay: (i*0.08)+'s' }"/>
-                <text :x="50 + i*55 + 17" :y="180 - b.val*1.3 - 5" font-family="JetBrains Mono" font-size="9" fill="#d7e3df" text-anchor="middle">{{ b.val }}</text>
-                <text :x="50 + i*55 + 17" y="195" font-family="JetBrains Mono" font-size="9" fill="#4a5957" text-anchor="middle">{{ b.label }}</text>
-                <defs>
-                  <linearGradient :id="'barGrad' + i" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" :stop-color="b.neg ? '#fb7185' : '#48ebbd'"/>
-                    <stop offset="100%" :stop-color="b.neg ? '#f43f5e' : '#0bb889'"/>
-                  </linearGradient>
-                </defs>
+                <rect :x="50 + i*55" :y="180 - b.val*1.3" width="34" :height="b.val*1.3" rx="2" :fill="'url(#bg'+i+')'" class="grow-bar" :style="{animationDelay:(i*0.08)+'s'}"/>
+                <text :x="50 + i*55 + 17" :y="180 - b.val*1.3 - 5" font-family="JetBrains Mono" font-size="9" fill="var(--ink)" text-anchor="middle">{{ b.val }}</text>
+                <text :x="50 + i*55 + 17" y="195" font-family="JetBrains Mono" font-size="9" fill="var(--ink-faint)" text-anchor="middle">{{ b.label }}</text>
+                <defs><linearGradient :id="'bg'+i" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" :stop-color="b.neg ? '#e96a52' : 'var(--brand-2)'"/>
+                  <stop offset="100%" :stop-color="b.neg ? 'var(--coral)' : 'var(--brand)'"/>
+                </linearGradient></defs>
               </g>
             </svg>
           </div>
 
-          <!-- Donut -->
           <div class="rounded-lg glass p-4">
             <div class="flex items-center justify-between mb-3">
               <div>
-                <div class="text-[11px] font-mono text-ink-500">donut · deal_count_by_stage</div>
-                <div class="font-serif italic text-[18px] text-mint-50">Pipeline mix</div>
+                <div class="text-[11px] font-mono text-faint">环形图 · {{ currentDataset.donutLabel }}</div>
+                <div class="font-serif italic text-[18px]" style="color: var(--ink)">{{ currentDataset.donutTitle }}</div>
               </div>
             </div>
             <div class="flex items-center gap-4">
               <svg viewBox="0 0 160 160" class="w-40 h-40 -rotate-90">
-                <circle v-for="(s, i) in donutSegments" :key="i"
-                  cx="80" cy="80" r="58" fill="none"
-                  :stroke="s.color" stroke-width="18"
-                  :stroke-dasharray="(s.arc) + ' ' + (364.4 - s.arc)"
-                  :stroke-dashoffset="s.offset"
-                  stroke-linecap="butt"/>
-                <text x="80" y="76" font-family="Instrument Serif" font-size="22" fill="#e7fff7" text-anchor="middle" transform="rotate(90 80 80)">1,284</text>
-                <text x="80" y="92" font-family="JetBrains Mono" font-size="8" fill="#4a5957" text-anchor="middle" transform="rotate(90 80 80)">deals</text>
+                <circle v-for="(s, i) in donutSegments" :key="i" cx="80" cy="80" r="58" fill="none" :stroke="s.color" stroke-width="18" :stroke-dasharray="s.arc + ' ' + (364.4 - s.arc)" :stroke-dashoffset="s.offset"/>
+                <text x="80" y="76" font-family="Instrument Serif" font-size="22" fill="var(--ink)" text-anchor="middle" transform="rotate(90 80 80)">{{ donutTotal }}</text>
+                <text x="80" y="92" font-family="JetBrains Mono" font-size="8" fill="var(--ink-faint)" text-anchor="middle" transform="rotate(90 80 80)">{{ currentDataset.donutUnit }}</text>
               </svg>
               <div class="flex-1 space-y-2">
                 <div v-for="(s, i) in donutSegments" :key="i" class="flex items-center gap-2 text-[12px]">
-                  <span class="w-2.5 h-2.5 rounded-sm" :style="{ background: s.color }"></span>
-                  <span class="text-stone-300 flex-1">{{ s.label }}</span>
-                  <span class="font-mono text-stone-200">{{ s.pct }}%</span>
+                  <span class="w-2.5 h-2.5 rounded-sm" :style="{background: s.color}"></span>
+                  <span class="text-soft flex-1">{{ s.label }}</span>
+                  <span class="font-mono text-ink">{{ s.pct }}%</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Heatmap -->
           <div class="rounded-lg glass p-4 col-span-2">
             <div class="flex items-center justify-between mb-3">
               <div>
-                <div class="text-[11px] font-mono text-ink-500">heatmap · revenue · region × month</div>
-                <div class="font-serif italic text-[18px] text-mint-50">Temporal density</div>
+                <div class="text-[11px] font-mono text-faint">热力图 · {{ currentDataset.short }} · 区域 × 月份</div>
+                <div class="font-serif italic text-[18px]" style="color: var(--ink)">时间密度</div>
               </div>
-              <div class="flex items-center gap-1.5 text-[10px] font-mono text-ink-500">
-                <span>low</span>
-                <div class="flex">
-                  <span v-for="n in 6" :key="n" class="w-4 h-3" :style="{ background: heatColor(n/6) }"></span>
+              <div class="flex items-center gap-1.5 text-[10px] font-mono text-faint">
+                <span>低</span>
+                <div class="flex rounded overflow-hidden">
+                  <span v-for="n in 6" :key="n" class="w-4 h-3" :style="{background: heatColor(n/6)}"></span>
                 </div>
-                <span>high</span>
+                <span>高</span>
               </div>
             </div>
             <div class="overflow-x-auto">
               <div class="min-w-[560px]">
-                <div class="grid grid-cols-[80px_repeat(12,1fr)] gap-1 text-[10px] font-mono">
+                <div class="grid gap-1 text-[10px] font-mono" style="grid-template-columns: 80px repeat(12, minmax(0,1fr))">
                   <div></div>
-                  <div v-for="m in months" :key="m" class="text-center text-ink-500">{{ m }}</div>
+                  <div v-for="m in months" :key="m" class="text-center text-faint">{{ m }}</div>
                   <template v-for="(r, ri) in heatmap" :key="ri">
-                    <div class="text-stone-300 self-center pr-2">{{ r.region }}</div>
+                    <div class="text-soft self-center pr-2">{{ r.region }}</div>
                     <div v-for="(v, ci) in r.values" :key="ci"
-                      class="aspect-square rounded-sm transition hover:ring-1 hover:ring-mint-300 cursor-pointer relative group"
-                      :style="{ background: heatColor(v) }">
-                      <span class="absolute inset-0 grid place-items-center text-[9px] text-ink-900/0 group-hover:text-ink-900 font-bold">{{ Math.round(v*100) }}</span>
+                      @click="heatCell(r.region, ci, v)"
+                      class="aspect-square rounded-sm transition hover:ring-2 cursor-pointer relative group grid place-items-center"
+                      :style="{background: heatColor(v), '--tw-ring-color': 'var(--brand)'}">
+                      <span class="text-[9px] opacity-0 group-hover:opacity-100 font-bold" :style="{color: v>0.55 ? '#fff' : 'var(--ink)'}">{{ Math.round(v*100) }}</span>
                     </div>
                   </template>
                 </div>
@@ -823,51 +790,47 @@
 
         <!-- ===== CODE ===== -->
         <div v-show="activeTab === 'code'" class="p-5 space-y-3">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <div class="font-serif italic text-[24px] text-mint-50">Generated analysis</div>
-              <div class="text-[11px] font-mono text-ink-500">python · pandas · executed in sandbox · 1.42s</div>
+              <div class="font-serif italic text-[24px]" style="color: var(--ink)">生成的分析代码</div>
+              <div class="text-[11px] font-mono text-faint">python · pandas · 沙箱执行 · {{ currentDataset.runTime }}</div>
             </div>
             <div class="flex items-center gap-2">
-              <button class="h-8 px-3 rounded-md chip text-[12px] text-stone-300 hover:text-mint-100 flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> Copy
+              <button @click="copyCode" class="h-8 px-3 rounded-md chip text-[12px] text-soft hover:text-brand flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> 复制
               </button>
-              <button class="h-8 px-3 rounded-md bg-gradient-to-b from-mint-400 to-mint-600 text-ink-900 text-[12px] font-medium flex items-center gap-1.5 hover:brightness-110">
-                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7" stroke-linecap="round"/></svg> Re-run
+              <button @click="rerunCode" class="h-8 px-3 rounded-md brand-grad text-[12px] font-medium flex items-center gap-1.5 hover:brightness-105" style="color: var(--paper)">
+                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" :class="{'spin':codeRunning}" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-6.2-8.5" stroke-linecap="round"/></svg> {{ codeRunning ? '运行中…' : '重新运行' }}
               </button>
             </div>
           </div>
-          <div class="codeblk overflow-hidden">
-            <div class="px-3 py-2 border-b hairline flex items-center gap-2 text-[11px] font-mono text-ink-500">
-              <span class="w-2.5 h-2.5 rounded-full bg-rose-500/60"></span>
-              <span class="w-2.5 h-2.5 rounded-full bg-amber-400/60"></span>
-              <span class="w-2.5 h-2.5 rounded-full bg-mint-400/60"></span>
-              <span class="ml-2">analysis_q3.py</span>
-              <span class="ml-auto text-mint-300">✓ ran · 1.42s</span>
+          <div class="rounded-lg overflow-hidden surface">
+            <div class="px-3 py-2 border-b hairline flex items-center gap-2 text-[11px] font-mono text-faint">
+              <span class="w-2.5 h-2.5 rounded-full" style="background:#fb718580"></span>
+              <span class="w-2.5 h-2.5 rounded-full" style="background:var(--amber); opacity:.6"></span>
+              <span class="w-2.5 h-2.5 rounded-full" style="background:var(--brand); opacity:.6"></span>
+              <span class="ml-2">{{ currentDataset.codeFile }}</span>
+              <span class="ml-auto" style="color: var(--brand)">✓ 已运行 · {{ currentDataset.runTime }}</span>
             </div>
             <pre class="px-4 py-3 font-mono text-[12px] leading-relaxed overflow-x-auto"><code v-html="highlightedCode"></code></pre>
           </div>
-          <!-- Output -->
-          <div class="codeblk overflow-hidden">
-            <div class="px-3 py-2 border-b hairline text-[11px] font-mono text-ink-500 flex items-center gap-2">
-              <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-mint-300" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6-6-6M12 19h8" stroke-linecap="round"/></svg>
-              stdout
+          <div class="rounded-lg overflow-hidden surface">
+            <div class="px-3 py-2 border-b hairline text-[11px] font-mono text-faint flex items-center gap-2">
+              <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" style="color: var(--brand)" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6-6-6M12 19h8" stroke-linecap="round"/></svg>
+              输出
             </div>
-            <pre class="px-4 py-3 font-mono text-[12px] leading-relaxed text-stone-300 overflow-x-auto">{{ codeOutput }}</pre>
+            <pre class="px-4 py-3 font-mono text-[12px] leading-relaxed text-soft overflow-x-auto">{{ currentDataset.codeOutput }}</pre>
           </div>
         </div>
-
       </div>
 
       <!-- Status ticker -->
-      <div class="h-7 border-t hairline flex items-center px-3 gap-4 text-[10px] font-mono text-ink-500 shrink-0 overflow-hidden bg-ink-900/60">
-        <span class="flex items-center gap-1.5 text-mint-300 shrink-0">
-          <span class="w-1.5 h-1.5 rounded-full bg-mint-300"></span> connected
-        </span>
+      <div class="h-7 border-t hairline flex items-center px-3 gap-4 text-[10px] font-mono text-faint shrink-0 overflow-hidden" style="background: color-mix(in srgb, var(--bg) 70%, transparent)">
+        <span class="flex items-center gap-1.5 shrink-0" style="color: var(--brand)"><span class="w-1.5 h-1.5 rounded-full" :style="{background:'var(--brand)'}"></span> 已连接</span>
         <div class="flex-1 overflow-hidden">
           <div class="ticker whitespace-nowrap flex gap-8">
             <span v-for="n in 2" :key="n">
-              <template v-for="(t, i) in tickerItems" :key="i"><span :class="t.tone === 'neg' ? 'text-rose-400' : t.tone === 'pos' ? 'text-mint-200' : 'text-stone-400'">{{ t.text }}</span><span class="mx-6 text-ink-700">•</span></template>
+              <template v-for="(t, i) in tickerItems" :key="i"><span :style="t.tone==='neg' ? {color:'var(--coral)'} : t.tone==='pos' ? {color:'var(--brand)'} : {color:'var(--ink-soft)'}">{{ t.text }}</span><span class="mx-6" style="color:'var(--line)'">•</span></template>
             </span>
           </div>
         </div>
@@ -875,377 +838,645 @@
       </div>
     </section>
   </div>
+
+  <!-- ===== ROW DETAIL DRAWER ===== -->
+  <transition name="fade">
+    <div v-if="drawer" class="fixed inset-0 z-40 drawer-mask" @click.self="drawer=null" :style="{background:'rgba(0,0,0,0.3)'}">
+      <div class="drawer-panel absolute right-0 top-0 h-full w-[380px] glass shadow-2xl flex flex-col" :style="{borderLeft:'1px solid var(--line)'}">
+        <div class="h-11 px-4 border-b hairline flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full" :style="{background: selectedRow && selectedRow.delta.startsWith('-') ? 'var(--coral)' : 'var(--brand)'}"></span>
+            <span class="font-serif italic text-[18px]" style="color: var(--ink)">{{ selectedRow?.region }}</span>
+            <span class="text-[10px] font-mono text-faint">子区域详情</span>
+          </div>
+          <button @click="drawer=null" class="w-7 h-7 grid place-items-center rounded text-faint hover:text-coral hover:bg-black/5">
+            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div v-if="selectedRow" class="flex-1 overflow-y-auto p-4 space-y-4">
+          <div class="grid grid-cols-2 gap-2">
+            <div class="rounded-md surface-2 p-3"><div class="text-[10px] font-mono text-faint uppercase">二季度</div><div class="font-mono text-[20px] text-ink mt-1">{{ selectedRow.q2 }}</div></div>
+            <div class="rounded-md surface-2 p-3"><div class="text-[10px] font-mono text-faint uppercase">三季度</div><div class="font-mono text-[20px] text-ink mt-1">{{ selectedRow.q3 }}</div></div>
+            <div class="rounded-md surface-2 p-3"><div class="text-[10px] font-mono text-faint uppercase">环比变化</div><div class="font-mono text-[20px] mt-1" :style="{color: selectedRow.delta.startsWith('-') ? 'var(--coral)':'var(--brand)'}">{{ selectedRow.delta }}</div></div>
+            <div class="rounded-md surface-2 p-3"><div class="text-[10px] font-mono text-faint uppercase">交易数</div><div class="font-mono text-[20px] text-ink mt-1">{{ selectedRow.deals }}</div></div>
+          </div>
+          <div>
+            <div class="text-[10px] font-mono text-faint uppercase mb-2">12 个月趋势</div>
+            <svg viewBox="0 0 340 90" class="w-full h-24">
+              <g stroke="var(--line)" stroke-width="1"><line x1="20" y1="20" x2="340" y2="20"/><line x1="20" y1="50" x2="340" y2="50"/><line x1="20" y1="80" x2="340" y2="80"/></g>
+              <polyline :points="rowSpark(selectedRow)" fill="none" :stroke="selectedRow.delta.startsWith('-') ? 'var(--coral)' : 'var(--brand)'" stroke-width="2" stroke-linecap="round" class="draw-line"/>
+              <polyline :points="rowSpark(selectedRow)" fill="none" :stroke="selectedRow.delta.startsWith('-') ? 'var(--coral)' : 'var(--brand)'" stroke-width="5" opacity="0.15"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-[10px] font-mono text-faint uppercase mb-2">助手洞察</div>
+            <div class="rounded-md surface-2 p-3 text-[12px] text-soft leading-relaxed" v-html="rowInsight(selectedRow)"></div>
+          </div>
+          <div class="flex gap-2">
+            <button @click="quickAsk('深入分析 ' + selectedRow.region + ' — 主要交易与风险')" class="flex-1 h-9 rounded-md brand-grad text-[12px] font-medium" style="color: var(--paper)">让 Quant 分析</button>
+            <button @click="drawer=null;toast('已置顶 ' + selectedRow.region)" class="h-9 px-3 rounded-md chip text-[12px] text-soft hover:text-brand">置顶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+  <!-- ===== COMMAND PALETTE ===== -->
+  <transition name="fade">
+    <div v-if="palette" class="fixed inset-0 z-50 drawer-mask flex items-start justify-center pt-[12vh]" @click.self="palette=false" :style="{background:'rgba(0,0,0,0.35)'}">
+      <div class="palette-in w-[560px] max-w-[92vw] glass rounded-xl shadow-2xl overflow-hidden" :style="{borderColor:'var(--line)'}">
+        <div class="flex items-center gap-2 px-4 py-3 border-b hairline-soft">
+          <svg viewBox="0 0 24 24" class="w-4 h-4 text-faint" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3" stroke-linecap="round"/></svg>
+          <input ref="paletteInput" v-model="paletteQuery" @keydown.esc="palette=false" @keydown.enter="runPaletteSel"
+            placeholder="搜索数据集、会话，或向 Quant 提问…" class="flex-1 bg-transparent text-[14px] text-ink focus:outline-none">
+          <kbd class="px-1.5 py-0.5 rounded text-[10px] font-mono text-faint" style="background:'var(--surface-2)'">Esc</kbd>
+        </div>
+        <div class="max-h-[50vh] overflow-y-auto py-1">
+          <div v-if="paletteFiltered.length === 0" class="px-4 py-8 text-center text-faint text-[12px]">无匹配项。按回车向 Quant 提问。</div>
+          <div v-for="(g, gi) in paletteGroups" :key="gi">
+            <div v-if="g.items.length" class="px-3 pt-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-faint">{{ g.label }}</div>
+            <button v-for="(it, ii) in g.items" :key="ii" @click="paletteAction(it)"
+              class="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-black/[0.04] transition text-[13px]">
+              <span class="w-7 h-7 grid place-items-center rounded-md surface-2 shrink-0" :style="{color: it.color || 'var(--brand)'}">
+                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><component :is="it.icon"/></svg>
+              </span>
+              <span class="flex-1 text-ink">{{ it.label }}</span>
+              <span class="text-[10px] font-mono text-faint">{{ it.hint }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+  <!-- ===== TOASTS ===== -->
+  <div class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none">
+    <div v-for="t in toasts" :key="t.id" class="toast-in glass rounded-lg px-3.5 py-2.5 shadow-lg flex items-center gap-2.5 pointer-events-auto min-w-[240px]" :style="{borderColor: 'var(--line)'}">
+      <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{background: t.tone === 'err' ? 'var(--coral)' : 'var(--brand)'}"></span>
+      <span class="text-[12px] text-ink flex-1">{{ t.text }}</span>
+      <button @click="dismissToast(t.id)" class="text-faint hover:text-ink"><svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
 </div>
 
 <script>
-const { createApp, ref, reactive, computed, nextTick, onMounted, h } = Vue;
+const { createApp, ref, reactive, computed, nextTick, onMounted, onUnmounted, h, watch } = Vue;
 
-/* ---- Inline SVG icon components for tabs ---- */
-const IconOverview = () => h('g', { stroke: 'currentColor', fill: 'none', 'stroke-width': 2 }, [
-  h('rect', { x: 3, y: 3, width: 7, height: 7, rx: 1 }),
-  h('rect', { x: 14, y: 3, width: 7, height: 7, rx: 1 }),
-  h('rect', { x: 3, y: 14, width: 7, height: 7, rx: 1 }),
-  h('rect', { x: 14, y: 14, width: 7, height: 7, rx: 1 }),
-]);
-const IconTable = () => h('g', { stroke: 'currentColor', fill: 'none', 'stroke-width': 2 }, [
-  h('rect', { x: 3, y: 3, width: 18, height: 18, rx: 2 }),
-  h('path', { d: 'M3 9h18M3 15h18M9 3v18M15 3v18' }),
-]);
-const IconChart = () => h('g', { stroke: 'currentColor', fill: 'none', 'stroke-width': 2 }, [
-  h('path', { d: 'M3 3v18h18', 'stroke-linecap': 'round' }),
-  h('path', { d: 'm7 14 3-3 3 2 5-6', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
-]);
-const IconCode = () => h('g', { stroke: 'currentColor', fill: 'none', 'stroke-width': 2 }, [
-  h('path', { d: 'm16 18 6-6-6-6M8 6l-6 6 6 6', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
-]);
+const I = (paths) => () => h('g', { stroke:'currentColor', fill:'none', 'stroke-width':2 }, paths.map(p => {
+  if (Array.isArray(p)) return h(p[0], p[1]);
+  return h('path', p);
+}));
+const IconGrid = I([[ 'rect', { x:3, y:3, width:7, height:7, rx:1 }], ['rect', { x:14, y:3, width:7, height:7, rx:1 }], ['rect', { x:3, y:14, width:7, height:7, rx:1 }], ['rect', { x:14, y:14, width:7, height:7, rx:1 }]]);
+const IconTable = I([['rect',{x:3,y:3,width:18,height:18,rx:2}],['path',{d:'M3 9h18M3 15h18M9 3v18M15 3v18'}]]);
+const IconChart = I([{d:'M3 3v18h18', 'stroke-linecap':'round'},{d:'m7 14 3-3 3 2 5-6', 'stroke-linecap':'round', 'stroke-linejoin':'round'}]);
+const IconCode = I([{d:'m16 18 6-6-6-6M8 6l-6 6 6 6', 'stroke-linecap':'round', 'stroke-linejoin':'round'}]);
+const IconDb = I([['ellipse',{cx:12,cy:5,rx:8,ry:3}],{d:'M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6'}]);
+const IconChat = I([{d:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'}]);
+const IconSun = I([{d:'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z', 'stroke-linecap':'round', 'stroke-linejoin':'round'}]);
+const IconPlus = I([{d:'M12 5v14M5 12h14', 'stroke-linecap':'round'}]);
+const IconBolt = I([{d:'M13 2 3 14h9l-1 8 10-12h-9z', 'stroke-linejoin':'round'}]);
+
+/* deterministic RNG so mock data is stable per dataset */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
 
 createApp({
-  components: { IconOverview, IconTable, IconChart, IconCode },
   setup() {
-    /* ---------------- navigation data ---------------- */
-    const datasets = reactive([
-      { id: 1, name: 'revenue_2024.csv', rows: '14.8k', active: true },
-      { id: 2, name: 'customers.parquet', rows: '8.2k' },
-      { id: 3, name: 'deals_pipeline.sql', rows: '3.1k' },
-      { id: 4, name: 'marketing_spend.csv', rows: '960' },
-    ]);
-    const sessions = reactive([
-      { id: 1, title: 'Why did Q3 revenue drop in EMEA?', time: '2m', steps: 7, active: true },
-      { id: 2, title: 'Forecast Q4 by segment', time: '1h', steps: 12 },
-      { id: 3, title: 'Cohort retention analysis', time: '3h', steps: 9 },
-      { id: 4, title: 'Marketing ROI attribution', time: '1d', steps: 15 },
-      { id: 5, title: 'Churn predictors', time: '2d', steps: 6 },
-    ]);
-    const selectDataset = (id) => { datasets.forEach(d => d.active = d.id === id); };
-    const selectSession = (id) => { sessions.forEach(s => s.active = s.id === id); };
+    const dark = ref(false);
+    const toggleTheme = () => {
+      dark.value = !dark.value;
+      document.documentElement.classList.toggle('dark', dark.value);
+      toast(dark.value ? '已切换至暗色实验室模式' : '已切换至亮色纸张模式');
+    };
 
-    /* ---------------- tabs ---------------- */
+    /* ---------- datasets (full mock) ---------- */
+    const datasets = reactive([
+      { id:'revenue', name:'revenue_2024.csv', rows:'14.8k', active:true, color:'var(--brand)', short:'revenue', icon:'IconDb' },
+      { id:'customers', name:'customers.parquet', rows:'8.2k', active:false, color:'#c98a1a', short:'customers', icon:'IconDb' },
+      { id:'deals', name:'deals_pipeline.sql', rows:'3.1k', active:false, color:'#d94f3a', short:'deals', icon:'IconDb' },
+      { id:'marketing', name:'marketing_spend.csv', rows:'960', active:false, color:'#6b3a8a', short:'marketing', icon:'IconDb' },
+    ]);
+    const currentDatasetId = ref('revenue');
+    const currentDataset = computed(() => DATASETS[currentDatasetId.value]);
+    const selectDataset = (id) => {
+      datasets.forEach(d => d.active = d.id === id || (id === undefined && d.id === 'revenue'));
+      // map active by id
+      datasets.forEach(d => d.active = false);
+      const target = datasets.find(d => d.id === id);
+      if (target) target.active = true;
+      currentDatasetId.value = id;
+      activeTab.value = 'overview';
+      toast('已加载 ' + (target?.name || '数据集'));
+    };
+
+    /* ---------- DATASET MOCK FACTORY ---------- */
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const regions = [
+      { name:'EMEA', color:'#d94f3a' },
+      { name:'APAC', color:'#1f5d3a' },
+      { name:'AMER', color:'#c98a1a' },
+    ];
+    const seedSeries = (seed, n, min, max, trend=0) => {
+      const r = mulberry32(seed); const out = [];
+      let v = (min+max)/2;
+      for (let i=0;i<n;i++){ v += (r()-0.5)*(max-min)*0.25 + trend; v = Math.max(min, Math.min(max, v)); out.push(Math.round(v*10)/10); }
+      return out;
+    };
+    const sparkPoints = (arr, x0,x1,y0,y1, vmax=100) => arr.map((v,i)=>{
+      const x = x0 + i*((x1-x0)/(arr.length-1));
+      const y = y1 - (v/vmax)*(y1-y0);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+
+    const DATASETS = {
+      revenue: {
+        name:'revenue_2024.csv', short:'revenue', rows:'14,820 rows · 6 cols',
+        heroTag:'执行概览', heroTitle:'Q3 收入异常',
+        heroSub:'由 <span class="font-mono" style="color:var(--brand)">revenue_2024.csv</span> 自动生成 · 2 分钟前刷新 · 14,820 行',
+        heroFoot:'距目标差 €420 万',
+        lineLabel:'月度净收入 · 按区域', lineTitle:'收入趋势',
+        tableTitle:'revenue_by_region', unit:'€ 千元',
+        donutLabel:'deal_count_by_stage', donutTitle:'管道组合', donutUnit:'交易数', donutTotal:'1,284',
+        codeFile:'analysis_q3.py', runTime:'1.42s',
+        hypothesis:'EMEA 企业交易延迟集中在 <span class="font-mono" style="color:var(--amber)">DACH</span> 地区 —— 与销售周期延长 <span class="font-mono" style="color:var(--brand)">+34%</span> 相关',
+        codeOutput:'DACH Q3 跌幅: -31.0% (p=0.0032)\nEMEA 第三季度合计: €2.91M (-12.4% 环比)\n最大延迟交易: ACME GmbH · €42万 · 移至 Q4\n检测到异常值: 14 个 (上限 €218k)\n✓ 分析完成 1.42 秒',
+        starters:['按部门预测 Q4','查找收入异常点','绘制收入 vs 营销费用图','哪些交易从 Q3 延迟了？'],
+        suggestions:[
+          { tag:'预测', q:'用置信区间预测 Q4 EMEA' },
+          { tag:'下钻', q:'列出前 10 个延迟的 DACH 交易' },
+          { tag:'关联', q:'分析销售周期长度与交易规模的相关性' },
+        ],
+        kpis:[
+          { label:'净收入', value:'€7.97M', delta:'−12.4%', up:false },
+          { label:'活跃交易', value:'1,284', delta:'+4.1%', up:true },
+          { label:'赢单率', value:'31.2%', delta:'−2.8pp', up:false },
+          { label:'平均周期', value:'68 天', delta:'+34%', up:false },
+        ],
+        drivers:[
+          { label:'DACH 企业交易延迟', val:'−€0.9M', pct:82, neg:true },
+          { label:'销售周期延长', val:'−€0.4M', pct:41, neg:true },
+          { label:'折扣深度', val:'−€0.2M', pct:22, neg:true },
+          { label:'北欧增长', val:'+€0.2M', pct:18, neg:false },
+          { label:'中端市场 SMB', val:'+€0.1M', pct:9, neg:false },
+        ],
+        table:[
+          { id:'dach', region:'DACH', q2:'€1.42M', q3:'€0.98M', delta:'−31.0%', bar:31, deals:184, status:'risk' },
+          { id:'nor', region:'Nordics', q2:'€0.61M', q3:'€0.63M', delta:'+3.3%', bar:63, deals:92, status:'ok' },
+          { id:'ben', region:'Benelux', q2:'€0.48M', q3:'€0.41M', delta:'−14.6%', bar:41, deals:71, status:'watch' },
+          { id:'fra', region:'France', q2:'€0.55M', q3:'€0.47M', delta:'−14.5%', bar:47, deals:88, status:'watch' },
+          { id:'uki', region:'UK & IE', q2:'€0.72M', q3:'€0.68M', delta:'−5.6%', bar:68, deals:121, status:'ok' },
+          { id:'ibe', region:'Iberia', q2:'€0.34M', q3:'€0.38M', delta:'+11.8%', bar:38, deals:64, status:'ok' },
+          { id:'ita', region:'Italy', q2:'€0.29M', q3:'€0.26M', delta:'−10.3%', bar:26, deals:49, status:'watch' },
+        ],
+        series:[
+          { idx:0, data: seedSeries(11, 12, 50, 95) },  // EMEA drops in late months
+          { idx:1, data: seedSeries(22, 12, 25, 55, 0.8) },
+          { idx:2, data: seedSeries(33, 12, 60, 100, 0.5) },
+        ],
+        bars:[{label:'ENT',val:92,neg:true},{label:'MID',val:64,neg:false},{label:'SMB',val:48,neg:false},{label:'STR',val:38,neg:false},{label:'FS',val:72,neg:true}],
+      },
+      customers: {
+        name:'customers.parquet', short:'customers', rows:'8,200 rows · 11 cols',
+        heroTag:'增长概览', heroTitle:'客户动能',
+        heroSub:'来自 <span class="font-mono" style="color:var(--brand)">customers.parquet</span> 的队列留存与获取数据 · 8,200 活跃客户',
+        heroFoot:'本季度净增 +312',
+        lineLabel:'活跃客户 · 按队列', lineTitle:'活跃客户',
+        tableTitle:'cohort_retention', unit:'数量',
+        donutLabel:'customers_by_plan', donutTitle:'套餐分布', donutUnit:'客户数', donutTotal:'8,200',
+        codeFile:'cohort_analysis.py', runTime:'0.94s',
+        hypothesis:'免费→专业版转化率停滞在 <span class="font-mono" style="color:var(--amber)">12%</span>；入职完成度是最强预测因子 (SHAP <span class="font-mono" style="color:var(--brand)">0.41</span>)',
+        codeOutput:'中位使用时长: 4.2 个月\n6 个月内流失率 60%\n主要流失驱动: 未完成设置 (SHAP 0.31)\n免费→专业版转化: 12.4% (-2.1pp)\n✓ 分析完成 0.94 秒',
+        starters:['构建队列留存矩阵','查找流失预测因子','哪个套餐转化率最高？','按获客渠道绘制 LTV'],
+        suggestions:[
+          { tag:'留存', q:'构建留存队列矩阵' },
+          { tag:'预测', q:'训练流失模型并排序特征' },
+          { tag:'分群', q:'按行为对客户分群' },
+        ],
+        kpis:[
+          { label:'活跃客户', value:'8,200', delta:'+3.9%', up:true },
+          { label:'净留存率', value:'108%', delta:'+2pp', up:true },
+          { label:'流失率', value:'4.8%', delta:'+0.6pp', up:false },
+          { label:'平均使用时长', value:'4.2 月', delta:'−0.3月', up:false },
+        ],
+        drivers:[
+          { label:'未完成入职', val:'−412', pct:78, neg:true },
+          { label:'未开通第二席位', val:'−218', pct:46, neg:true },
+          { label:'计费摩擦', val:'−96', pct:22, neg:true },
+          { label:'推荐循环', val:'+180', pct:34, neg:false },
+          { label:'Q3 营销活动', val:'+152', pct:29, neg:false },
+        ],
+        table:[
+          { id:'ent', region:'Enterprise', q2:'1,240', q3:'1,310', delta:'+5.6%', bar:65, deals:1310, status:'ok' },
+          { id:'pro', region:'Pro', q2:'3,180', q3:'3,420', delta:'+7.5%', bar:71, deals:3420, status:'ok' },
+          { id:'starter', region:'Starter', q2:'2,840', q3:'2,610', delta:'−8.1%', bar:48, deals:2610, status:'watch' },
+          { id:'free', region:'Free', q2:'920', q3:'860', delta:'−6.5%', bar:40, deals:860, status:'risk' },
+          { id:'trial', region:'Trial', q2:'0', q3:'0', delta:'—', bar:0, deals:0, status:'ok' },
+        ].filter(r=>r.deals>0),
+        series:[
+          { idx:0, data: seedSeries(41, 12, 30, 70, 0.6) },
+          { idx:1, data: seedSeries(52, 12, 45, 80, 0.9) },
+          { idx:2, data: seedSeries(63, 12, 20, 50, 0.3) },
+        ],
+        bars:[{label:'SLF',val:88,neg:false},{label:'SMB',val:62,neg:false},{label:'MID',val:54,neg:false},{label:'ENT',val:46,neg:true},{label:'STR',val:32,neg:false}],
+      },
+      deals: {
+        name:'deals_pipeline.sql', short:'deals', rows:'3,100 rows · 9 cols',
+        heroTag:'管道概览', heroTitle:'交易速度',
+        heroSub:'来自 <span class="font-mono" style="color:var(--brand)">deals_pipeline.sql</span> 的管道健康度 · 3,100 笔已开/已关交易',
+        heroFoot:'加权管道 €1,240 万',
+        lineLabel:'交易数 · 按阶段', lineTitle:'管道流转',
+        tableTitle:'deals_by_owner', unit:'数量',
+        donutLabel:'deals_by_stage', donutTitle:'阶段分布', donutUnit:'交易数', donutTotal:'3,100',
+        codeFile:'pipeline_health.py', runTime:'0.71s',
+        hypothesis:'停滞交易集中在 <span class="font-mono" style="color:var(--amber)">谈判</span> 阶段；平均阶段停留时间较上半年增加 <span class="font-mono" style="color:var(--coral)">+18 天</span>',
+        codeOutput:'加权管道: €12.4M\n平均阶段停留: 47 天 (+18 vs 上半年)\n停滞 (>90天): 312 笔交易\n预测 Q4 关单: €4.1M\n✓ 分析完成 0.71 秒',
+        starters:['按成交概率评分交易','查找停滞交易','预测 Q4 管道','谁是业绩最好的人？'],
+        suggestions:[
+          { tag:'评分', q:'按成交概率对未决交易评分' },
+          { tag:'停滞', q:'列出停滞超过 90 天的交易' },
+          { tag:'预测', q:'预测 Q4 加权关单额' },
+        ],
+        kpis:[
+          { label:'未结管道', value:'€12.4M', delta:'+8.2%', up:true },
+          { label:'赢单率', value:'31.2%', delta:'−2.8pp', up:false },
+          { label:'平均周期', value:'68 天', delta:'+34%', up:false },
+          { label:'停滞交易', value:'312', delta:'+41', up:false },
+        ],
+        drivers:[
+          { label:'谈判停滞', val:'−€2.1M', pct:88, neg:true },
+          { label:'审批瓶颈', val:'−€0.8M', pct:33, neg:true },
+          { label:'价格异议', val:'−€0.5M', pct:21, neg:true },
+          { label:'扩增交易', val:'+€1.2M', pct:50, neg:false },
+          { label:'入站增长', val:'+€0.6M', pct:25, neg:false },
+        ],
+        table:[
+          { id:'alex', region:'Alex Rivera', q2:'€1.8M', q3:'€1.4M', delta:'−22%', bar:55, deals:42, status:'watch' },
+          { id:'sam', region:'Sam Chen', q2:'€1.2M', q3:'€1.5M', delta:'+25%', bar:75, deals:38, status:'ok' },
+          { id:'jor', region:'Jordan Patel', q2:'€0.9M', q3:'€0.6M', delta:'−33%', bar:30, deals:29, status:'risk' },
+          { id:'may', region:'Maya Olsen', q2:'€0.7M', q3:'€0.9M', delta:'+28%', bar:72, deals:31, status:'ok' },
+          { id:'leo', region:'Leo Park', q2:'€0.6M', q3:'€0.5M', delta:'−17%', bar:42, deals:24, status:'watch' },
+        ],
+        series:[
+          { idx:0, data: seedSeries(71, 12, 40, 85) },
+          { idx:1, data: seedSeries(82, 12, 25, 60, 0.5) },
+          { idx:2, data: seedSeries(93, 12, 55, 90, 0.4) },
+        ],
+        bars:[{label:'QLF',val:42,neg:false},{label:'PRP',val:58,neg:false},{label:'NEG',val:84,neg:true},{label:'CLO',val:36,neg:false},{label:'LST',val:28,neg:true}],
+      },
+      marketing: {
+        name:'marketing_spend.csv', short:'marketing', rows:'960 rows · 7 cols',
+        heroTag:'归因概览', heroTitle:'营销 ROI',
+        heroSub:'来自 <span class="font-mono" style="color:var(--brand)">marketing_spend.csv</span> 的花费与归因 · 12 个渠道共 960 条记录',
+        heroFoot:'CAC 较目标上升 €84',
+        lineLabel:'花费 vs 收入 · 按渠道', lineTitle:'花费效率',
+        tableTitle:'roi_by_channel', unit:'€ 千元',
+        donutLabel:'spend_by_channel', donutTitle:'预算分配', donutUnit:'总计', donutTotal:'€4.2M',
+        codeFile:'attribution_model.py', runTime:'1.18s',
+        hypothesis:'付费社交 ROI 暴跌至 <span class="font-mono" style="color:var(--coral)">0.7×</span>；自然流量与推荐以 <span class="font-mono" style="color:var(--brand)">3.1×</span> 支撑全局',
+        codeOutput:'综合 CAC: €412 (+€84)\n付费社交 ROI: 0.7x (从 1.9x 下降)\n自然流量 ROI: 3.1x (最佳渠道)\n推荐 ROI: 2.8x\n✓ 分析完成 1.18 秒',
+        starters:['按渠道分析 ROI 构成','优化预算分配','哪个渠道 CAC 最低？','构建多触点归因模型'],
+        suggestions:[
+          { tag:'分配', q:'跨渠道优化预算以最大化 ROI' },
+          { tag:'CAC', q:'按客户获取成本对渠道排序' },
+          { tag:'归因', q:'构建多触点归因模型' },
+        ],
+        kpis:[
+          { label:'总花费', value:'€4.2M', delta:'+12%', up:false },
+          { label:'综合 ROI', value:'1.8×', delta:'−0.4×', up:false },
+          { label:'CAC', value:'€412', delta:'+€84', up:false },
+          { label:'MQL 数', value:'8,940', delta:'+18%', up:true },
+        ],
+        drivers:[
+          { label:'付费社交饱和', val:'−€0.7M', pct:74, neg:true },
+          { label:'展示广告浪费', val:'−€0.3M', pct:31, neg:true },
+          { label:'创意疲劳', val:'−€0.2M', pct:21, neg:true },
+          { label:'自然 SEO', val:'+€0.9M', pct:92, neg:false },
+          { label:'推荐计划', val:'+€0.5M', pct:52, neg:false },
+        ],
+        table:[
+          { id:'seo', region:'Organic SEO', q2:'€0.4M', q3:'€0.6M', delta:'+50%', bar:92, deals:580, status:'ok' },
+          { id:'ref', region:'Referral', q2:'€0.3M', q3:'€0.4M', delta:'+33%', bar:80, deals:420, status:'ok' },
+          { id:'ps', region:'Paid Social', q2:'€1.1M', q3:'€1.3M', delta:'+18%', bar:38, deals:310, status:'risk' },
+          { id:'pd', region:'Paid Display', q2:'€0.5M', q3:'€0.6M', delta:'+20%', bar:42, deals:180, status:'watch' },
+          { id:'em', region:'Email', q2:'€0.2M', q3:'€0.2M', delta:'0%', bar:55, deals:240, status:'ok' },
+          { id:'ev', region:'Events', q2:'€0.3M', q3:'€0.2M', delta:'−33%', bar:48, deals:90, status:'watch' },
+        ],
+        series:[
+          { idx:0, data: seedSeries(101, 12, 35, 80, 0.5) },
+          { idx:1, data: seedSeries(112, 12, 40, 75) },
+          { idx:2, data: seedSeries(123, 12, 50, 90, 0.7) },
+        ],
+        bars:[{label:'ORG',val:92,neg:false},{label:'REF',val:80,neg:false},{label:'SOC',val:38,neg:true},{label:'DSP',val:42,neg:false},{label:'EML',val:55,neg:false}],
+      },
+    };
+
+    /* ---------- sessions ---------- */
+    const sessions = reactive([
+      { id:1, title:'为什么 Q3 收入在 EMEA 下降？', time:'2分钟', steps:7, active:true },
+      { id:2, title:'按部门预测 Q4', time:'1小时', steps:12 },
+      { id:3, title:'队列留存分析', time:'3小时', steps:9 },
+      { id:4, title:'营销 ROI 归因', time:'1天', steps:15 },
+      { id:5, title:'流失预测因子', time:'2天', steps:6 },
+    ]);
+    const selectSession = (id) => { sessions.forEach(s => s.active = s.id === id); toast('已加载会话'); };
+    const activeSession = computed(() => sessions.find(s => s.active));
+
+    /* ---------- tabs ---------- */
     const tabs = [
-      { id: 'overview', label: 'Overview', icon: IconOverview },
-      { id: 'table', label: 'Data', icon: IconTable, count: '14.8k' },
-      { id: 'charts', label: 'Charts', icon: IconChart },
-      { id: 'code', label: 'Code', icon: IconCode },
+      { id:'overview', label:'概览', icon: IconGrid },
+      { id:'table', label:'数据', icon: IconTable, count: computed(() => currentDataset.value.rows.split(' ')[0]) },
+      { id:'charts', label:'图表', icon: IconChart },
+      { id:'code', label:'代码', icon: IconCode },
     ];
     const activeTab = ref('overview');
 
-    /* ---------------- conversation ---------------- */
+    /* ---------- conversation ---------- */
     const messages = reactive([
+      { id:1, role:'user', time:'14:02', text:'为什么 Q3 收入在 EMEA 下降了？我明天需要向董事会汇报。' },
       {
-        id: 1, role: 'user', time: '14:02', text: 'Why did Q3 revenue drop in EMEA? I need to brief the board tomorrow.'
-      },
-      {
-        id: 2, role: 'agent', time: '14:02', duration: 4.1, reasoningSteps: 4,
-        reasoning:
-`1. Loaded revenue_2024.csv (14,820 rows, 6 cols)
-2. Grouped by region × quarter → EMEA Q3 = €2.91M (−12.4% QoQ)
-3. Drilled into sub-region: DACH = −31%, Nordics flat
-4. Cross-checked deal-stage: "closed-lost" spiked in €100k+ band`,
-        tools: [
-          { name: 'read_dataset', detail: 'revenue_2024.csv', status: 'done', ms: 142, preview: { type: 'table', headers: ['region','q3','Δ qoq'], rows: [['EMEA','€2.91M','-12.4%'],['APAC','€1.84M','+8.1%'],['AMER','€3.22M','+3.2%']] } },
-          { name: 'groupby_aggregate', detail: 'region × quarter', status: 'done', ms: 88 },
-          { name: 'stat_test', detail: 'mann-whitney u', status: 'done', ms: 210, preview: { text: 'U = 1284, p = 0.0032  →  significant at α=0.05' } },
+        id:2, role:'agent', time:'14:02', duration:4.1, reasoningSteps:4,
+        reasoning:'1. 加载 revenue_2024.csv (14,820 行, 6 列)\n2. 按区域×季度分组 → EMEA Q3 = €2.91M (−12.4% 环比)\n3. 下钻子区域: DACH = −31%, 北欧持平\n4. 交叉验证交易阶段: "已关闭-已丢失" 在 €10万+ 区间激增',
+        tools:[
+          { name:'read_dataset', detail:'revenue_2024.csv', status:'done', ms:142, preview:{ type:'table', headers:['区域','Q3','环比变化'], rows:[['EMEA','€2.91M','-12.4%'],['APAC','€1.84M','+8.1%'],['AMER','€3.22M','+3.2%']] } },
+          { name:'groupby_aggregate', detail:'区域 × 季度', status:'done', ms:88 },
+          { name:'stat_test', detail:'mann-whitney u', status:'done', ms:210, preview:{ text:'U = 1284, p = 0.0032 → 在 α=0.05 下显著' } },
         ],
-        text: 'EMEA dropped **−12.4% QoQ** to €2.91M, almost entirely from **DACH enterprise** deals slipping out of Q3. APAC and AMER actually grew, masking the issue at the global level.',
-        findings: [
-          { label: 'DACH −31%', tone: 'neg' },
-          { label: 'cycle length +34%', tone: 'neg' },
-          { label: 'AMER +3.2%', tone: 'pos' },
-          { label: 'p = 0.003', tone: 'pos' },
+        text:'EMEA **环比下降 −12.4%** 至 €2.91M，几乎全部来自 **DACH 企业** 交易从 Q3 延迟。APAC 和 AMER 实际在增长，掩盖了全球层面存在的问题。',
+        findings:[
+          { label:'DACH −31%', tone:'neg' },
+          { label:'周期 +34%', tone:'neg' },
+          { label:'AMER +3.2%', tone:'pos' },
+          { label:'p = 0.003', tone:'pos' },
         ],
-        streaming: false,
+        streaming:false,
       },
     ]);
-
     const input = ref('');
     const running = ref(false);
     const mode = ref('analysis');
     const model = ref('quant-pro-1.2');
     const reasoningEffort = ref('high');
-    const reasoningPct = ref(72);
+    const reasoningPct = computed(() => ({ low:30, medium:60, high:80 }[reasoningEffort.value] || 60));
     const tokensUsed = ref(48230);
     const scrollEl = ref(null);
 
-    /* ---------------- canned scripted responses ---------------- */
     const scripts = {
-      default: {
-        reasoning:
-`1. Re-scoped to current dataset & filters
-2. Computed descriptive statistics
-3. Identified outliers via IQR (1.5×)
-4. Drafted a focused summary with evidence`,
-        tools: [
-          { name: 'describe', detail: 'numeric columns', status: 'done', ms: 64, preview: { type: 'table', headers: ['metric','value','Δ'], rows: [['mean','€48.2k','+2.1%'],['median','€31.0k','-0.4%'],['std','€72.5k','+5.8%']] } },
-          { name: 'detect_outliers', detail: 'iqr · 1.5×', status: 'done', ms: 92, preview: { text: '14 outliers above upper fence (€218k) — mostly DACH enterprise' } },
-        ],
-        text: 'I re-ran the descriptive pass. The distribution is right-skewed (mean ≫ median), and 14 high-value outliers cluster in DACH enterprise — consistent with the earlier finding.',
-        findings: [
-          { label: 'skew 1.8', tone: 'neg' },
-          { label: '14 outliers', tone: 'neg' },
-          { label: 'median stable', tone: 'pos' },
-        ],
-      },
       forecast: {
-        reasoning:
-`1. Pulled 24 months of history
-2. Fit Prophet + seasonal-naive ensemble
-3. Backtested on holdout (RMSE €182k)
-4. Generated Q4 forecast with 80/95% intervals`,
-        tools: [
-          { name: 'fit_model', detail: 'prophet · additive', status: 'done', ms: 1240, preview: { text: 'RMSE €182k · MAPE 8.4% · R² 0.91 on holdout' } },
-          { name: 'forecast', detail: '90d · 80/95 CI', status: 'done', ms: 410 },
+        reasoning:'1. 提取 24 个月历史数据\n2. 拟合 Prophet + 季节性朴素集成模型\n3. 在留出集上回测 (RMSE €182k)\n4. 生成含 80/95% 置信区间的 Q4 预测',
+        tools:[
+          { name:'fit_model', detail:'prophet · additive', status:'done', ms:1240, preview:{ text:'RMSE €182k · MAPE 8.4% · R² 0.91 留出集验证' } },
+          { name:'forecast', detail:'90天 · 80/95 CI', status:'done', ms:410 },
         ],
-        text: 'Q4 EMEA forecast: **€3.1M ± €0.4M** (80% CI). Recovery is partial — even the upper bound misses the original €3.8M target. Recommend re-forecasting the annual plan.',
-        findings: [
-          { label: 'Q4 €3.1M', tone: 'pos' },
-          { label: 'MAPE 8.4%', tone: 'pos' },
-          { label: 'target missed', tone: 'neg' },
-        ],
+        text:'Q4 EMEA 预测: **€3.1M ± €0.4M** (80% 置信区间)。恢复不完全 —— 即使上限也低于原定 €3.8M 目标。建议重新制定年度计划。',
+        findings:[{ label:'Q4 €3.1M', tone:'pos' }, { label:'MAPE 8.4%', tone:'pos' }, { label:'未达目标', tone:'neg' }],
       },
       churn: {
-        reasoning:
-`1. Built cohort matrix (signup month × active month)
-2. Computed retention curves
-3. Fit survival model (Weibull)
-4. Extracted top churn drivers via SHAP`,
-        tools: [
-          { name: 'cohort_matrix', detail: '24 × 12', status: 'done', ms: 180 },
-          { name: 'survival_fit', detail: 'weibull a=1.4', status: 'done', ms: 320, preview: { text: 'median tenure 4.2 mo · 60% churn by month 6' } },
+        reasoning:'1. 构建队列矩阵 (注册月 × 活跃月)\n2. 计算留存曲线\n3. 拟合生存模型 (Weibull)\n4. 通过 SHAP 提取主要流失驱动因素',
+        tools:[
+          { name:'cohort_matrix', detail:'24 × 12', status:'done', ms:180 },
+          { name:'survival_fit', detail:'weibull a=1.4', status:'done', ms:320, preview:{ text:'中位使用时长 4.2 月 · 6 个月内流失率 60%' } },
         ],
-        text: 'Median tenure is **4.2 months** with steep drop after onboarding. Top churn drivers: incomplete setup (SHAP 0.31), no second user invited (0.24), billing friction (0.19).',
-        findings: [
-          { label: 'median 4.2mo', tone: 'neg' },
-          { label: 'setup gap', tone: 'neg' },
-          { label: 'SHAP ready', tone: 'pos' },
+        text:'中位使用时长为 **4.2 个月**，入职后急剧下降。主要流失驱动因素：未完成设置 (SHAP 0.31)、未邀请第二位用户 (0.24)、计费摩擦 (0.19)。',
+        findings:[{ label:'中位 4.2 月', tone:'neg' }, { label:'设置缺口', tone:'neg' }, { label:'SHAP 就绪', tone:'pos' }],
+      },
+      attribution: {
+        reasoning:'1. 关联花费 → MQL → 客户旅程\n2. 拟合 Markov + 末次触达模型\n3. 计算渠道级 ROI 和 CAC\n4. 用 Bootstrap 置信区间对效率排序',
+        tools:[
+          { name:'markov_chain', detail:'移除效应', status:'done', ms:540, preview:{ text:'移除自然 SEO: -38% 转化 (最高)' } },
+          { name:'bootstrap_ci', detail:'2000 次重采样', status:'done', ms:310 },
         ],
+        text:'付费社交 ROI 因饱和暴跌至 **0.7×**（从 1.9×）。**自然 SEO (3.1×)** 和 **推荐 (2.8×)** 支撑全局 —— 建议将 25% 的付费社交预算转移。',
+        findings:[{ label:'社交 0.7×', tone:'neg' }, { label:'SEO 3.1×', tone:'pos' }, { label:'转移 25%', tone:'pos' }],
+      },
+      default: {
+        reasoning:'1. 重新限定到当前数据集和筛选条件\n2. 计算描述性统计\n3. 通过 IQR (1.5×) 识别异常值\n4. 起草有据可查的聚焦摘要',
+        tools:[
+          { name:'describe', detail:'数值列', status:'done', ms:64, preview:{ type:'table', headers:['指标','值','变化'], rows:[['均值','€48.2k','+2.1%'],['中位数','€31.0k','-0.4%'],['标准差','€72.5k','+5.8%']] } },
+          { name:'detect_outliers', detail:'iqr · 1.5×', status:'done', ms:92, preview:{ text:'14 个异常值超出上界 (€218k) —— 主要集中在 DACH 企业' } },
+        ],
+        text:'我重新运行了描述性分析。分布呈右偏态（均值 ≫ 中位数），14 个高值异常值集中在 DACH 企业 —— 与之前的发现一致。',
+        findings:[{ label:'偏度 1.8', tone:'neg' }, { label:'14 异常值', tone:'neg' }, { label:'中位数稳定', tone:'pos' }],
       },
     };
-
-    const starters = [
-      'Forecast Q4 by segment',
-      'Find churn predictors',
-      'Plot revenue vs marketing spend',
-      'Which deals slipped from Q3?',
-    ];
-
-    const suggestions = [
-      { tag: 'FORECAST', q: 'Forecast Q4 EMEA with confidence intervals' },
-      { tag: 'DRILL', q: 'List the top 10 DACH deals that slipped' },
-      { tag: 'CORRELATE', q: 'Correlate sales-cycle length with deal size' },
-    ];
-
-    const quickAsk = (q) => { input.value = q; send(); };
-
-    /* ---------------- send / streaming ---------------- */
-    const phase = ref(0);
-    const phases = ['reading dataset', 'running statistics', 'fitting model', 'composing answer'];
-    const phaseLabel = computed(() => phases[phase.value] || 'thinking');
-    const phasePct = computed(() => Math.round(((phase.value + 1) / phases.length) * 100));
-    const lastStreamingMsg = computed(() => messages.find(m => m.streaming));
-
     const pickScript = (text) => {
       const t = text.toLowerCase();
-      if (/(forecast|predict|q4|future)/.test(t)) return scripts.forecast;
-      if (/(churn|retention|cohort)/.test(t)) return scripts.churn;
+      if (/(forecast|predict|q4|future|pipeline|score)/.test(t)) return scripts.forecast;
+      if (/(churn|retention|cohort|tenure|customer)/.test(t)) return scripts.churn;
+      if (/(marketing|spend|roi|cac|attribution|channel|budget)/.test(t)) return scripts.attribution;
       return scripts.default;
     };
 
     const send = async () => {
       const text = input.value.trim();
       if (!text || running.value) return;
-      const now = new Date();
-      const time = now.toTimeString().slice(0, 5);
-      messages.push({ id: Date.now(), role: 'user', time, text });
+      const time = new Date().toTimeString().slice(0,5);
+      messages.push({ id:Date.now(), role:'user', time, text });
       input.value = '';
       running.value = true;
       phase.value = 0;
       await scroll();
-
-      // advance phases
-      const phaseTimer = setInterval(() => { if (phase.value < phases.length - 1) phase.value++; }, 700);
-
+      const phaseTimer = setInterval(() => { if (phase.value < phases.length-1) phase.value++; }, 700);
       await wait(2200);
       clearInterval(phaseTimer);
 
-      // create streaming agent message
       const script = pickScript(text);
-      const aMsg = reactive({
-        id: Date.now() + 1, role: 'agent', time, duration: 0,
-        reasoning: '', reasoningSteps: 4, tools: [], text: '', findings: script.findings,
-        streaming: true,
-      });
+      const aMsg = reactive({ id:Date.now()+1, role:'agent', time, duration:0, reasoning:'', reasoningSteps:4, tools:[], text:'', findings:script.findings, streaming:true });
       messages.push(aMsg);
       await scroll();
-
-      // stream reasoning
       const start = performance.now();
       await typeInto(aMsg, 'reasoning', script.reasoning, 8);
       await wait(250);
-
-      // add tools one by one
       for (const t of script.tools) {
-        const tool = reactive({ ...t, status: 'running' });
+        const tool = reactive({ ...t, status:'running' });
         aMsg.tools.push(tool);
         await scroll();
-        await wait(380 + Math.random() * 300);
+        await wait(380 + Math.random()*300);
         tool.status = 'done';
       }
-
-      // stream answer
       await typeInto(aMsg, 'text', script.text, 14);
-
-      aMsg.duration = ((performance.now() - start) / 1000).toFixed(1);
+      aMsg.duration = ((performance.now()-start)/1000).toFixed(1);
       aMsg.streaming = false;
       running.value = false;
-      tokensUsed.value += Math.round(800 + Math.random() * 1400);
+      tokensUsed.value += Math.round(800 + Math.random()*1400);
       await scroll();
     };
-
-    const typeInto = async (obj, key, full, step = 10) => {
+    const typeInto = async (obj, key, full, step=10) => {
       obj[key] = '';
-      for (let i = 0; i <= full.length; i += step) {
-        obj[key] = full.slice(0, i);
-        await wait(12);
-      }
+      for (let i=0;i<=full.length;i+=step){ obj[key]=full.slice(0,i); await wait(12); }
       obj[key] = full;
     };
-
+    const quickAsk = (q) => { input.value = q; send(); };
     const rerun = (m) => {
       if (running.value) return;
-      // re-stream the answer text
-      const original = m.text;
-      m.streaming = true;
-      m.text = '';
-      running.value = true;
-      typeInto(m, 'text', original, 12).then(() => { m.streaming = false; running.value = false; });
+      const original = m.text; m.streaming = true; m.text = ''; running.value = true;
+      typeInto(m, 'text', original, 12).then(() => { m.streaming=false; running.value=false; toast('已重新生成响应'); });
     };
-
+    const copyMsg = (m) => { navigator.clipboard?.writeText(m.text); toast('已复制到剪贴板'); };
+    const pinMsg = (m) => { m.pinned = !m.pinned; toast(m.pinned ? '已置顶消息' : '已取消置顶'); };
+    const forkMsg = (m) => { toast('已分叉至新会话'); sessions.unshift({ id:Date.now(), title:'分叉: '+(m.text?.slice(0,30)||'分析'), time:'刚刚', steps:1, active:true }); sessions.forEach(s=>{ if(s!==sessions[0]) s.active=false; }); };
+    const regenerate = () => { const last = [...messages].reverse().find(m=>m.role==='agent'); if (last) rerun(last); };
+    const clearChat = () => { messages.splice(0, messages.length); toast('对话已清空'); };
+    const newAnalysis = () => { messages.splice(0, messages.length); activeTab.value='overview'; input.value=''; toast('已开始新分析'); sessions.unshift({ id:Date.now(), title:'未命名分析', time:'刚刚', steps:0, active:true }); sessions.forEach(s=>{ if(s!==sessions[0]) s.active=false; }); };
+    const toggleMode = () => { mode.value = mode.value==='analysis' ? 'explore' : 'analysis'; toast('模式: ' + (mode.value==='analysis' ? '分析' : '探索')); };
     const wait = (ms) => new Promise(r => setTimeout(r, ms));
-    const scroll = () => nextTick(() => {
-      if (scrollEl.value) scrollEl.value.scrollTop = scrollEl.value.scrollHeight;
-    });
+    const scroll = () => nextTick(() => { if (scrollEl.value) scrollEl.value.scrollTop = scrollEl.value.scrollHeight; });
+    const renderInline = (t) => (t||'').replace(/\*\*(.+?)\*\*/g, '<span style="color:var(--brand); font-weight:500">$1</span>');
+    const toolDotColor = (s) => s==='running' ? 'var(--amber)' : s==='error' ? 'var(--coral)' : 'var(--brand)';
+    const isNeg = (s) => typeof s==='string' && (s.startsWith('-') || s.startsWith('−'));
+    const effortToast = () => toast('推理强度: ' + (reasoningEffort.value==='low'?'低':reasoningEffort.value==='medium'?'中':'高'));
 
-    const renderInline = (t) => (t || '').replace(/\*\*(.+?)\*\*/g, '<span class="text-mint-100 font-medium">$1</span>');
-    const toolDotColor = (s) => s === 'running' ? 'bg-amber-400' : s === 'error' ? 'bg-rose-500' : 'bg-mint-300';
+    /* ---------- phase progress ---------- */
+    const phase = ref(0);
+    const phases = ['读取数据集','运行统计','拟合模型','生成回答'];
+    const phaseLabel = computed(() => phases[phase.value] || 'thinking');
+    const phasePct = computed(() => Math.round(((phase.value+1)/phases.length)*100));
+    const lastStreamingMsg = computed(() => messages.find(m => m.streaming));
 
-    /* ---------------- KPI / chart data ---------------- */
-    const kpis = [
-      { label: 'Net Revenue', value: '€7.97M', delta: '−12.4%', up: false, spark: '0,18 14,16 28,20 42,12 56,15 70,10 84,14 100,8' },
-      { label: 'Active Deals', value: '1,284', delta: '+4.1%', up: true, spark: '0,20 14,18 28,16 42,14 56,15 70,11 84,9 100,6' },
-      { label: 'Win Rate', value: '31.2%', delta: '−2.8pp', up: false, spark: '0,8 14,10 28,9 42,12 56,11 70,15 84,14 100,18' },
-      { label: 'Avg Cycle', value: '68 days', delta: '+34%', up: false, spark: '0,22 14,20 28,18 42,16 56,12 70,10 84,7 100,4' },
-    ];
+    /* ---------- overview chart controls ---------- */
+    const timeRanges = [{id:'12m',label:'12M'},{id:'6m',label:'6M'},{id:'3m',label:'3M'},{id:'ytd',label:'YTD'}];
+    const timeRange = ref('12m');
+    const chartTypes = [{id:'line',label:'折线'},{id:'area',label:'面积'},{id:'bar',label:'柱状'}];
+    const chartType = ref('line');
+    const seriesOn = reactive([true, true, true]);
+    const toggleSeries = (i) => { seriesOn[i] = !seriesOn[i]; };
+    const rangeLabel = computed(() => timeRanges.find(r=>r.id===timeRange.value).label);
+    const heroDelta = computed(() => currentDataset.value.kpis[0].delta);
 
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const lineData = {
-      // values 0..200 mapped to svg y; higher = bigger revenue
-      emea: [60,62,65,68,72,70,75,68,55,52,null,null],
-      apac: [30,32,35,38,40,42,45,48,50,52,null,null],
-      amer: [80,82,78,85,88,90,92,95,98,100,null,null],
+    const yTicks = computed(() => currentDatasetId.value === 'revenue' ? ['€180k','€135k','€90k','€45k','€0']
+      : currentDatasetId.value === 'marketing' ? ['€90k','€68k','€45k','€23k','€0']
+      : ['180','135','90','45','0']);
+    const annot = computed(() => ({ x: 40 + 8*((580-40)/11), y: 110, label:currentDataset.value.short+' 信号' }));
+
+    const visibleSeries = computed(() => currentDataset.value.series.filter(s => seriesOn[s.idx]));
+    const linePoints = (s) => {
+      const n = s.data.length; const x0=40,x1=580,y0=30,y1=200;
+      const max = Math.max(...currentDataset.value.series.flatMap(x=>x.data));
+      return s.data.map((v,i)=>{ const x=x0+i*((x1-x0)/(n-1)); const y=y1-(v/max)*(y1-y0); return `${x.toFixed(1)},${y.toFixed(1)}`; }).join(' ');
     };
-    const regions = [
-      { name: 'EMEA', color: '#fb7185' },
-      { name: 'APAC', color: '#48ebbd' },
-      { name: 'AMER', color: '#ffd483' },
-    ];
-
-    const sparkPoints = (arr, x0, x1, y0, y1) => {
-      const n = arr.length;
-      const step = (x1 - x0) / (n - 1);
-      return arr.map((v, i) => {
-        if (v == null) return null;
-        const x = x0 + i * step;
-        const y = y1 - v; // v already in 0..200 svg-y-ish
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      }).filter(p => p != null).join(' ');
+    const areaPoints = (s) => {
+      const lp = linePoints(s); const n = s.data.length; const x1=580,x0=40;
+      const lastX = x0 + (n-1)*((x1-x0)/(n-1));
+      return `${lp} ${lastX.toFixed(1)},200 40,200`;
     };
+    // grouped bar data: 12 months × 3 series
+    const barSeries = computed(() => currentDataset.value.series[0].data.map((_, i) => ({
+      vals: currentDataset.value.series.map(s => s.data[i]),
+    })));
+    const xForBar = (i, si, count) => 50 + i*((580-50-40)/12) + si*(8) ;
+    const barW = (count) => Math.max(3, 26/count);
 
-    const drivers = [
-      { label: 'DACH enterprise slippage', val: '−€0.9M', pct: 82, neg: true },
-      { label: 'Sales cycle elongation', val: '−€0.4M', pct: 41, neg: true },
-      { label: 'Discounting depth', val: '−€0.2M', pct: 22, neg: true },
-      { label: 'Nordics growth', val: '+€0.2M', pct: 18, neg: false },
-      { label: 'Mid-market SMB', val: '+€0.1M', pct: 9, neg: false },
-    ];
+    /* ---------- KPIs reactive (per dataset) ---------- */
+    const kpis = computed(() => currentDataset.value.kpis.map((k, idx) => {
+      // generate sparkline from dataset series (avg of visible)
+      const s = currentDataset.value.series[idx % currentDataset.value.series.length].data;
+      const max = Math.max(...s); const n = s.length;
+      const spark = s.map((v,i)=>{ const x=i*((100)/(n-1)); const y=28-(v/max)*24-2; return `${x.toFixed(1)},${y.toFixed(1)}`; }).join(' ');
+      return { ...k, spark };
+    }));
+    const drillKpi = (k) => { activeTab.value='table'; toast('正在下钻: ' + k.label); };
+    const drivers = computed(() => currentDataset.value.drivers);
 
-    /* ---------------- table ---------------- */
+    /* ---------- table ---------- */
     const tableHeaders = [
-      { label: 'region', sorted: true },
-      { label: 'q2 2024' },
-      { label: 'q3 2024' },
-      { label: 'Δ qoQ' },
-      { label: 'deals' },
-      { label: 'status' },
+      { label:'区域', key:'region' },
+      { label:'Q2', key:'q2v' },
+      { label:'Q3', key:'q3v' },
+      { label:'环比变化', key:'deltav' },
+      { label:'交易数 / 柱', key:'deals' },
+      { label:'状态', key:'status' },
     ];
-    const tableData = reactive([
-      { region: 'DACH',     q2: '€1.42M', q3: '€0.98M', delta: '−31.0%', bar: 31, deals: 184, status: 'risk' },
-      { region: 'Nordics',  q2: '€0.61M', q3: '€0.63M', delta: '+3.3%',  bar: 63, deals: 92,  status: 'ok' },
-      { region: 'Benelux',  q2: '€0.48M', q3: '€0.41M', delta: '−14.6%', bar: 41, deals: 71,  status: 'watch' },
-      { region: 'France',   q2: '€0.55M', q3: '€0.47M', delta: '−14.5%', bar: 47, deals: 88,  status: 'watch' },
-      { region: 'UK & IE',  q2: '€0.72M', q3: '€0.68M', delta: '−5.6%',  bar: 68, deals: 121, status: 'ok' },
-      { region: 'Iberia',   q2: '€0.34M', q3: '€0.38M', delta: '+11.8%', bar: 38, deals: 64,  status: 'ok' },
-      { region: 'Italy',    q2: '€0.29M', q3: '€0.26M', delta: '−10.3%', bar: 26, deals: 49,  status: 'watch' },
-    ]);
+    const currentTable = computed(() => currentDataset.value.table.map(r => ({
+      ...r,
+      q2v: parseFloat(r.q2.replace(/[^0-9.]/g,'')) || 0,
+      q3v: parseFloat(r.q3.replace(/[^0-9.]/g,'')) || 0,
+      deltav: parseFloat((r.delta||'0').replace(/[−+]/g,'-').replace('%','')) || 0,
+    })));
     const tableSearch = ref('');
+    const statusFilter = ref('all');
+    const sortKey = ref('deltav');
+    const sortDir = ref('asc');
+    const sortBy = (key) => {
+      if (!key) return;
+      if (sortKey.value === key) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+      else { sortKey.value = key; sortDir.value = 'asc'; }
+    };
     const filteredTable = computed(() => {
+      let rows = currentTable.value.slice();
       const q = tableSearch.value.toLowerCase();
-      if (!q) return tableData;
-      return tableData.filter(r => r.region.toLowerCase().includes(q));
-    });
-
-    /* ---------------- charts tab ---------------- */
-    const bars = [
-      { label: 'ENT', val: 92, neg: true },
-      { label: 'MID', val: 64, neg: false },
-      { label: 'SMB', val: 48, neg: false },
-      { label: 'STR', val: 38, neg: false },
-      { label: 'FS',  val: 72, neg: true },
-    ];
-    const donutSegments = (() => {
-      const data = [
-        { label: 'Closed Won',  pct: 31, color: '#48ebbd' },
-        { label: 'Negotiation', pct: 22, color: '#1fd9a4' },
-        { label: 'Proposal',    pct: 19, color: '#fbbf52' },
-        { label: 'Qualified',   pct: 16, color: '#f59e0b' },
-        { label: 'Lost',        pct: 12, color: '#fb7185' },
-      ];
-      const C = 2 * Math.PI * 58; // 364.4
-      let acc = 0;
-      return data.map(d => {
-        const arc = (d.pct / 100) * C;
-        const seg = { ...d, arc, offset: -acc };
-        acc += arc;
-        return seg;
-      });
-    })();
-    const heatmap = [
-      { region: 'DACH',    values: [0.7,0.6,0.5,0.42,0.55,0.78,0.86,0.9,0.88,0.85,0.82,0.8] },
-      { region: 'Nordics', values: [0.4,0.45,0.5,0.52,0.55,0.58,0.6,0.62,0.63,0.6,0.58,0.55] },
-      { region: 'Benelux', values: [0.5,0.52,0.55,0.58,0.6,0.62,0.6,0.55,0.48,0.45,0.5,0.52] },
-      { region: 'France',  values: [0.55,0.58,0.6,0.62,0.65,0.63,0.6,0.55,0.5,0.48,0.5,0.52] },
-      { region: 'UK & IE', values: [0.65,0.68,0.7,0.72,0.7,0.68,0.66,0.65,0.68,0.7,0.68,0.66] },
-      { region: 'Iberia',  values: [0.3,0.32,0.35,0.38,0.4,0.42,0.45,0.48,0.5,0.38,0.36,0.34] },
-    ];
-    const heatColor = (v) => {
-      // mint -> amber -> rose scale based on intensity
-      const stops = [
-        [0.0, [16,22,21]],
-        [0.4, [11,90,72]],
-        [0.7, [11,184,137]],
-        [0.85, [251,191,82]],
-        [1.0, [244,63,94]],
-      ];
-      let a = stops[0], b = stops[stops.length-1];
-      for (let i = 0; i < stops.length - 1; i++) {
-        if (v >= stops[i][0] && v <= stops[i+1][0]) { a = stops[i]; b = stops[i+1]; break; }
+      if (q) rows = rows.filter(r => r.region.toLowerCase().includes(q));
+      if (statusFilter.value !== 'all') rows = rows.filter(r => r.status === statusFilter.value);
+      const k = sortKey.value, dir = sortDir.value === 'asc' ? 1 : -1;
+      if (['q2v','q3v','deltav','deals'].includes(k)) {
+        rows.sort((a,b) => (a[k]-b[k])*dir);
+      } else {
+        rows.sort((a,b) => String(a[k]).localeCompare(String(b[k]))*dir);
       }
-      const t = (v - a[0]) / (b[0] - a[0] || 1);
-      const c = a[1].map((x, i) => Math.round(x + (b[1][i] - x) * t));
+      return rows;
+    });
+    const statusStyle = (s) => s==='risk' ? {color:'var(--coral)', background:'color-mix(in srgb, var(--coral) 12%, transparent)'}
+      : s==='watch' ? {color:'var(--amber)', background:'color-mix(in srgb, var(--amber) 15%, transparent)'}
+      : {color:'var(--brand)', background:'var(--brand-soft)'};
+    const statusLabel = (s) => s==='risk' ? '风险' : s==='watch' ? '观察' : s==='ok' ? '正常' : '未知';
+
+    /* ---------- row drawer ---------- */
+    const drawer = ref(false);
+    const selectedRow = ref(null);
+    const openRow = (row) => { selectedRow.value = row; drawer.value = true; };
+    const rowSpark = (row) => {
+      const r = mulberry32(row.id.charCodeAt(0)*97 + row.id.length*131);
+      const pts = []; let v = 50 + r()*30;
+      for (let i=0;i<12;i++){ v += (r()-0.5)*18 + (row.delta.startsWith('-')?-2:2); pts.push(v); }
+      const max = Math.max(...pts), min = Math.min(...pts);
+      return pts.map((p,i)=>{ const x=20+i*((340-20)/11); const y=85-((p-min)/Math.max(1,max-min))*65-5; return `${x.toFixed(1)},${y.toFixed(1)}`; }).join(' ');
+    };
+    const rowInsight = (row) => {
+      const neg = row.delta.startsWith('-') || row.delta.startsWith('−');
+      return `${row.region} 环比 <span style="color:${neg?'var(--coral)':'var(--brand)'}; font-weight:500">${row.delta}</span>，拥有 ${row.deals} 笔活跃交易。${neg ? '建议制定以周期压缩和定价为重点的恢复计划。' : '这是一个亮点 —— 考虑放大此处有效的做法。'}`;
+    };
+
+    /* ---------- charts tab ---------- */
+    const bars = computed(() => currentDataset.value.bars);
+    const donutSegments = computed(() => {
+      const presets = {
+        revenue: [{label:'Closed Won',pct:31},{label:'Negotiation',pct:22},{label:'Proposal',pct:19},{label:'Qualified',pct:16},{label:'Lost',pct:12}],
+        customers: [{label:'Pro',pct:42},{label:'Starter',pct:32},{label:'Enterprise',pct:16},{label:'Free',pct:10}],
+        deals: [{label:'Qualified',pct:28},{label:'Proposal',pct:24},{label:'Negotiation',pct:22},{label:'Closing',pct:14},{label:'Lost',pct:12}],
+        marketing: [{label:'Paid Social',pct:31},{label:'Organic',pct:24},{label:'Display',pct:18},{label:'Referral',pct:14},{label:'Other',pct:13}],
+      };
+      const colors = ['#1f5d3a','#2d8a55','#c98a1a','#d94f3a','#6b3a8a'];
+      const data = presets[currentDatasetId.value] || presets.revenue;
+      const C = 2*Math.PI*58; let acc = 0;
+      return data.map((d,i) => { const arc=(d.pct/100)*C; const seg={...d, color:colors[i%colors.length], arc, offset:-acc}; acc+=arc; return seg; });
+    });
+    const donutTotal = computed(() => currentDataset.value.donutTotal);
+    const heatmap = computed(() => {
+      const labels = {
+        revenue:['DACH','Nordics','Benelux','France','UK & IE','Iberia'],
+        customers:['Enterprise','Pro','Starter','Free','Trial','Lapsed'],
+        deals:['EMEA','APAC','AMER','Channel','Partner','Direct'],
+        marketing:['Organic','Referral','Paid Social','Display','Email','Events'],
+      };
+      const rows = labels[currentDatasetId.value] || labels.revenue;
+      return rows.map((region, ri) => {
+        const r = mulberry32(ri*17 + currentDatasetId.value.length*53);
+        const values = Array.from({length:12}, () => Math.round((0.2 + r()*0.8) * 100)/100);
+        return { region, values };
+      });
+    });
+    const heatColor = (v) => {
+      const stops=[[0,[244,239,228]],[0.4,[45,138,85]],[0.7,[31,93,58]],[0.85,[201,138,26]],[1,[217,79,58]]];
+      let a=stops[0], b=stops[stops.length-1];
+      for (let i=0;i<stops.length-1;i++){ if (v>=stops[i][0] && v<=stops[i+1][0]){ a=stops[i]; b=stops[i+1]; break; } }
+      const t=(v-a[0])/((b[0]-a[0])||1);
+      const c=a[1].map((x,i)=>Math.round(x+(b[1][i]-x)*t));
       return `rgb(${c[0]},${c[1]},${c[2]})`;
     };
+    const heatCell = (region, ci, v) => toast(`${region} · ${months[ci]}: 强度 ${Math.round(v*100)}`);
 
-    /* ---------------- code tab ---------------- */
-    const rawCode =
-`import pandas as pd
+    /* ---------- code tab ---------- */
+    const rawCode = computed(() => {
+      const ds = currentDataset.value;
+      const tmpl = {
+        revenue: `import pandas as pd
 import numpy as np
 from scipy import stats
 
@@ -1267,57 +1498,189 @@ u, p = stats.mannwhitneyu(
     dach[dach["close_date"].dt.quarter == 3]["amount_eur"],
     alternative="greater",
 )
-print(f"DACH Q3 drop: {qoq.loc[('EMEA',), '2024Q3']:.1%}  (p={p:.4f})")`;
+print(f"DACH Q3 drop: {qoq.loc[('EMEA',), '2024Q3']:.1%}  (p={p:.4f})")`,
+        customers: `import pandas as pd
+from lifelines import WeibullAFTFitter
+import shap
 
-    const highlightedCode = computed(() => {
-      const keywords = /\b(import|from|as|def|return|for|in|if|else|print|groupby|sum|unstack|pct_change|read_csv|lambda|with|None|True|False)\b/g;
-      const builtins = /\b(pd|np|stats|df|qoq|emea|dach|mannwhitneyu|alternative)\b/g;
-      return rawCode
-        .replace(/(#.*)/g, '<span class="tok-com">$1</span>')
-        .replace(/("[^"]*")/g, '<span class="tok-str">$1</span>')
-        .replace(/\b(\d+\.?\d*)\b/g, '<span class="tok-num">$1</span>')
-        .replace(keywords, '<span class="tok-kw">$1</span>')
-        .replace(builtins, '<span class="tok-fn">$1</span>');
+df = pd.read_parquet("customers.parquet")
+
+# Cohort retention matrix
+df["cohort"] = df["signup_date"].dt.to_period("M")
+df["age"] = (df["last_active"] - df["signup_date"]).dt.days // 30
+cohort = df.pivot_table(index="cohort", columns="age", values="customer_id", aggfunc="count")
+
+# Survival model
+aft = WeibullAFTFitter()
+aft.fit(df[["tenure","churn","plan","seats","setup_complete"]], duration_col="tenure", event_col="churn")
+
+# Feature importance via SHAP
+explainer = shap.Explainer(aft.predict_partial_hazard, df)
+shap_vals = explainer(df.sample(500))
+print("Top churn drivers:", shap_vals.abs().mean(0).sort_values(ascending=False).head(5))`,
+        deals: `import pandas as pd
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.model_selection import cross_val_score
+
+df = pd.read_sql("SELECT * FROM deals_pipeline", con)
+
+# Feature engineering
+df["days_in_stage"] = (pd.Timestamp.now() - df["stage_entered"]).dt.days
+df["deal_velocity"] = df["amount"] / df["days_in_pipeline"]
+
+# Score close likelihood
+X = df[["amount","days_in_stage","deal_velocity","prior_contacts","discount"]]
+y = (df["stage"] == "Closed Won").astype(int)
+model = GradientBoostingClassifier(n_estimators=200, max_depth=4)
+scores = cross_val_score(model, X, y, cv=5, scoring="roc_auc")
+model.fit(X, y)
+df["close_score"] = model.predict_proba(X)[:,1]
+print(f"AUC: {scores.mean():.3f} ± {scores.std():.3f}")
+print(df.nlargest(10, "close_score")[["deal_name","amount","close_score"]])`,
+        marketing: `import pandas as pd
+from sklearn.linear_model import LogisticRegression
+import numpy as np
+
+spend = pd.read_csv("marketing_spend.csv")
+journey = pd.read_csv("customer_journey.csv")
+
+# Multi-touch attribution (Markov)
+touchpoints = journey.groupby("customer_id")["channel"].apply(list)
+transitions = build_transition_matrix(touchpoints)  # custom helper
+removal_effect = compute_removal_effects(transitions)
+
+# Channel ROI & CAC
+roi = spend.groupby("channel").agg(spend=("cost","sum"), rev=("attributed_rev","sum"))
+roi["roi"] = roi["rev"] / roi["spend"]
+roi["cac"] = roi["spend"] / roi["rev"] * 1000
+
+# Budget reallocation optimizer
+optimal = optimize_budget(roi, total_budget=4_200_000, min_roi=1.5)
+print(roi.sort_values("roi", ascending=False))
+print("Optimal allocation:\\n", optimal)`,
+      };
+      return tmpl[currentDatasetId.value] || tmpl.revenue;
     });
-    const codeOutput =
-`DACH Q3 drop: -31.0%  (p=0.0032)
-EMEA total Q3: €2.91M  (-12.4% QoQ)
-Top slipping deal: ACME GmbH · €420k · moved to Q4
-Outliers detected: 14 (upper fence €218k)
-✓ Analysis complete in 1.42s`;
+    const highlightedCode = computed(() => {
+      const code = rawCode.value;
+      const kw = /\b(import|from|as|def|return|for|in|if|else|elif|print|groupby|sum|unstack|pct_change|read_csv|read_parquet|read_sql|lambda|with|None|True|False|class|not|and|or)\b/g;
+      return code
+        .replace(/(#[^\n]*)/g, '<span style="color:var(--ink-faint); font-style:italic">$1</span>')
+        .replace(/("[^"]*")/g, '<span style="color:var(--brand)">$1</span>')
+        .replace(/\b(\d+\.?\d*)\b/g, '<span style="color:var(--coral)">$1</span>')
+        .replace(kw, '<span style="color:var(--plum); font-weight:500">$1</span>')
+        .replace(/\b(pd|np|stats|df|qoq|emea|dach|cohort|aft|shap|explainer|model|scores|X|y|spend|journey|roi|optimal|touchpoints|transitions|removal_effect)\b/g, '<span style="color:var(--amber)">$1</span>');
+    });
+    const codeRunning = ref(false);
+    const rerunCode = () => {
+      if (codeRunning.value) return;
+      codeRunning.value = true;
+      toast('正在执行 ' + currentDataset.value.codeFile + '…');
+      setTimeout(() => { codeRunning.value = false; toast('✓ 已执行，耗时 ' + currentDataset.value.runTime); }, 1400);
+    };
+    const copyCode = () => { navigator.clipboard?.writeText(rawCode.value); toast('代码已复制'); };
 
-    /* ---------------- ticker ---------------- */
-    const tickerItems = [
-      { text: 'EMEA Q3 −12.4%', tone: 'neg' },
-      { text: 'DACH −31% biggest drag', tone: 'neg' },
-      { text: 'APAC +8.1% bright spot', tone: 'pos' },
-      { text: 'p=0.003 significant', tone: 'pos' },
-      { text: '14 high-value outliers', tone: 'neg' },
-      { text: 'cycle length +34%', tone: 'neg' },
-      { text: 'Q4 forecast €3.1M ±€0.4M', tone: 'pos' },
-      { text: '1,284 active deals', tone: 'pos' },
-    ];
+    /* ---------- ticker ---------- */
+    const tickerItems = computed(() => {
+      const base = {
+        revenue: [{text:'EMEA Q3 −12.4%',tone:'neg'},{text:'DACH −31% 最大拖累',tone:'neg'},{text:'APAC +8.1% 亮点',tone:'pos'},{text:'p=0.003 显著',tone:'pos'},{text:'14 个高值异常值',tone:'neg'},{text:'周期 +34%',tone:'neg'}],
+        customers: [{text:'NRR 108% 健康',tone:'pos'},{text:'免费→专业版 12%',tone:'neg'},{text:'+312 净新增',tone:'pos'},{text:'流失率 4.8%',tone:'neg'},{text:'入职 SHAP 0.41',tone:'pos'}],
+        deals: [{text:'管道 €12.4M',tone:'pos'},{text:'312 笔停滞交易',tone:'neg'},{text:'赢单率 31.2%',tone:'neg'},{text:'平均周期 +18天',tone:'neg'},{text:'Q4 预测 €4.1M',tone:'pos'}],
+        marketing: [{text:'综合 ROI 1.8×',tone:'neg'},{text:'SEO 3.1× 最佳',tone:'pos'},{text:'CAC €412 上升 €84',tone:'neg'},{text:'付费社交 0.7×',tone:'neg'},{text:'+18% MQLs',tone:'pos'}],
+      };
+      return base[currentDatasetId.value] || base.revenue;
+    });
 
-    onMounted(() => { tokensUsed.value = 48230; });
+    /* ---------- refresh / export ---------- */
+    const refreshing = ref(false);
+    const refresh = () => {
+      if (refreshing.value) return;
+      refreshing.value = true;
+      toast('正在从数据源刷新…');
+      setTimeout(() => { refreshing.value = false; toast('✓ 数据已刷新'); }, 900);
+    };
+    const exportData = () => toast('已导出 ' + currentDataset.value.name + ' → report.pdf');
+    const addDatasetToast = () => toast('上传对话框将在此处打开');
+
+    /* ---------- command palette ---------- */
+    const palette = ref(false);
+    const paletteQuery = ref('');
+    const paletteInput = ref(null);
+    const openPalette = () => { palette.value = true; paletteQuery.value=''; nextTick(() => paletteInput.value?.focus()); };
+    const paletteGroups = computed(() => {
+      const q = paletteQuery.value.toLowerCase();
+      const match = (s) => !q || s.toLowerCase().includes(q);
+      return [
+        { label:'操作', items: [
+          { id:'new', label:'新建分析', hint:'⌘N', icon: IconPlus, color:'var(--brand)', action: () => { newAnalysis(); palette.value=false; } },
+          { id:'theme', label: dark.value ? '切换至亮色模式' : '切换至暗色模式', hint:'⌘D', icon: IconSun, color:'var(--amber)', action: () => { toggleTheme(); palette.value=false; } },
+          { id:'export', label:'导出当前视图', hint:'', icon: IconBolt, color:'var(--plum)', action: () => { exportData(); palette.value=false; } },
+          { id:'refresh', label:'刷新数据', hint:'⌘R', icon: IconBolt, color:'var(--brand)', action: () => { refresh(); palette.value=false; } },
+        ].filter(i => match(i.label)) },
+        { label:'数据集', items: datasets.filter(d => match(d.name)).map(d => ({ id:'ds'+d.id, label:d.name, hint:d.rows, icon: IconDb, color:d.color, action: () => { selectDataset(d.id); palette.value=false; } })) },
+        { label:'会话', items: sessions.filter(s => match(s.title)).map(s => ({ id:'ss'+s.id, label:s.title, hint:s.time, icon: IconChat, color:'var(--brand)', action: () => { selectSession(s.id); palette.value=false; } })) },
+      ];
+    });
+    const paletteFiltered = computed(() => paletteGroups.value.flatMap(g => g.items));
+    const runPaletteSel = () => {
+      if (!paletteQuery.value.trim()) return;
+      if (paletteFiltered.value.length) { paletteFiltered.value[0].action(); return; }
+      // ask quant
+      input.value = paletteQuery.value; palette.value=false; send();
+    };
+    const paletteAction = (it) => it.action();
+
+    /* ---------- toasts ---------- */
+    const toasts = reactive([]);
+    let toastId = 0;
+    const toast = (text, tone='ok') => {
+      const id = ++toastId;
+      toasts.push({ id, text, tone });
+      setTimeout(() => { const i = toasts.findIndex(t=>t.id===id); if (i>=0) toasts.splice(i,1); }, 3200);
+    };
+    const dismissToast = (id) => { const i = toasts.findIndex(t=>t.id===id); if (i>=0) toasts.splice(i,1); };
+
+    /* ---------- keyboard ---------- */
+    const onKey = (e) => {
+      if ((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k') { e.preventDefault(); openPalette(); }
+      if ((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='d') { e.preventDefault(); toggleTheme(); }
+      if (e.key==='Escape') { palette.value=false; drawer.value=false; }
+    };
+    onMounted(() => { window.addEventListener('keydown', onKey); tokensUsed.value = 48230; });
+    onUnmounted(() => window.removeEventListener('keydown', onKey));
 
     return {
+      // theme
+      dark, toggleTheme,
       // nav
-      datasets, sessions, selectDataset, selectSession,
+      datasets, sessions, selectDataset, selectSession, activeSession, currentDataset,
       tabs, activeTab,
-      // conversation
+      // chat
       messages, input, running, mode, model, reasoningEffort, reasoningPct, tokensUsed,
-      send, quickAsk, starters, suggestions, rerun, renderInline, toolDotColor,
-      phaseLabel, phasePct, lastStreamingMsg, scrollEl,
+      send, quickAsk, rerun, regenerate, clearChat, newAnalysis, toggleMode, copyMsg, pinMsg, forkMsg,
+      renderInline, toolDotColor, isNeg, effortToast, scrollEl,
+      phaseLabel, phasePct, lastStreamingMsg,
       // overview
-      kpis, months, lineData, regions, sparkPoints, drivers,
+      months, regions, seriesOn, toggleSeries, kpis, drivers, drillKpi,
+      timeRanges, timeRange, rangeLabel, chartTypes, chartType,
+      linePoints, areaPoints, visibleSeries, barSeries, xForBar, barW,
+      yTicks, annot, heroDelta,
       // table
-      tableHeaders, tableData, tableSearch, filteredTable,
+      tableHeaders, currentTable, tableSearch, statusFilter, sortKey, sortDir, sortBy, filteredTable, statusStyle, statusLabel,
+      // drawer
+      drawer, selectedRow, openRow, rowSpark, rowInsight,
       // charts
-      bars, donutSegments, heatmap, heatColor,
+      bars, donutSegments, donutTotal, heatmap, heatColor, heatCell,
       // code
-      highlightedCode, codeOutput,
+      highlightedCode, codeRunning, rerunCode, copyCode,
       // ticker
       tickerItems,
+      // misc
+      refreshing, refresh, exportData, addDatasetToast,
+      // palette
+      palette, paletteQuery, paletteInput, paletteGroups, paletteFiltered, openPalette, runPaletteSel, paletteAction,
+      // toasts
+      toasts, toast, dismissToast,
     };
   },
 }).mount('#app');

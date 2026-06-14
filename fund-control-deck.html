@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FUND CONTROL DECK · 行情操纵终端</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;800&family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+<style>
+  :root{
+    --bg:#06080D; --bg2:#0A0E15; --panel:#0E131C; --panel2:#131A26;
+    --border:#1B2330; --border2:#28344A;
+    --text:#E9EFF8; --text2:#9AA6BC; --muted:#586378;
+    --up:#FF4D6D; --up-glow:rgba(255,77,109,.16);
+    --down:#00C08A; --down-glow:rgba(0,192,138,.16);
+    --amber:#FFB627; --blue:#3B9EFF; --violet:#9B6BFF;
+  }
+  html,body{ background:var(--bg); color:var(--text); height:100%; }
+  body{
+    font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  .font-display{ font-family:'Unbounded','Noto Sans SC',sans-serif; }
+  .font-mono{ font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; }
+  .font-zh{ font-family:'Noto Sans SC',sans-serif; }
+
+  /* 全局背景：网格 + 径向光 + 扫描线 */
+  .deck-bg{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(900px 600px at 78% -8%, rgba(255,182,39,.07), transparent 60%),
+      radial-gradient(800px 600px at 10% 110%, rgba(255,77,109,.06), transparent 60%),
+      linear-gradient(180deg, #070A10, #06080D);
+  }
+  .grid-bg{
+    position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.35;
+    background-image:
+      linear-gradient(rgba(80,100,130,.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(80,100,130,.07) 1px, transparent 1px);
+    background-size:46px 46px;
+    mask-image:radial-gradient(120% 100% at 50% 40%, #000 40%, transparent 92%);
+  }
+  @keyframes scan { 0%{transform:translateY(-100%)} 100%{transform:translateY(100vh)} }
+  .scanline{
+    position:fixed; left:0; right:0; height:120px; z-index:1; pointer-events:none;
+    background:linear-gradient(180deg, transparent, rgba(255,77,109,.04) 45%, rgba(255,77,109,.08) 50%, rgba(255,77,109,.04) 55%, transparent);
+    animation:scan 9s linear infinite; opacity:.7;
+  }
+
+  /* 面板 */
+  .panel{ background:linear-gradient(180deg, var(--panel), var(--bg2)); border:1px solid var(--border); position:relative; }
+  .panel-glow::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .hairline{ border-color:var(--border); }
+
+  /* 按钮 */
+  .btn{
+    position:relative; font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;
+    letter-spacing:.02em; transition:all .15s ease;
+    border:1px solid var(--border2); background:var(--panel2); color:var(--text2);
+  }
+  .btn:hover{ color:var(--text); border-color:#3a4a66; background:#19223100; background-color:#182234; }
+  .btn-active{ color:#06080D; background:var(--amber); border-color:var(--amber); box-shadow:0 0 22px rgba(255,182,39,.28); }
+  .btn-active:hover{ color:#06080D; background:var(--amber); }
+  .btn-up{ color:var(--up); border-color:rgba(255,77,109,.4); }
+  .btn-up:hover{ background:rgba(255,77,109,.12); border-color:var(--up); color:var(--up); }
+  .btn-down{ color:var(--down); border-color:rgba(0,192,138,.4); }
+  .btn-down:hover{ background:rgba(0,192,138,.12); border-color:var(--down); color:var(--down); }
+
+  /* 状态点 */
+  .dot{ width:7px; height:7px; border-radius:50%; display:inline-block; }
+  @keyframes pulse { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:.4; transform:scale(.8)} }
+  .pulse{ animation:pulse 1.4s ease-in-out infinite; }
+
+  /* 数字翻动闪烁 */
+  @keyframes flashUp { 0%{background:rgba(255,77,109,.0)} 30%{background:rgba(255,77,109,.18)} 100%{background:transparent} }
+  @keyframes flashDown { 0%{background:rgba(0,192,138,.0)} 30%{background:rgba(0,192,138,.18)} 100%{background:transparent} }
+  .flash-up{ animation:flashUp .5s ease; }
+  .flash-down{ animation:flashDown .5s ease; }
+
+  /* 新闻逐条进入 */
+  @keyframes slideIn { from{opacity:0; transform:translateX(14px)} to{opacity:1; transform:none} }
+  .news-item{ animation:slideIn .35s ease; }
+
+  /* 自定义滑块 */
+  input[type=range]{ -webkit-appearance:none; appearance:none; background:transparent; width:100%; height:22px; }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:4px; border-radius:2px;
+    background:linear-gradient(90deg, var(--down) 0%, #3a4250 50%, var(--up) 100%);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%;
+    background:#E9EFF8; margin-top:-6px; cursor:grab;
+    box-shadow:0 0 0 3px rgba(255,255,255,.08), 0 2px 8px rgba(0,0,0,.6);
+  }
+  input[type=range]::-webkit-slider-thumb:active{ cursor:grabbing; }
+  input[type=range]::-moz-range-track{ height:4px; border-radius:2px; background:#3a4250; }
+  input[type=range]::-moz-range-thumb{ width:16px; height:16px; border:none; border-radius:50%; background:#E9EFF8; }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar{ width:6px; height:6px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:#222D40; border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover{ background:var(--amber); }
+
+  ::selection{ background:rgba(255,182,39,.3); color:#fff; }
+
+  /* canvas cursor */
+  #chart{ cursor:crosshair; display:block; }
+  .paused #chart{ cursor:not-allowed; }
+
+  /* 紧急按钮特效 */
+  .danger-btn{ position:relative; overflow:hidden; }
+  .danger-btn::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(110deg, transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%);
+    transform:translateX(-120%); transition:transform .6s;
+  }
+  .danger-btn:hover::after{ transform:translateX(120%); }
+
+  /* 顶部品牌闪光 */
+  @keyframes brandGlow { 0%,100%{filter:drop-shadow(0 0 6px rgba(255,182,39,.4))} 50%{filter:drop-shadow(0 0 14px rgba(255,182,39,.8))} }
+  .brand-dot{ animation:brandGlow 2.4s ease-in-out infinite; }
+
+  /* 熔断遮罩 */
+  @keyframes haltBlink { 0%,100%{opacity:.85} 50%{opacity:.4} }
+  .halt-overlay{ animation:haltBlink .8s ease-in-out infinite; }
+
+  /* tooltip on draw */
+  .hint-tag{
+    position:absolute; top:10px; right:14px; z-index:5;
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.12em;
+    color:var(--amber); border:1px solid rgba(255,182,39,.4);
+    background:rgba(255,182,39,.08); padding:3px 8px; border-radius:2px;
+  }
+
+  /* 响应式收敛 */
+  @media (max-width: 1100px){
+    .layout{ grid-template-columns: 1fr !important; grid-template-rows:auto auto auto; overflow:auto !important; }
+    .left-col, .right-col{ max-height:none; }
+    body{ overflow:auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck-bg"></div>
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+
+<div id="app" class="relative z-10 h-screen flex flex-col">
+
+  <!-- ====== 顶部状态栏 ====== -->
+  <header class="flex items-center justify-between px-5 h-14 border-b hairline bg-[rgba(10,14,21,.7)] backdrop-blur-sm shrink-0">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2.5">
+        <svg width="22" height="22" viewBox="0 0 24 24" class="brand-dot">
+          <path d="M3 17l5-6 4 3 5-8 4 6" fill="none" stroke="#FFB627" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="21" cy="12" r="1.6" fill="#FFB627"/>
+        </svg>
+        <div class="leading-none">
+          <div class="font-display font-extrabold text-[15px] tracking-[.18em]">FUND CONTROL DECK</div>
+          <div class="font-mono text-[9px] text-[var(--muted)] tracking-[.25em] mt-0.5">行情操纵终端 · v1.0 · SIMULATION</div>
+        </div>
+      </div>
+      <div class="h-7 w-px bg-[var(--border)]"></div>
+      <div class="flex items-center gap-2 font-mono text-[11px]">
+        <span class="dot pulse" :style="{background: paused? 'var(--down)' : 'var(--up)'}"></span>
+        <span class="text-[var(--text2)]">市场</span>
+        <span :class="paused? 'text-[var(--down)]':'text-[var(--up)]'">{{ halted ? 'HALTED 熔断中' : (paused ? 'PAUSED 已暂停' : 'LIVE 交易中') }}</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-5 font-mono text-[11px]">
+      <div class="flex items-center gap-2">
+        <span class="text-[var(--muted)]">TICK</span>
+        <span class="text-[var(--text)]">{{ String(tickCount).padStart(6,'0') }}</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-[var(--muted)]">速率</span>
+        <span class="text-[var(--amber)]">{{ speedLabel }}</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-[var(--muted)]">SYS-CLOCK</span>
+        <span class="text-[var(--text)]">{{ clock }}</span>
+      </div>
+      <button @click="paused = !paused" class="btn px-3 py-1 text-[11px] rounded-sm">
+        {{ paused ? '▶ 继续' : '⏸ 暂停' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- ====== 主体三栏 ====== -->
+  <main class="layout flex-1 min-h-0 grid gap-3 p-3" style="grid-template-columns: 252px 1fr 308px;">
+
+    <!-- ===== 左栏：基金列表 + 资产 ===== -->
+    <aside class="left-col flex flex-col gap-3 min-h-0">
+      <section class="panel panel-glow flex flex-col min-h-0 flex-1">
+        <div class="px-3 py-2.5 border-b hairline flex items-center justify-between">
+          <span class="font-mono text-[10px] tracking-[.22em] text-[var(--text2)]">WATCHLIST · 自选</span>
+          <span class="font-mono text-[10px] text-[var(--muted)]">{{ funds.length }}</span>
+        </div>
+        <div class="flex-1 overflow-auto">
+          <div v-for="f in funds" :key="f.id"
+               @click="activeId = f.id"
+               :class="['px-3 py-2.5 border-b hairline cursor-pointer transition-all', activeId===f.id ? 'bg-[var(--panel2)]' : 'hover:bg-[rgba(255,255,255,.02)]']">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 min-w-0">
+                <span :class="['dot shrink-0', activeId===f.id ? 'pulse':'']" :style="{background:f.color}"></span>
+                <span class="font-mono text-[11px] text-[var(--text2)] truncate">{{ f.code }}</span>
+              </div>
+              <span class="font-mono text-[10px] px-1.5 rounded-sm" :style="tagStyle(f)">{{ f.tag }}</span>
+            </div>
+            <div class="font-zh text-[12px] mt-1 truncate" :class="activeId===f.id ? 'text-[var(--text)]' : 'text-[var(--text2)]'">{{ f.name }}</div>
+            <div class="flex items-baseline justify-between mt-1.5">
+              <span class="font-display font-semibold text-[15px]" :class="f.change>=0 ? 'text-[var(--up)]':'text-[var(--down)]'">
+                {{ f.nav.toFixed(4) }}
+              </span>
+              <span class="font-mono text-[11px]" :class="f.changePct>=0 ? 'text-[var(--up)]':'text-[var(--down)]'">
+                {{ f.changePct>=0?'+':'' }}{{ f.changePct.toFixed(2) }}%
+              </span>
+            </div>
+            <!-- 迷你 sparkline -->
+            <canvas :ref="el => sparkRefs[f.id] = el" width="220" height="26" class="w-full h-[26px] mt-1"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel panel-glow px-3 py-3">
+        <div class="font-mono text-[10px] tracking-[.22em] text-[var(--text2)] mb-2.5">PORTFOLIO · 模拟持仓</div>
+        <div class="flex items-baseline gap-2">
+          <span class="font-display font-extrabold text-[22px]" :class="totalChange>=0?'text-[var(--up)]':'text-[var(--down)]'">
+            {{ totalValue.toLocaleString('zh-CN',{maximumFractionDigits:0}) }}
+          </span>
+          <span class="font-mono text-[10px] text-[var(--muted)]">CNY</span>
+        </div>
+        <div class="font-mono text-[11px] mt-0.5" :class="totalChange>=0?'text-[var(--up)]':'text-[var(--down)]'">
+          {{ totalChange>=0?'▲':'▼' }} {{ Math.abs(totalChange).toLocaleString('zh-CN',{maximumFractionDigits:0}) }}
+          ({{ totalChangePct>=0?'+':'' }}{{ totalChangePct.toFixed(2) }}%)
+        </div>
+        <div class="mt-2.5 h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
+          <div class="h-full transition-all duration-500" :style="{width: profitRatio+'%', background: totalChange>=0?'var(--up)':'var(--down)'}"></div>
+        </div>
+        <div class="flex justify-between font-mono text-[9px] text-[var(--muted)] mt-1">
+          <span>盈亏比 {{ profitRatio }}%</span>
+          <span>{{ tickCount }} ticks</span>
+        </div>
+      </section>
+    </aside>
+
+    <!-- ===== 中栏：图表 + 控制 ===== -->
+    <section class="flex flex-col gap-3 min-h-0">
+      <!-- 基金信息头 -->
+      <div class="panel panel-glow px-4 py-3 flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-display font-extrabold text-[20px] tracking-wide">{{ activeFund.nav.toFixed(4) }}</span>
+              <span class="font-mono text-[10px] px-1.5 py-0.5 rounded-sm" :class="navFlash" :style="{background:'transparent'}">{{ activeFund.code }}</span>
+            </div>
+            <div class="font-zh text-[12px] text-[var(--text2)] mt-0.5">{{ activeFund.name }}</div>
+          </div>
+          <div class="h-9 w-px bg-[var(--border)]"></div>
+          <div class="flex gap-5">
+            <div>
+              <div class="font-mono text-[9px] tracking-[.15em] text-[var(--muted)]">涨跌</div>
+              <div class="font-mono text-[14px] font-medium mt-0.5" :class="activeFund.change>=0?'text-[var(--up)]':'text-[var(--down)]'">
+                {{ activeFund.change>=0?'+':'' }}{{ activeFund.change.toFixed(4) }}
+              </div>
+            </div>
+            <div>
+              <div class="font-mono text-[9px] tracking-[.15em] text-[var(--muted)]">涨跌幅</div>
+              <div class="font-mono text-[14px] font-medium mt-0.5" :class="activeFund.changePct>=0?'text-[var(--up)]':'text-[var(--down)]'">
+                {{ activeFund.changePct>=0?'+':'' }}{{ activeFund.changePct.toFixed(2) }}%
+              </div>
+            </div>
+            <div>
+              <div class="font-mono text-[9px] tracking-[.15em] text-[var(--muted)]">最高</div>
+              <div class="font-mono text-[14px] mt-0.5 text-[var(--text)]">{{ activeFund.high.toFixed(4) }}</div>
+            </div>
+            <div>
+              <div class="font-mono text-[9px] tracking-[.15em] text-[var(--muted)]">最低</div>
+              <div class="font-mono text-[14px] mt-0.5 text-[var(--text)]">{{ activeFund.low.toFixed(4) }}</div>
+            </div>
+            <div>
+              <div class="font-mono text-[9px] tracking-[.15em] text-[var(--muted)]">成交额</div>
+              <div class="font-mono text-[14px] mt-0.5 text-[var(--amber)]">{{ formatVol(activeFund.volume) }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-mono text-[10px] text-[var(--muted)]">当前剧本</span>
+          <span class="font-mono text-[11px] px-2 py-1 rounded-sm border" :style="{color:scriptInfo(activeFund.script).color, borderColor:scriptInfo(activeFund.script).color+'66', background:scriptInfo(activeFund.script).color+'14'}">
+            {{ scriptInfo(activeFund.script).icon }} {{ scriptInfo(activeFund.script).name }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 图表 -->
+      <div class="panel panel-glow flex-1 min-h-0 relative overflow-hidden" ref="chartWrap">
+        <div class="hint-tag" v-if="drawMode">{{ drawing ? '松开鼠标 → 价格将沿此路径运行' : '绘制模式 · 在图上拖动设定走势' }}</div>
+        <div class="absolute top-3 left-4 z-[2] font-mono text-[9px] tracking-[.2em] text-[var(--muted)]">PRICE / NAV — LIVE</div>
+        <canvas id="chart" ref="chart" class="w-full h-full"></canvas>
+
+        <!-- 熔断遮罩 -->
+        <div v-if="halted" class="halt-overlay absolute inset-0 flex items-center justify-center bg-[rgba(0,192,138,.06)] backdrop-blur-[1px] pointer-events-none">
+          <div class="text-center">
+            <div class="font-display font-extrabold text-[34px] text-[var(--down)] tracking-[.15em]">CIRCUIT BREAKER</div>
+            <div class="font-zh text-[13px] text-[var(--down)] mt-1 tracking-[.3em]">熔 断 暂 停 · {{ haltCountdown.toFixed(1) }}s</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 控制台 -->
+      <div class="panel panel-glow p-3">
+        <div class="grid gap-3" style="grid-template-columns: 1.5fr 1fr 1fr;">
+
+          <!-- 剧本预设 -->
+          <div>
+            <div class="font-mono text-[9px] tracking-[.22em] text-[var(--text2)] mb-2 flex items-center justify-between">
+              <span>MARKET SCRIPT · 剧本预设</span>
+              <span class="text-[var(--muted)] normal-case tracking-normal">数字键 1-8 切换</span>
+            </div>
+            <div class="grid grid-cols-4 gap-1.5">
+              <button v-for="(s, key) in scripts" :key="key"
+                @click="setScript(key)"
+                :class="['btn text-[11px] py-2 rounded-sm leading-tight', activeFund.script===key ? 'btn-active':'']">
+                <div class="text-[13px]">{{ s.icon }}</div>
+                <div class="font-zh text-[10px] mt-0.5">{{ s.name }}</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- 滑块 -->
+          <div class="border-l border-[var(--border)] pl-3">
+            <div class="font-mono text-[9px] tracking-[.22em] text-[var(--text2)] mb-2">DIRECT CONTROL · 手动调控</div>
+            <div class="space-y-2">
+              <div>
+                <div class="flex justify-between font-mono text-[10px] mb-0.5">
+                  <span class="text-[var(--muted)]">趋势 Trend</span>
+                  <span :class="activeFund.trend>0.05?'text-[var(--up)]':activeFund.trend<-0.05?'text-[var(--down)]':'text-[var(--text2)]'">
+                    {{ activeFund.trend>0?'+':'' }}{{ activeFund.trend.toFixed(2) }}
+                  </span>
+                </div>
+                <input type="range" min="-1" max="1" step="0.01" v-model.number="activeFund.trend" @input="activeFund.script='custom'">
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-[10px] mb-0.5">
+                  <span class="text-[var(--muted)]">波动 Volatility</span>
+                  <span class="text-[var(--amber)]">{{ activeFund.vol.toFixed(2) }}x</span>
+                </div>
+                <input type="range" min="0" max="3" step="0.01" v-model.number="activeFund.vol" @input="activeFund.script='custom'">
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-[10px] mb-0.5">
+                  <span class="text-[var(--muted)]">速率 Speed</span>
+                  <span class="text-[var(--blue)]">{{ speedLabel }}</span>
+                </div>
+                <input type="range" min="0.5" max="6" step="0.1" v-model.number="speed">
+              </div>
+            </div>
+          </div>
+
+          <!-- 紧急操作 -->
+          <div class="border-l border-[var(--border)] pl-3">
+            <div class="font-mono text-[9px] tracking-[.22em] text-[var(--text2)] mb-2">EMERGENCY · 紧急操作</div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button @click="emergency('rocket')" class="btn btn-up danger-btn text-[11px] py-2 rounded-sm font-zh">🚀 拉升 +5%</button>
+              <button @click="emergency('crash')" class="btn btn-down danger-btn text-[11px] py-2 rounded-sm font-zh">💥 砸盘 -5%</button>
+              <button @click="emergency('limitUp')" class="btn btn-up danger-btn text-[11px] py-2 rounded-sm font-zh">⬆ 封涨停</button>
+              <button @click="emergency('limitDown')" class="btn btn-down danger-btn text-[11px] py-2 rounded-sm font-zh">⬇ 封跌停</button>
+              <button @click="drawMode = !drawMode" :class="['btn danger-btn text-[11px] py-2 rounded-sm font-zh col-span-2', drawMode?'btn-active':'']">
+                ✏ {{ drawMode ? '退出手绘模式' : '手绘未来走势' }}
+              </button>
+              <button @click="resetActive" class="btn text-[11px] py-2 rounded-sm font-zh col-span-2">↺ 重置该基金</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 右栏：新闻 + 成交 ===== -->
+    <aside class="right-col flex flex-col gap-3 min-h-0">
+      <section class="panel panel-glow flex flex-col min-h-0 flex-1">
+        <div class="px-3 py-2.5 border-b hairline flex items-center justify-between">
+          <span class="font-mono text-[10px] tracking-[.22em] text-[var(--text2)]">NEWS WIRE · 电报</span>
+          <span class="dot pulse" style="background:var(--amber)"></span>
+        </div>
+        <div class="flex-1 overflow-auto px-3 py-2 space-y-2.5" ref="newsBox">
+          <div v-for="n in news" :key="n.id" class="news-item">
+            <div class="flex items-start gap-2">
+              <span class="font-mono text-[9px] mt-0.5 shrink-0" :style="{color:n.color}">{{ n.time }}</span>
+              <div class="flex-1 min-w-0">
+                <div class="font-zh text-[12px] leading-snug" :style="{color:n.color}">
+                  <span class="font-mono text-[9px] mr-1" :style="{color:n.color}">▍</span>{{ n.text }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-if="!news.length" class="font-mono text-[10px] text-[var(--muted)] text-center py-6">等待行情讯号...</div>
+        </div>
+      </section>
+
+      <section class="panel panel-glow flex flex-col min-h-0 flex-1">
+        <div class="px-3 py-2.5 border-b hairline flex items-center justify-between">
+          <span class="font-mono text-[10px] tracking-[.22em] text-[var(--text2)]">TICKER · 成交明细</span>
+          <span class="font-mono text-[10px] text-[var(--muted)]">{{ trades.length }}</span>
+        </div>
+        <div class="flex-1 overflow-auto" ref="tradeBox">
+          <table class="w-full font-mono text-[10px]">
+            <tbody>
+              <tr v-for="t in trades" :key="t.id" class="border-b hairline">
+                <td class="py-1 pl-3 text-[var(--muted)]">{{ t.time }}</td>
+                <td class="py-1 text-[var(--text2)]">{{ t.code }}</td>
+                <td class="py-1 text-right" :class="t.up?'text-[var(--up)]':'text-[var(--down)]'">{{ t.price.toFixed(4) }}</td>
+                <td class="py-1 pr-3 text-right text-[var(--text2)]">{{ t.vol }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-if="!trades.length" class="font-mono text-[10px] text-[var(--muted)] text-center py-6">无成交</div>
+        </div>
+      </section>
+    </aside>
+
+  </main>
+
+  <!-- 底部状态栏 -->
+  <footer class="h-7 border-t hairline bg-[rgba(10,14,21,.7)] backdrop-blur-sm flex items-center justify-between px-4 font-mono text-[10px] text-[var(--muted)] shrink-0">
+    <div class="flex items-center gap-4">
+      <span>快捷键:</span>
+      <span><span class="text-[var(--text2)]">1-8</span> 剧本</span>
+      <span><span class="text-[var(--text2)]">Space</span> 暂停</span>
+      <span><span class="text-[var(--text2)]">D</span> 手绘</span>
+      <span><span class="text-[var(--text2)]">↑↓</span> 趋势</span>
+      <span><span class="text-[var(--text2)]">R</span> 重置</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span>引擎: <span class="text-[var(--up)]">正常</span></span>
+      <span>延迟: <span class="text-[var(--text2)]">{{ latency }}ms</span></span>
+      <span class="text-[var(--amber)]">⚠ 本终端为模拟演示，数据纯属虚构</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+const { createApp, reactive, toRefs, computed, ref, onMounted, onBeforeUnmount, nextTick, watch } = Vue;
+
+createApp({
+  setup(){
+    // ---------- 剧本定义 ----------
+    const scripts = {
+      calm:       { name:'横盘震荡', icon:'〰', trend:0.0,  vol:0.4,  color:'#8A95A8', osc:false },
+      slowBull:   { name:'慢牛攀升', icon:'📈', trend:0.35, vol:0.5,  color:'#FF4D6D', osc:false },
+      madBull:    { name:'疯牛狂奔', icon:'🐂', trend:1.1,  vol:1.1,  color:'#FF2D55', osc:false },
+      bleed:      { name:'阴跌不止', icon:'📉', trend:-0.35,vol:0.5,  color:'#00E5A8', osc:false },
+      crash:      { name:'闪崩熔断', icon:'🌊', trend:-1.8, vol:2.0, color:'#00C08A', osc:false },
+      rocket:     { name:'暴力拉升', icon:'🚀', trend:1.8,  vol:1.7,  color:'#FFB627', osc:false },
+      coaster:    { name:'过山车',  icon:'🎢', trend:0.0,  vol:1.8,  color:'#9B6BFF', osc:true  },
+      dead:       { name:'一潭死水', icon:'💤', trend:0.0,  vol:0.05, color:'#586378', osc:false },
+    };
+
+    // 自定义/手绘剧本兜底
+    const extraScripts = {
+      custom: { name:'手动调控', icon:'🎛', color:'#FFB627' },
+      draw:   { name:'手绘剧本', icon:'✏', color:'#FFB627' },
+    };
+    function scriptInfo(key){
+      return scripts[key] || extraScripts[key] || { name: key, icon:'?', color:'#8A95A8' };
+    }
+
+    // ---------- 基金 ----------
+    function mkFund(id, code, name, base, color, tag){
+      const hist = [];
+      let v = base;
+      for(let i=0;i<120;i++){ v = v*(1 + (Math.random()-0.5)*0.004); hist.push(v); }
+      const nav = hist[hist.length-1];
+      const open = hist[0];
+      const change = nav - open;
+      const changePct = (change/open)*100;
+      return reactive({
+        id, code, name, color, tag,
+        open, prevClose: base,
+        nav,
+        history: hist,
+        high: Math.max(...hist), low: Math.min(...hist),
+        change, changePct,
+        volume: Math.random()*8e8 + 2e8,
+        script: 'calm',
+        trend: 0, vol: 1.0,
+        drawPath: [],
+        shares: Math.floor(Math.random()*40000)+5000,
+        cost: base,
+      });
+    }
+
+    const funds = reactive([
+      mkFund(1,'519018','涅槃成长混合',   1.0000, '#FF4D6D','成'),
+      mkFund(2,'008888','量子科技ETF',     2.3000, '#FFB627','科'),
+      mkFund(3,'161725','红利低波指数',   1.2400, '#3B9EFF','利'),
+      mkFund(4,'159992','新能源车LOF',     0.8700, '#00E5A8','新'),
+      mkFund(5,'000001','稳健配置债基',   1.0500, '#9B6BFF','债'),
+    ]);
+
+    const state = reactive({
+      funds,
+      activeId: 1,
+      paused: false,
+      halted: false,
+      haltCountdown: 0,
+      tickCount: 0,
+      speed: 2,
+      drawMode: false,
+      drawing: false,
+      news: [],
+      trades: [],
+      clock: '',
+      latency: 12,
+      navFlash: '',
+    });
+
+    const sparkRefs = reactive({});
+    const chart = ref(null);
+    const chartWrap = ref(null);
+    const newsBox = ref(null);
+    const tradeBox = ref(null);
+    let ctx, W=0, H=0, dpr=1;
+    let drawBuffer = []; // 手绘临时点 {x,y}
+    let lastDir = null;  // 用于新闻状态
+
+    const activeFund = computed(()=> state.funds.find(f=>f.id===state.activeId));
+    const totalValue = computed(()=> state.funds.reduce((s,f)=> s + f.nav*f.shares, 0));
+    const totalCost  = computed(()=> state.funds.reduce((s,f)=> s + f.cost*f.shares, 0));
+    const totalChange = computed(()=> totalValue.value - totalCost.value);
+    const totalChangePct = computed(()=> totalCost.value? totalChange.value/totalCost.value*100 : 0);
+    const profitRatio = computed(()=> {
+      const win = state.funds.filter(f=> f.nav>=f.cost).length;
+      return Math.round(win/state.funds.length*100);
+    });
+    const speedLabel = computed(()=> state.speed.toFixed(1)+'x');
+
+    function tagStyle(f){
+      const up = f.changePct>=0;
+      return { color: up?'var(--up)':'var(--down)', borderColor:(up?'#FF4D6D':'#00C08A')+'55', background:(up?'#FF4D6D':'#00C08A')+'12' };
+    }
+    function formatVol(v){
+      if(v>=1e8) return (v/1e8).toFixed(2)+'亿';
+      if(v>=1e4) return (v/1e4).toFixed(1)+'万';
+      return v.toFixed(0);
+    }
+
+    // ---------- 价格引擎 ----------
+    function tick(){
+      if(state.halted){
+        state.haltCountdown -= interval()/1000;
+        if(state.haltCountdown<=0){ state.halted=false; }
+        return;
+      }
+      if(state.paused) return;
+
+      state.funds.forEach(f=>{
+        let pct;
+        if(f.drawPath && f.drawPath.length){
+          // 手绘追踪
+          const target = f.drawPath[0];
+          const diff = target - f.nav;
+          const step = Math.sign(diff) * Math.min(Math.abs(diff), Math.abs(diff)*0.18 + f.nav*0.0006);
+          pct = step / f.nav;
+          if(Math.abs(diff) < f.nav*0.0008){ f.drawPath.shift(); }
+          if(f.drawPath.length===0 && f.script==='draw'){ /* keep */ }
+        } else {
+          const sc = scripts[f.script] || scripts.calm;
+          let tr = f.trend + sc.trend;
+          let vo = f.vol * sc.vol;
+          let osc = sc.osc ? Math.sin(state.tickCount*0.12 + f.id) * 1.6 : 0;
+          const noise = (Math.random()-0.5)*2;
+          pct = (tr + osc)*0.00075 + noise*vo*0.0014;
+          // 单 tick 熔断限制
+          pct = Math.max(-0.025, Math.min(0.025, pct));
+        }
+        const nv = Math.max(0.01, f.nav*(1+pct));
+        f.history.push(nv);
+        if(f.history.length>160) f.history.shift();
+        f.nav = nv;
+        f.high = Math.max(f.high, nv);
+        f.low  = Math.min(f.low, nv);
+        f.change = f.nav - f.open;
+        f.changePct = (f.change/f.open)*100;
+        f.volume += Math.abs(pct)*f.nav*1e7 + Math.random()*2e6;
+
+        // 仅活跃基金产生新闻/成交（避免过载），其它基金偶发
+        if(f.id===state.activeId && state.tickCount%3===0){
+          pushTrade(f, pct);
+        }
+      });
+
+      state.tickCount++;
+
+      // 新闻判定
+      if(state.tickCount % 10 === 0){ maybeGenNews(); }
+
+      // 时钟
+      const d = new Date();
+      state.clock = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      state.latency = 8 + Math.floor(Math.random()*14);
+    }
+
+    function pad(n){ return String(n).padStart(2,'0'); }
+
+    // ---------- 新闻生成 ----------
+    const newsUp = [
+      '{n}异动飙升，主力资金大举抢筹！',
+      '重磅利好！{n}放量突破阶段新高',
+      '机构调研密集，{n}成资金宠儿',
+      '北向资金狂买{n}，净流入创纪录',
+      '分析师集体唱多{n}，目标价上调',
+      '{n}直线拉升，游资封板意图明显',
+      '业绩超预期！{n}获多家机构增持',
+      '{n}站上关键位，技术面全面转强',
+    ];
+    const newsDown = [
+      '{n}遭遇断头铡，散户恐慌出逃',
+      '黑天鹅突袭！{n}断崖式下跌',
+      '{n}高位放量下杀，主力出逃迹象明显',
+      '资金链传闻四起，{n}重挫',
+      '监管问询函下发，{n}应声急跌',
+      '{n}破位下行，技术形态遭到破坏',
+      '恐慌蔓延，{n}领跌同类板块',
+      '{n}持续阴跌，多头防线告急',
+    ];
+    const newsFlat = [
+      '{n}多空胶着，变盘在即',
+      '{n}窄幅震荡，方向选择关键期',
+      '缩量整理，{n}蓄势待发',
+      '{n}波澜不惊，市场观望情绪浓',
+      '{n}箱体运行，等待催化',
+    ];
+
+    function maybeGenNews(){
+      const f = activeFund.value;
+      const pool = f.changePct>1.5 ? newsUp : f.changePct<-1.5 ? newsDown : newsFlat;
+      const color = f.changePct>1.5 ? 'var(--up)' : f.changePct<-1.5 ? 'var(--down)' : 'var(--text2)';
+      const txt = pool[Math.floor(Math.random()*pool.length)].replace('{n}', f.name);
+      const d = new Date();
+      state.news.unshift({ id: state.tickCount+'-'+Math.random(), time: `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`, text: txt, color });
+      if(state.news.length>40) state.news.pop();
+    }
+    function pushTrade(f, pct){
+      const d = new Date();
+      state.trades.unshift({
+        id: state.tickCount+'-'+Math.random(),
+        time: `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,
+        code: f.code, price: f.nav,
+        up: pct>=0,
+        vol: formatVol(Math.abs(pct)*f.nav*5e5 + Math.random()*1e5),
+      });
+      if(state.trades.length>30) state.trades.pop();
+    }
+
+    // ---------- 操作 ----------
+    function setScript(key){
+      const f = activeFund.value;
+      f.script = key;
+      f.drawPath = [];
+      const sc = scripts[key];
+      f.trend = sc.trend;
+      f.vol = Math.max(0.3, Math.min(2.5, sc.vol));
+      flashNews(sc.color);
+    }
+    function flashNews(color){
+      // 切剧本瞬间一条快讯
+      const f = activeFund.value;
+      const d = new Date();
+      state.news.unshift({ id:'s'+state.tickCount+Math.random(), time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`, text:`▸ 切换剧本：【${scripts[f.script].name}】已生效`, color });
+      if(state.news.length>40) state.news.pop();
+    }
+    function emergency(kind){
+      if(state.halted) return;
+      const f = activeFund.value;
+      let target;
+      if(kind==='rocket'){ target = f.nav*1.05; f.script='custom'; f.trend=0.8; }
+      else if(kind==='crash'){ target = f.nav*0.95; f.script='custom'; f.trend=-0.8; }
+      else if(kind==='limitUp'){ target = f.nav*1.10; }
+      else if(kind==='limitDown'){
+        target = f.nav*0.90;
+        // 触发熔断
+        state.halted = true; state.haltCountdown = 3;
+      }
+      // 用 drawPath 平滑过渡到 target（分若干步）
+      const steps = 40;
+      const start = f.nav;
+      f.drawPath = [];
+      for(let i=1;i<=steps;i++){
+        const t = i/steps;
+        // easeOut
+        const e = 1-Math.pow(1-t,2);
+        f.drawPath.push(start + (target-start)*e);
+      }
+      // 触发快讯
+      const d = new Date();
+      const map = { rocket:['🚀 紧急拉升！主力点火', 'var(--up)'], crash:['💥 砸盘！大单砸出', 'var(--down)'], limitUp:['⬆ 封死涨停！买盘堆积万手', 'var(--up)'], limitDown:['⬇ 跌停！恐慌盘涌出，触发熔断', 'var(--down)'] };
+      const [txt,color] = map[kind];
+      state.news.unshift({ id:'e'+state.tickCount+Math.random(), time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`, text: txt+' · '+f.name, color });
+      if(state.news.length>40) state.news.pop();
+    }
+    function resetActive(){
+      const f = activeFund.value;
+      const base = f.prevClose;
+      f.history = []; let v=base;
+      for(let i=0;i<120;i++){ v=v*(1+(Math.random()-0.5)*0.004); f.history.push(v); }
+      f.open=f.history[0]; f.nav=f.history[f.history.length-1];
+      f.high=Math.max(...f.history); f.low=Math.min(...f.history);
+      f.change=f.nav-f.open; f.changePct=(f.change/f.open)*100;
+      f.trend=0; f.vol=1; f.script='calm'; f.drawPath=[];
+    }
+
+    // ---------- 图表绘制 ----------
+    function setupCanvas(){
+      const c = chart.value; if(!c) return;
+      dpr = window.devicePixelRatio||1;
+      const r = c.getBoundingClientRect();
+      W = r.width; H = r.height;
+      c.width = W*dpr; c.height = H*dpr;
+      ctx = c.getContext('2d');
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+
+    function draw(){
+      if(!ctx) return;
+      const f = activeFund.value;
+      const padL=54, padR=14, padT=34, padB=24;
+      const cw = W-padL-padR, ch = H-padT-padB;
+      ctx.clearRect(0,0,W,H);
+
+      const hist = f.history;
+      if(hist.length<2) return;
+      let hi = Math.max(...hist), lo = Math.min(...hist);
+      if(f.drawPath.length){ hi = Math.max(hi, ...f.drawPath); lo = Math.min(lo, ...f.drawPath); }
+      if(drawBuffer.length){ hi = Math.max(hi, ...drawBuffer.map(p=>p.yv)); lo = Math.min(lo, ...drawBuffer.map(p=>p.yv)); }
+      const range = Math.max((hi-lo)*1.15, f.nav*0.01);
+      const mid = (hi+lo)/2;
+      hi = mid + range/2; lo = mid - range/2;
+
+      const x = i => padL + (i/(hist.length-1))*cw;
+      const y = v => padT + (1-(v-lo)/(hi-lo))*ch;
+
+      // 网格
+      ctx.strokeStyle='rgba(80,100,130,.10)'; ctx.lineWidth=1;
+      ctx.font='10px JetBrains Mono'; ctx.fillStyle='#586378'; ctx.textAlign='right';
+      const gridN=5;
+      for(let i=0;i<=gridN;i++){
+        const gy = padT + (i/gridN)*ch;
+        ctx.beginPath(); ctx.moveTo(padL,gy); ctx.lineTo(W-padR,gy); ctx.stroke();
+        const val = hi - (i/gridN)*(hi-lo);
+        ctx.fillText(val.toFixed(4), padL-8, gy+3);
+      }
+      ctx.textAlign='center';
+      for(let i=0;i<=6;i++){
+        const gx = padL + (i/6)*cw;
+        ctx.strokeStyle='rgba(80,100,130,.06)';
+        ctx.beginPath(); ctx.moveTo(gx,padT); ctx.lineTo(gx,padT+ch); ctx.stroke();
+      }
+
+      // 开盘价虚线
+      const oy = y(f.open);
+      ctx.strokeStyle='rgba(255,255,255,.14)'; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(padL,oy); ctx.lineTo(W-padR,oy); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#9AA6BC'; ctx.textAlign='left'; ctx.fillText('OPEN '+f.open.toFixed(4), padL+4, oy-4);
+
+      // 区域填充
+      const up = f.nav >= f.open;
+      const grad = ctx.createLinearGradient(0,padT,0,padT+ch);
+      if(up){ grad.addColorStop(0,'rgba(255,77,109,.34)'); grad.addColorStop(1,'rgba(255,77,109,0)'); }
+      else  { grad.addColorStop(0,'rgba(0,192,138,.34)'); grad.addColorStop(1,'rgba(0,192,138,0)'); }
+
+      ctx.beginPath();
+      ctx.moveTo(x(0), padT+ch);
+      hist.forEach((v,i)=> ctx.lineTo(x(i), y(v)));
+      ctx.lineTo(x(hist.length-1), padT+ch);
+      ctx.closePath();
+      ctx.fillStyle=grad; ctx.fill();
+
+      // 主线
+      ctx.beginPath();
+      hist.forEach((v,i)=>{ i? ctx.lineTo(x(i),y(v)) : ctx.moveTo(x(i),y(v)); });
+      ctx.strokeStyle = up? '#FF4D6D' : '#00C08A';
+      ctx.lineWidth=1.8; ctx.lineJoin='round';
+      ctx.shadowColor = up? 'rgba(255,77,109,.5)':'rgba(0,192,138,.5)';
+      ctx.shadowBlur=8;
+      ctx.stroke();
+      ctx.shadowBlur=0;
+
+      // 当前点
+      const lx = x(hist.length-1), ly = y(f.nav);
+      ctx.beginPath(); ctx.arc(lx,ly,3.5,0,Math.PI*2); ctx.fillStyle = up?'#FF4D6D':'#00C08A'; ctx.fill();
+      ctx.beginPath(); ctx.arc(lx,ly,7,0,Math.PI*2); ctx.strokeStyle = up?'rgba(255,77,109,.4)':'rgba(0,192,138,.4)'; ctx.lineWidth=1.5; ctx.stroke();
+      // 价格标签
+      ctx.fillStyle = up? '#FF4D6D' : '#00C08A';
+      ctx.fillRect(W-padR-58, ly-9, 56, 18);
+      ctx.fillStyle='#06080D'; ctx.textAlign='center'; ctx.font='600 11px JetBrains Mono';
+      ctx.fillText(f.nav.toFixed(4), W-padR-30, ly+4);
+
+      // 手绘预览线
+      if(drawBuffer.length>1){
+        ctx.beginPath();
+        drawBuffer.forEach((p,i)=>{ i? ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); });
+        ctx.strokeStyle='rgba(255,182,39,.85)'; ctx.lineWidth=2; ctx.setLineDash([6,4]); ctx.stroke(); ctx.setLineDash([]);
+      }
+      // 已确认的 drawPath 预览（从当前点延伸）
+      if(f.drawPath.length){
+        ctx.beginPath();
+        ctx.moveTo(x(hist.length-1), y(f.nav));
+        const stepX = cw/(hist.length-1);
+        f.drawPath.forEach((v,i)=>{
+          const px = x(hist.length-1) + (i+1)*(stepX*0.6);
+          ctx.lineTo(px, y(v));
+        });
+        ctx.strokeStyle='rgba(255,182,39,.45)'; ctx.lineWidth=1.5; ctx.setLineDash([3,4]); ctx.stroke(); ctx.setLineDash([]);
+      }
+
+      // 边框
+      ctx.strokeStyle='rgba(80,100,130,.15)'; ctx.lineWidth=1;
+      ctx.strokeRect(padL,padT,cw,ch);
+    }
+
+    // ---------- 手绘交互 ----------
+    function onDown(e){
+      if(!state.drawMode || state.paused || state.halted) return;
+      state.drawing = true;
+      drawBuffer = [];
+      onMove(e);
+    }
+    function onMove(e){
+      if(!state.drawing) return;
+      const rect = chart.value.getBoundingClientRect();
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      drawBuffer.push({x,y, yv: yToVal(y)});
+    }
+    function onUp(){
+      if(!state.drawing) return;
+      state.drawing = false;
+      if(drawBuffer.length<2){ drawBuffer=[]; return; }
+      // 把 drawBuffer 转成目标净值序列（按 x 排序，采样 ~40 个点）
+      const pts = [...drawBuffer].sort((a,b)=>a.x-b.x);
+      const f = activeFund.value;
+      f.drawPath = [];
+      const N = 40;
+      for(let i=1;i<=N;i++){
+        const t = i/N;
+        const idx = Math.min(pts.length-1, Math.floor(t*(pts.length-1)));
+        let v = pts[idx].yv;
+        // 保证起始衔接当前价
+        f.drawPath.push(v);
+      }
+      // 平滑
+      f.drawPath = smooth(f.drawPath);
+      f.script = 'draw';
+      drawBuffer = [];
+    }
+    function yToVal(y){
+      const padT=34, padB=24; const ch = H-padT-padB;
+      const hist = activeFund.value.history;
+      let hi=Math.max(...hist), lo=Math.min(...hist);
+      const range=Math.max((hi-lo)*1.15, activeFund.value.nav*0.01);
+      const mid=(hi+lo)/2; hi=mid+range/2; lo=mid-range/2;
+      let t = (y-padT)/ch; t=Math.max(0,Math.min(1,t));
+      return hi - t*(hi-lo);
+    }
+    function smooth(arr){
+      const out=[...arr];
+      for(let pass=0;pass<3;pass++){
+        for(let i=1;i<out.length-1;i++){ out[i]=(out[i-1]+out[i]+out[i+1])/3; }
+      }
+      return out;
+    }
+
+    // ---------- sparkline ----------
+    function drawSparks(){
+      state.funds.forEach(f=>{
+        const c = sparkRefs[f.id]; if(!c) return;
+        const cx = c.getContext('2d');
+        const w=c.width, h=c.height;
+        cx.clearRect(0,0,w,h);
+        const hist=f.history; const hi=Math.max(...hist), lo=Math.min(...hist);
+        const rg=Math.max(hi-lo, 1e-6);
+        const up = f.nav>=f.open;
+        cx.beginPath();
+        hist.forEach((v,i)=>{ const X=i/(hist.length-1)*w; const Y=h-((v-lo)/rg)*h; i?cx.lineTo(X,Y):cx.moveTo(X,Y); });
+        cx.strokeStyle = up?'#FF4D6D':'#00C08A'; cx.lineWidth=1.2; cx.stroke();
+      });
+    }
+
+    // ---------- 闪烁效果 ----------
+    let lastNav = {};
+    watch(()=> activeFund.value && activeFund.value.nav, (nv, ov)=>{
+      if(nv===undefined) return;
+      if(ov!==undefined && nv!==ov){
+        state.navFlash = nv>ov? 'flash-up':'flash-down';
+        setTimeout(()=> state.navFlash='', 500);
+      }
+    });
+
+    // ---------- 主循环 ----------
+    let rafId, lastT=0, acc=0;
+    const interval = ()=> 280/state.speed; // ms per tick
+    function loop(t){
+      rafId = requestAnimationFrame(loop);
+      if(!lastT) lastT=t;
+      acc += t-lastT; lastT=t;
+      const iv = interval();
+      while(acc >= iv){ tick(); acc -= iv; }
+      draw();
+      drawSparks();
+    }
+
+    // ---------- 键盘 ----------
+    function onKey(e){
+      const k = e.key.toLowerCase();
+      if(k>='1'&&k<='8'){ const keys=Object.keys(scripts); const idx=parseInt(k)-1; if(keys[idx]) setScript(keys[idx]); }
+      else if(k===' '){ e.preventDefault(); state.paused=!state.paused; }
+      else if(k==='d'){ state.drawMode=!state.drawMode; }
+      else if(k==='arrowup'){ e.preventDefault(); activeFund.value.trend=Math.min(1,activeFund.value.trend+0.1); activeFund.value.script='custom'; }
+      else if(k==='arrowdown'){ e.preventDefault(); activeFund.value.trend=Math.max(-1,activeFund.value.trend-0.1); activeFund.value.script='custom'; }
+      else if(k==='r'){ resetActive(); }
+    }
+
+    onMounted(()=>{
+      setupCanvas();
+      window.addEventListener('resize', setupCanvas);
+      window.addEventListener('keydown', onKey);
+      const c = chart.value;
+      c.addEventListener('mousedown', onDown);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      // 初始几条新闻
+      maybeGenNews();
+      rafId = requestAnimationFrame(loop);
+    });
+    onBeforeUnmount(()=>{
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', setupCanvas);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    });
+
+    return {
+      ...toRefs(state),
+      scripts, scriptInfo, activeFund, totalValue, totalChange, totalChangePct, profitRatio, speedLabel,
+      sparkRefs, chart, chartWrap, newsBox, tradeBox,
+      tagStyle, formatVol, setScript, emergency, resetActive,
+      navFlash: computed(()=> state.navFlash || ''),
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
