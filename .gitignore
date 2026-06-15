@@ -1,0 +1,52 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# ===== Jupyter / Notebook =====
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+# 执行后带输出的 notebook 副本（保留无输出源码版，避免污染 git diff）
+*.executed.ipynb
+*_executed.ipynb
+
+# ===== 项目生成数据（中间产物，每次运行 notebook 会重新生成）=====
+phone-assembly-correlation/output/
+
+# ===== 包构建产物 =====
+build/
+dist/
+*.egg-info/
+*.egg
+
+# ===== 测试 / 覆盖率 =====
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ===== IDE / 编辑器 =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== 操作系统 =====
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+# macOS
+.DS_Store
+# Linux
+*~
