@@ -3,112 +3,202 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI 洞察订阅页 · 三版原型对比</title>
+<title>AI 洞察订阅页 · 六版原型对比</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,800;1,400&family=Inter+Tight:wght@400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   body { font-family: 'Inter Tight', sans-serif; background: #0a0a0f; color: #e8e8f0; }
   .font-serif { font-family: 'Fraunces', serif; }
   .font-mono { font-family: 'JetBrains Mono', monospace; }
-  .card { transition: transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s; }
-  .card:hover { transform: translateY(-6px); }
+  .card { transition: transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s, border-color .3s; }
+  .card:hover { transform: translateY(-6px); border-color: rgba(255,255,255,.3); }
+  .v4:hover { box-shadow: 0 20px 60px -20px rgba(200,52,26,.5); }
+  .v5:hover { box-shadow: 0 20px 60px -20px rgba(168,120,14,.45); }
+  .v6:hover { box-shadow: 0 20px 60px -20px rgba(184,51,28,.45); }
   .v1:hover { box-shadow: 0 20px 60px -20px rgba(139,92,246,.5); }
   .v2:hover { box-shadow: 0 20px 60px -20px rgba(200,52,26,.4); }
   .v3:hover { box-shadow: 0 20px 60px -20px rgba(212,255,0,.35); }
+  .badge-new { background: linear-gradient(120deg,#c8341a,#d4a017); color:#fff; }
+  .sun-moon { display:inline-block; width:12px; height:12px; border-radius:50%; vertical-align:middle; }
 </style>
 </head>
 <body class="min-h-screen p-6 md:p-12">
 <div class="max-w-6xl mx-auto">
   <header class="mb-12">
-    <div class="font-mono text-xs tracking-[0.3em] text-white/40 mb-3">AI FOR INSIGHT · 3 PROTOTYPES</div>
+    <div class="font-mono text-xs tracking-[0.3em] text-white/40 mb-3">AI FOR INSIGHT · 6 PROTOTYPES</div>
     <h1 class="font-serif font-extrabold text-5xl md:text-6xl leading-tight">
-      洞察订阅页 <span class="italic font-light text-white/60">三版原型</span>
+      洞察订阅页 <span class="italic font-light text-white/60">六版原型</span>
     </h1>
     <p class="mt-4 text-white/60 max-w-2xl leading-relaxed">
-      同一份需求 · 三种截然不同的美学方向。点击进入任一版本查看完整的交互（时间窗口切换、领域筛选、实时数据）。
+      同一份需求 · 六种美学方向。前三版（V1–V3）风格各异；后三版（V4–V6）融合 V2 配色与 V3 三栏布局，<span class="text-amber-300 font-semibold">并全部支持明暗双模式切换</span>。
     </p>
   </header>
 
+  <!-- 新三版（重点展示） -->
+  <div class="mb-3 flex items-center gap-3">
+    <span class="badge-new text-[10px] font-mono font-bold uppercase tracking-widest px-2 py-1 rounded">NEW</span>
+    <h2 class="font-serif font-bold text-2xl text-amber-100">第二批 · V2 配色 × V3 布局 · 含明暗双模</h2>
+  </div>
+  <div class="grid md:grid-cols-3 gap-6 mb-12">
+    <!-- V4 DISPATCH -->
+    <a href="v4-dispatch.html" class="card v4 block rounded-2xl overflow-hidden border border-white/10" style="background:linear-gradient(160deg,#f1ebdd,#e8e0cc);color:#1a1410">
+      <div class="h-44 relative overflow-hidden" style="background:#e8e0cc">
+        <div class="absolute top-0 left-0 right-0 h-1.5" style="background:repeating-linear-gradient(135deg,#c8341a 0 10px,#1a1410 10px 20px)"></div>
+        <div class="absolute inset-0 px-5 py-5 flex flex-col justify-between">
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-[9px] font-bold tracking-widest px-2 py-0.5" style="background:#1a1410;color:#f1ebdd">● 急电</span>
+            <span class="font-mono text-[9px]" style="color:#9a8d7a">⚡ 12:04:22</span>
+          </div>
+          <div>
+            <div class="font-black text-3xl leading-none" style="font-family:'Archivo'">DISPATCH<span style="color:#c8341a">//</span></div>
+            <div class="font-serif italic text-sm mt-1" style="color:#5a4f42">通讯社 · 实时电讯</div>
+          </div>
+          <div class="flex justify-between font-mono text-[9px] tracking-widest" style="color:#9a8d7a">
+            <span>[01] 时间窗 ▸</span><span>003 / 016</span>
+          </div>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-xs tracking-widest" style="color:#c8341a">V4 · DISPATCH</span>
+          <span class="flex items-center gap-1 text-[10px] font-mono" style="color:#9a8d7a"><span class="sun-moon" style="background:#d4a017"></span><span class="sun-moon" style="background:#1a1410"></span> 昼/夜</span>
+        </div>
+        <h3 class="font-serif font-extrabold text-2xl mt-1">电报通讯社</h3>
+        <p class="text-sm mt-2 leading-relaxed" style="color:#5a4f42">冷峻急促的电报通讯社气质。时间戳密集、急电红字闪烁、斜纹警示条、热力格点阵。</p>
+        <div class="mt-4 flex gap-1.5 flex-wrap text-[10px] font-mono">
+          <span class="px-2 py-0.5 rounded-full" style="background:rgba(200,52,26,.12);color:#c8341a">朱砂急电</span>
+          <span class="px-2 py-0.5 rounded-full" style="background:rgba(45,90,61,.12);color:#2d5a3d">JetBrains</span>
+          <span class="px-2 py-0.5 rounded-full" style="background:rgba(29,59,110,.12);color:#1d3b6e">扫描动效</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- V5 ATELIER -->
+    <a href="v5-atelier.html" class="card v5 block rounded-2xl overflow-hidden border border-white/10" style="background:linear-gradient(160deg,#efe7d4,#e4d9bf);color:#211a12">
+      <div class="h-44 relative overflow-hidden" style="background:#e4d9bf">
+        <div class="absolute inset-0 px-5 py-5 flex flex-col justify-between items-center text-center">
+          <div class="font-mono text-[9px] uppercase tracking-[0.4em]" style="color:#9c8b6f">An Atelier · Est. MMXXII</div>
+          <div>
+            <div class="font-serif font-black leading-none" style="font-size:2.6rem">Atelier<span class="font-light italic" style="color:#b8331c">.</span></div>
+            <div class="font-serif italic text-sm mt-1" style="color:#5c4f3c">一间洞察工坊</div>
+          </div>
+          <div class="flex items-center gap-2 font-mono text-[9px]" style="color:#b08d3c">
+            <span>❦</span><span>I. 择时</span><span>❦</span><span>II. 择题</span><span>❦</span>
+          </div>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-xs tracking-widest" style="color:#b8331c">V5 · ATELIER</span>
+          <span class="flex items-center gap-1 text-[10px] font-mono" style="color:#9c8b6f"><span class="sun-moon" style="background:#d4a017"></span><span class="sun-moon" style="background:#211a12"></span> 晨/夜</span>
+        </div>
+        <h3 class="font-serif font-extrabold text-2xl mt-1">档案工坊</h3>
+        <p class="text-sm mt-2 leading-relaxed" style="color:#5c4f3c">温暖策展的工坊气质。罗马数字章节、Fraunces 衬线大字、装饰花纹、匠心陈列卡。</p>
+        <div class="mt-4 flex gap-1.5 flex-wrap text-[10px] font-mono">
+          <span class="px-2 py-0.5 rounded-full" style="background:rgba(184,51,28,.12);color:#b8331c">罗马章节</span>
+          <span class="px-2 py-0.5 rounded-full" style="background:rgba(176,141,60,.18);color:#a8780e">Fraunces</span>
+          <span class="px-2 py-0.5 rounded-full" style="background:rgba(51,90,58,.12);color:#335a3a">策展感</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- V6 LEDGER -->
+    <a href="v6-ledger.html" class="card v6 block rounded-2xl overflow-hidden border border-white/10" style="background:linear-gradient(160deg,#f0ead8,#e6dec6);color:#181410">
+      <div class="h-44 relative overflow-hidden" style="background:#ece4cd">
+        <div class="absolute inset-0 px-5 py-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-[9px] uppercase tracking-[0.3em]" style="color:#968b72">BOOK · 卷 XLVII</span>
+            <span class="font-mono text-[8px] font-bold px-1.5 py-0.5" style="border:1.5px solid #b8331c;color:#b8331c;transform:rotate(-5deg);display:inline-block">已核</span>
+          </div>
+          <div>
+            <div class="font-serif font-black leading-none" style="font-size:2.6rem">Ledger<span class="font-serif italic font-normal" style="color:#b8331c">.</span></div>
+            <div class="font-serif italic text-sm mt-1" style="color:#54493a">洞察总账 · 借贷平衡</div>
+          </div>
+          <div class="font-mono text-[9px] flex justify-between" style="color:#968b72">
+            <span>№0001 凭单</span><span>热度 94</span><span style="color:#b8331c">合计 1284</span>
+          </div>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-xs tracking-widest" style="color:#b8331c">V6 · LEDGER</span>
+          <span class="flex items-center gap-1 text-[10px] font-mono" style="color:#968b72"><span class="sun-moon" style="background:#d4a017"></span><span class="sun-moon" style="background:#181410"></span> 日/夜</span>
+        </div>
+        <h3 class="font-serif font-extrabold text-2xl mt-1">编纂账本</h3>
+        <p class="text-sm mt-2 leading-relaxed" style="color:#54493a">精密规范的账本气质。双线账本表、借贷红绿墨、印章、凭单编号、试算平衡带。</p>
+        <div class="mt-4 flex gap-1.5 flex-wrap text-[10px] font-mono">
+          <span class="px-2 py-0.5 rounded-full" style="background:rgba(184,51,28,.12);color:#b8331c">双线账表</span>
+          <span class="px-2 py-0.5 rounded-full" style="background:rgba(46,88,54,.12);color:#2e5836">IBM Plex</span>
+          <span class="px-2 py-0.5 rounded-full" style="background:rgba(156,112,8,.15);color:#9c7008">印章</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- 旧三版 -->
+  <div class="mb-3 flex items-center gap-3">
+    <span class="text-[10px] font-mono font-bold uppercase tracking-widest px-2 py-1 rounded border border-white/20 text-white/50">EARLIER</span>
+    <h2 class="font-serif font-bold text-2xl text-white/70">第一批 · 风格探索 V1–V3</h2>
+  </div>
   <div class="grid md:grid-cols-3 gap-6">
     <a href="v1-nebula.html" class="card v1 block rounded-2xl overflow-hidden border border-white/10" style="background:linear-gradient(160deg,#0c0b1d,#06060f)">
-      <div class="h-44 relative overflow-hidden" style="background:radial-gradient(circle at 70% 20%,rgba(139,92,246,.5),transparent 60%),radial-gradient(circle at 20% 80%,rgba(34,211,238,.35),transparent 60%)">
+      <div class="h-40 relative overflow-hidden" style="background:radial-gradient(circle at 70% 20%,rgba(139,92,246,.5),transparent 60%),radial-gradient(circle at 20% 80%,rgba(34,211,238,.35),transparent 60%)">
         <div class="absolute inset-0 grid place-items-center">
-          <div class="w-16 h-16 rounded-full" style="background:radial-gradient(circle,#fef9c3,#f472b6 40%,#8b5cf6 80%);box-shadow:0 0 40px -5px rgba(244,114,182,.7)"></div>
+          <div class="w-14 h-14 rounded-full" style="background:radial-gradient(circle,#fef9c3,#f472b6 40%,#8b5cf6 80%);box-shadow:0 0 40px -5px rgba(244,114,182,.7)"></div>
         </div>
         <div class="absolute bottom-3 left-4 font-mono text-[10px] tracking-[0.2em] text-white/50">DARK · IMMERSIVE</div>
       </div>
       <div class="p-5">
         <div class="font-mono text-xs text-violet-300 tracking-widest">V1 · NEBULA</div>
-        <h2 class="font-serif font-extrabold text-2xl mt-1">星图</h2>
-        <p class="text-sm text-white/55 mt-2 leading-relaxed">深空沉浸式暗黑美学。紫粉渐变 + 星空轨道动效，强调"信号即星辰"的诗意叙事。</p>
-        <div class="mt-4 flex gap-2 flex-wrap text-[10px] font-mono">
-          <span class="px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-200">玻璃拟态</span>
-          <span class="px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-200">星空动效</span>
-          <span class="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200">Bricolage</span>
-        </div>
+        <h3 class="font-serif font-extrabold text-2xl mt-1">星图</h3>
+        <p class="text-sm text-white/55 mt-2">深空沉浸式暗黑美学。紫粉渐变 + 星空轨道动效。</p>
       </div>
     </a>
 
     <a href="v2-editorial.html" class="card v2 block rounded-2xl overflow-hidden border border-white/10" style="background:#f4efe6;color:#1a1612">
-      <div class="h-44 relative overflow-hidden" style="background:#ece5d6">
+      <div class="h-40 relative overflow-hidden" style="background:#ece5d6">
         <div class="absolute inset-0 px-5 py-4 flex flex-col justify-between">
           <div class="font-mono text-[9px] tracking-[0.25em] text-stone-500">VOL.XLVII · NO.23</div>
           <div>
             <div class="font-serif font-black text-3xl leading-none text-stone-900">The Insight</div>
             <div class="font-serif italic text-2xl text-red-700 leading-none mt-0.5">Review</div>
           </div>
-          <div class="font-mono text-[9px] tracking-widest text-stone-500">A CURATED DISPATCH</div>
         </div>
-        <div class="absolute top-3 right-3 border-2 border-red-700 text-red-700 font-mono text-[8px] px-1.5 py-0.5 font-bold tracking-widest" style="transform:rotate(-6deg)">TOP STORY</div>
-        <div class="absolute bottom-3 right-3 font-mono text-[9px] tracking-[0.2em] text-stone-500">EDITORIAL · LIGHT</div>
+        <div class="absolute top-3 right-3 border-2 border-red-700 text-red-700 font-mono text-[8px] px-1.5 py-0.5 font-bold" style="transform:rotate(-6deg)">TOP STORY</div>
       </div>
       <div class="p-5">
         <div class="font-mono text-xs text-red-700 tracking-widest">V2 · EDITORIAL</div>
-        <h2 class="font-serif font-extrabold text-2xl mt-1">周刊</h2>
-        <p class="text-sm text-stone-600 mt-2 leading-relaxed">编辑部杂志风。米白纸张 + 朱砂红 + 衬线大标题，把洞察变成一份"为你而编"的报刊。</p>
-        <div class="mt-4 flex gap-2 flex-wrap text-[10px] font-mono">
-          <span class="px-2 py-0.5 rounded-full bg-red-700/10 text-red-700">衬线美学</span>
-          <span class="px-2 py-0.5 rounded-full bg-amber-700/10 text-amber-700">纸张纹理</span>
-          <span class="px-2 py-0.5 rounded-full bg-stone-700/10 text-stone-700">Fraunces</span>
-        </div>
+        <h3 class="font-serif font-extrabold text-2xl mt-1">周刊</h3>
+        <p class="text-sm text-stone-600 mt-2">编辑部杂志风。米白纸张 + 朱砂红 + 衬线大标题。</p>
       </div>
     </a>
 
     <a href="v3-grid.html" class="card v3 block rounded-2xl overflow-hidden border border-white/10" style="background:#0a0a0a">
-      <div class="h-44 relative overflow-hidden" style="background:#111">
+      <div class="h-40 relative overflow-hidden" style="background:#111">
         <div class="absolute inset-0" style="background-image:linear-gradient(#2a2a2a 1px,transparent 1px),linear-gradient(90deg,#2a2a2a 1px,transparent 1px);background-size:20px 20px;opacity:.5"></div>
         <div class="absolute inset-0 px-5 py-4 flex flex-col justify-between">
           <div class="flex items-center gap-2">
             <span class="font-mono text-[9px] font-bold tracking-widest px-2 py-0.5" style="background:#d4ff00;color:#0a0a0a">● LIVE</span>
-            <span class="font-mono text-[9px] text-stone-500">UPLINK 23ms</span>
           </div>
-          <div>
-            <div class="font-mono font-black text-3xl leading-none text-white">SIGNAL<span style="color:#d4ff00">//</span>GRID</div>
-          </div>
-          <div class="font-mono text-[9px] text-stone-500 tracking-widest">[02] SECTOR FILTER ▸</div>
+          <div class="font-mono font-black text-3xl leading-none text-white">SIGNAL<span style="color:#d4ff00">//</span>GRID</div>
         </div>
-        <div class="absolute bottom-3 right-3 font-mono text-[9px] tracking-[0.2em] text-stone-600">TERMINAL · DARK</div>
       </div>
       <div class="p-5">
         <div class="font-mono text-xs tracking-widest" style="color:#d4ff00">V3 · GRID</div>
-        <h2 class="font-serif font-extrabold text-2xl mt-1">终端</h2>
-        <p class="text-sm text-white/55 mt-2 leading-relaxed">工业终端 Brutalist 风。等宽字体 + 荧光黄绿 + 扫描线，把洞察做成一块"信号矩阵仪表盘"。</p>
-        <div class="mt-4 flex gap-2 flex-wrap text-[10px] font-mono">
-          <span class="px-2 py-0.5 rounded-full" style="background:rgba(212,255,0,.15);color:#d4ff00">Brutalist</span>
-          <span class="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">扫描线</span>
-          <span class="px-2 py-0.5 rounded-full bg-white/10 text-white/70">JetBrains</span>
-        </div>
+        <h3 class="font-serif font-extrabold text-2xl mt-1">终端</h3>
+        <p class="text-sm text-white/55 mt-2">工业终端 Brutalist 风。荧光黄绿 + 扫描线 + 等宽字体。</p>
       </div>
     </a>
   </div>
 
+  <!-- 说明 -->
   <div class="mt-12 grid md:grid-cols-3 gap-4 text-sm">
     <div class="border border-white/10 rounded-xl p-4">
       <div class="font-mono text-xs text-white/40 mb-2">共同功能</div>
       <ul class="space-y-1 text-white/70 text-[13px]">
-        <li>· 六档时间窗：当天 / 3天 / 一周 / 一月 / 半年 / 全部</li>
-        <li>· 领域多维筛选（AI / BIO / QUANT / CLIMATE / SOC）</li>
-        <li>· 实时统计：信号数、热度、来源、高优先级</li>
+        <li>· 六档时间窗：当天 / 3 天 / 一周 / 一月 / 半年 / 全部</li>
+        <li>· 领域多维筛选（智能 / 生医 / 量子 / 气候 / 人文）</li>
+        <li>· 实时统计：数量、热度、来源、加急</li>
         <li>· AI 自动摘要 / 编辑荐语</li>
       </ul>
     </div>
@@ -118,21 +208,21 @@
         <li>· Vue 3 (CDN, Composition API)</li>
         <li>· Tailwind CSS (CDN)</li>
         <li>· 单 HTML 文件，双击即开</li>
-        <li>· Google Fonts 字体方案</li>
+        <li>· V4–V6：CSS 变量驱动明暗双模</li>
       </ul>
     </div>
     <div class="border border-white/10 rounded-xl p-4">
       <div class="font-mono text-xs text-white/40 mb-2">如何选择</div>
       <ul class="space-y-1 text-white/70 text-[13px]">
-        <li>· 偏感性 / 品牌 → <span class="text-violet-300">V1 Nebula</span></li>
-        <li>· 偏阅读 / 信任 → <span class="text-red-400">V2 Editorial</span></li>
-        <li>· 偏效率 / 专业 → <span style="color:#d4ff00">V3 Grid</span></li>
+        <li>· 急促 / 信息密度 → <span class="text-red-400">V4 Dispatch</span></li>
+        <li>· 温暖 / 策展感 → <span class="text-amber-300">V5 Atelier</span></li>
+        <li>· 规范 / 表格化 → <span class="text-orange-300">V6 Ledger</span></li>
       </ul>
     </div>
   </div>
 
   <footer class="mt-12 pt-6 border-t border-white/10 text-center font-mono text-xs text-white/30">
-    AI Insights Demo · 3 Prototypes · 2026-06-16
+    AI Insights Demo · 6 Prototypes · 2026-06-17
   </footer>
 </div>
 </body>

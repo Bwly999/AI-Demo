@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ATELIER · 洞察工坊</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,300;1,9..144,400;1,9..144,500&family=DM+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #efe7d4;
+    --bg-2: #e4d9bf;
+    --panel: #f7f0df;
+    --panel-2: #ece2cc;
+    --ink: #211a12;
+    --ink-2: #5c4f3c;
+    --ink-3: #9c8b6f;
+    --line: #211a12;
+    --line-soft: rgba(33,26,18,0.14);
+    --vermillion: #b8331c;
+    --mustard: #a8780e;
+    --forest: #335a3a;
+    --cobalt: #244b7a;
+    --rose: #9a3553;
+    --hl-bg: #211a12;
+    --hl-fg: #efe7d4;
+    --gold-line: #b08d3c;
+  }
+  html.dark {
+    --bg: #100d0a;
+    --bg-2: #18130d;
+    --panel: #1a1510;
+    --panel-2: #221b14;
+    --ink: #ede2c9;
+    --ink-2: #b3a386;
+    --ink-3: #756650;
+    --line: #ede2c9;
+    --line-soft: rgba(237,226,201,0.14);
+    --vermillion: #e5664a;
+    --mustard: #e0a93a;
+    --forest: #5fb573;
+    --cobalt: #6ba2d8;
+    --rose: #e07a9a;
+    --hl-bg: #ede2c9;
+    --hl-fg: #100d0a;
+    --gold-line: #d4a93a;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--ink); font-family: 'Cormorant Garamond', serif; transition: background .3s, color .3s; }
+  .font-serif { font-family: 'Fraunces', serif; }
+  .font-cormorant { font-family: 'Cormorant Garamond', serif; }
+  .font-mono { font-family: 'DM Mono', monospace; }
+  .font-disp { font-family: 'Fraunces', serif; }
+
+  body::before {
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.4;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.32  0 0 0 0 0.26  0 0 0 0 0.18  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  html.dark body::before { opacity:.22; }
+  .app { position: relative; z-index:1; }
+
+  .rule { border-color: var(--line); }
+  .soft-rule { border-color: var(--line-soft); }
+  .panel { background: var(--panel); }
+  .panel-2 { background: var(--panel-2); }
+
+  .vermillion { color: var(--vermillion); }
+  .mustard { color: var(--mustard); }
+  .forest { color: var(--forest); }
+  .cobalt { color: var(--cobalt); }
+  .rose { color: var(--rose); }
+  .bg-vermillion { background: var(--vermillion); color: var(--panel); }
+  .bg-mustard { background: var(--mustard); color: var(--panel); }
+  html.dark .bg-vermillion, html.dark .bg-mustard { color: #100d0a; }
+
+  .double { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); height: 5px; border-image: none; position:relative; }
+  .double::after { content:""; position:absolute; left:0; right:0; top:2px; height:1px; background: var(--line); }
+  .ornament { color: var(--gold-line); }
+
+  /* 装饰：罗马数字章节 */
+  .chap { font-family:'Fraunces',serif; font-style:italic; font-weight:500; color: var(--vermillion); }
+
+  .btn-ctrl { border:1px solid var(--line-soft); background: var(--panel); color: var(--ink-2); transition: all .15s; font-family:'DM Mono',monospace; }
+  .btn-ctrl:hover { border-color: var(--vermillion); color: var(--ink); }
+  .btn-ctrl.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  .item { transition: all .25s cubic-bezier(.2,.7,.2,1); cursor:pointer; }
+  .item:hover { transform: translateY(-2px); }
+  .item:hover .item-bar { transform: scaleX(1); }
+  .item-bar { transform: scaleX(0); transform-origin:left; transition: transform .35s cubic-bezier(.2,.7,.2,1); background: var(--vermillion); height:2px; }
+
+  .tabular { font-variant-numeric: tabular-nums; }
+  .blink { animation: blink 1.4s steps(2) infinite; }
+  @keyframes blink { 50% { opacity:0 } }
+
+  .marquee { overflow:hidden; }
+  .marquee-inner { display:inline-flex; white-space:nowrap; animation: sx 70s linear infinite; }
+  @keyframes sx { to { transform: translateX(-50%) } }
+
+  .reveal { opacity:0; animation: fade .5s ease forwards; }
+  @keyframes fade { to { opacity:1 } }
+
+  .num { font-family:'Fraunces',serif; font-weight:300; font-style:italic; font-variant-numeric: tabular-nums; letter-spacing:-.02em; }
+
+  ::-webkit-scrollbar { width:10px; } ::-webkit-scrollbar-track { background: var(--bg-2); }
+  ::-webkit-scrollbar-thumb { background: var(--ink-3); border:2px solid var(--bg-2); }
+
+  /* 章节大编号 */
+  .chap-num { font-family:'Fraunces',serif; font-weight:900; font-style:italic; color: var(--vermillion); line-height:.8; }
+
+  /* 边框装饰角 */
+  .deco-frame { position:relative; }
+  .deco-frame::before, .deco-frame::after {
+    content:"❦"; position:absolute; color: var(--gold-line); font-size:14px; opacity:.7;
+  }
+  .deco-frame::before { top:-9px; left:50%; transform:translateX(-50%); background:var(--bg); padding:0 8px; }
+
+  .pill { display:inline-block; padding:2px 8px; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; border:1px solid var(--line-soft); }
+
+  [v-cloak]{display:none}
+</style>
+</head>
+<body>
+<div id="app" v-cloak class="app min-h-screen">
+
+  <!-- 顶部跑马栏（工坊式） -->
+  <div class="border-b rule panel-2">
+    <div class="flex items-stretch text-[11px] font-mono">
+      <div class="px-3 py-1.5 flex items-center gap-2 border-r rule" :style="{background:'var(--vermillion)',color:'var(--panel)'}">
+        <span class="blink">✦</span> 营业中
+      </div>
+      <div class="marquee flex-1 border-r rule flex items-center overflow-hidden">
+        <div class="marquee-inner" :style="{color:'var(--ink-2)'}">
+          <span v-for="n in 2" :key="n" class="flex">
+            <span class="mx-4 ornament">❦</span>
+            <span class="mx-3">ATELIER 工坊 · 第 {{ roman(filtered.length) }} 批</span>
+            <span class="mx-3 vermillion">现存 {{ filtered.length }} 件</span>
+            <span class="mx-3">{{ clock }}</span>
+            <span class="mx-3 mustard">本期策展 · {{ topSector.label }} 为主题</span>
+            <span class="mx-3 forest">>{{ stats.sources }} 位供稿匠人</span>
+            <span class="mx-3 cobalt">热度均 {{ avgHeat }}/百</span>
+            <span class="mx-3 rose">订户 WL · 尊享</span>
+          </span>
+        </div>
+      </div>
+      <button @click="toggleTheme" class="px-3 py-1.5 hover:bg-[var(--panel)] transition flex items-center gap-2 border-r rule" :style="{color:'var(--ink-2)'}">
+        <span>{{ theme==='light'?'☾':'☀' }}</span>
+        <span class="uppercase tracking-widest text-[10px]">{{ theme==='light'?'夜阑':'晨光' }}</span>
+      </button>
+      <div class="px-3 py-1.5 tabular border-r rule hidden md:flex items-center font-mono" :style="{color:'var(--ink-2)'}">{{ clock }}</div>
+    </div>
+  </div>
+
+  <!-- 招牌 -->
+  <header class="border-b rule relative">
+    <div class="px-6 md:px-12 py-8">
+      <div class="text-center max-w-4xl mx-auto deco-frame py-2">
+        <div class="font-mono text-[10px] uppercase tracking-[0.4em]" :style="{color:'var(--ink-3)'}">An Atelier of Insight · Est. MMXXII</div>
+        <h1 class="font-serif font-black mt-2 leading-none" style="font-size:clamp(3rem,8vw,6.5rem)">
+          Atelier<span class="font-light italic vermillion">.</span>
+        </h1>
+        <div class="font-cormorant italic text-xl md:text-2xl mt-3" :style="{color:'var(--ink-2)'}">
+          一间为你而开的 <span class="vermillion font-semibold not-italic font-serif">洞察工坊</span>
+        </div>
+        <div class="flex items-center justify-center gap-3 mt-4 text-[11px] font-mono" :style="{color:'var(--ink-3)'}">
+          <span>本期 {{ filtered.length }} 件</span>
+          <span class="ornament">✦</span>
+          <span>匠人 {{ stats.sources }} 位</span>
+          <span class="ornament">✦</span>
+          <span>策展于 {{ today }}</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 控制台 -->
+  <section class="border-b rule">
+    <div class="grid lg:grid-cols-[1fr_auto]">
+      <div class="p-5 border-b lg:border-b-0 lg:border-r rule">
+        <div class="flex items-baseline gap-3 mb-3">
+          <span class="chap-num text-3xl">I.</span>
+          <div>
+            <div class="font-serif font-bold text-lg leading-none">择一时段</div>
+            <div class="font-mono text-[10px] uppercase tracking-[0.2em] mt-1" :style="{color:'var(--ink-3)'}">Temporal Window</div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <button v-for="r in ranges" :key="r.key" @click="range=r.key"
+            class="btn-ctrl px-3.5 py-1.5 text-[11px] font-mono uppercase tracking-wider">
+            {{ r.label }}<span class="ml-1.5 opacity-40">{{ r.abbr }}</span>
+          </button>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="flex items-baseline gap-3 mb-3">
+          <span class="chap-num text-3xl">II.</span>
+          <div>
+            <div class="font-serif font-bold text-lg leading-none">择一主题</div>
+            <div class="font-mono text-[10px] uppercase tracking-[0.2em] mt-1" :style="{color:'var(--ink-3)'}">Thematic Selection</div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <button v-for="c in categories" :key="c.key" @click="toggleCategory(c.key)"
+            class="btn-ctrl px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider flex items-center gap-1.5"
+            :class="activeCats.includes(c.key)?'active':''">
+            <span class="w-2 h-2" :style="{background:c.color}"></span>{{ c.label }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据带（衬线大数字） -->
+    <div class="border-t rule grid grid-cols-2 md:grid-cols-4">
+      <div class="p-5 border-r rule text-center">
+        <div class="font-mono text-[10px] uppercase tracking-[0.2em]" :style="{color:'var(--ink-3)'}">现存</div>
+        <div class="num text-5xl mt-1">{{ filtered.length }}</div>
+        <div class="font-cormorant italic text-sm mt-1 vermillion">件洞察</div>
+      </div>
+      <div class="p-5 border-r rule text-center">
+        <div class="font-mono text-[10px] uppercase tracking-[0.2em]" :style="{color:'var(--ink-3)'}">均热度</div>
+        <div class="num text-5xl mt-1 mustard">{{ avgHeat }}</div>
+        <div class="font-cormorant italic text-sm mt-1" :style="{color:'var(--ink-3)'}">于百</div>
+      </div>
+      <div class="p-5 border-r rule text-center">
+        <div class="font-mono text-[10px] uppercase tracking-[0.2em]" :style="{color:'var(--ink-3)'}">匠人</div>
+        <div class="num text-5xl mt-1 cobalt">{{ sourceCount }}</div>
+        <div class="font-cormorant italic text-sm mt-1" :style="{color:'var(--ink-3)'}">位供稿</div>
+      </div>
+      <div class="p-5 text-center">
+        <div class="font-mono text-[10px] uppercase tracking-[0.2em]" :style="{color:'var(--ink-3)'}">珍藏</div>
+        <div class="num text-5xl mt-1 forest">{{ criticalCount }}</div>
+        <div class="font-cormorant italic text-sm mt-1" :style="{color:'var(--ink-3)'}">件首选</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 主体三栏 -->
+  <section class="grid lg:grid-cols-[250px_1fr_300px]">
+
+    <!-- 左：工坊目录 -->
+    <aside class="border-r rule p-5 space-y-6">
+      <div>
+        <div class="chap text-sm font-mono uppercase tracking-[0.2em] mb-3">— 目录 —</div>
+        <nav class="space-y-1">
+          <a v-for="(nv,i) in navItems" :key="nv.label"
+            class="flex items-baseline justify-between px-2 py-1.5 font-cormorant text-base hover:bg-[var(--panel-2)] transition group"
+            :class="i===0?'':''" :style="i===0?{color:'var(--vermillion)',fontWeight:'600'}:{color:'var(--ink-2)'}">
+            <span class="flex items-baseline gap-2"><span class="font-mono text-[10px] opacity-50">{{ roman(i+1) }}</span>{{ nv.label }}</span>
+            <span class="font-mono text-xs tabular opacity-60">{{ nv.count }}</span>
+          </a>
+        </nav>
+      </div>
+
+      <div class="pt-4 border-t soft-rule">
+        <div class="chap text-sm font-mono uppercase tracking-[0.2em] mb-3">— 匠人榜 —</div>
+        <div class="space-y-2.5">
+          <div v-for="s in sourceStats" :key="s.name">
+            <div class="flex items-baseline justify-between mb-1">
+              <span class="font-cormorant text-sm" :style="{color:'var(--ink-2)'}">{{ s.name }}</span>
+              <span class="font-mono text-[11px] vermillion font-medium tabular">{{ s.count }}</span>
+            </div>
+            <div class="h-[3px]" :style="{background:'var(--panel-2)'}">
+              <div class="h-full" :style="{width:(s.count/maxSource*100)+'%',background:s.color}"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 中：策展陈列 -->
+    <main class="p-6">
+      <div class="flex items-baseline justify-between mb-6 flex-wrap gap-2">
+        <div class="flex items-baseline gap-3">
+          <span class="chap-num text-4xl">III.</span>
+          <div>
+            <div class="font-serif font-black text-3xl leading-none">本期陈列</div>
+            <div class="font-cormorant italic mt-1" :style="{color:'var(--ink-2)'}">{{ currentRangeLabel }} 时段 · 凡 {{ filtered.length }} 件</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 text-[10px] font-mono">
+          <span class="mr-1" :style="{color:'var(--ink-3)'}">陈列序</span>
+          <button v-for="so in sorts" :key="so.key" @click="sort=so.key"
+            class="btn-ctrl px-2.5 py-1 uppercase tracking-wider" :class="sort===so.key?'active':''">{{ so.label }}</button>
+        </div>
+      </div>
+
+      <!-- 陈列卡片网格 -->
+      <div class="grid md:grid-cols-2 gap-5">
+        <article v-for="(item, idx) in filtered" :key="item.id"
+          class="item panel border soft-rule p-5 reveal relative overflow-hidden"
+          :style="{animationDelay:(0.04*idx)+'s'}">
+          <!-- 左侧色条 -->
+          <div class="absolute left-0 top-0 bottom-0 w-1" :style="{background:catColor(item.category)}"></div>
+
+          <div class="flex items-center justify-between mb-2">
+            <span class="pill" :style="{borderColor:catColor(item.category),color:catColor(item.category)}">{{ catLabel(item.category) }}</span>
+            <span class="font-mono text-[10px]" :style="{color:'var(--ink-3)'}">{{ item.source }}</span>
+          </div>
+
+          <h3 class="font-serif font-bold text-xl leading-snug">{{ item.title }}</h3>
+          <p class="font-cormorant text-[15px] mt-2 leading-relaxed" :style="{color:'var(--ink-2)'}">{{ item.summary }}</p>
+
+          <div class="flex items-center justify-between mt-4 pt-3 border-t soft-rule">
+            <div class="flex items-center gap-2">
+              <span class="num text-2xl" :class="item.heat>85?'vermillion':item.heat>75?'mustard':'cobalt'">{{ item.heat }}</span>
+              <span class="font-cormorant italic text-xs" :style="{color:'var(--ink-3)'}">/ 百度</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span v-if="item.critical" class="pill vermillion" :style="{borderColor:'var(--vermillion)'}">★ 珍藏</span>
+              <span class="font-mono text-[10px]" :style="{color:'var(--ink-3)'}">{{ relTime(item.t) }}</span>
+            </div>
+          </div>
+
+          <div class="item-bar mt-3"></div>
+        </article>
+      </div>
+
+      <div v-if="filtered.length===0" class="panel border soft-rule p-16 text-center">
+        <div class="ornament text-3xl mb-2">❦</div>
+        <div class="font-serif italic text-2xl" :style="{color:'var(--ink-2)'}">此处暂空</div>
+        <div class="font-cormorant text-sm mt-1" :style="{color:'var(--ink-3)'}">换一时段或主题，或可见新物</div>
+      </div>
+    </main>
+
+    <!-- 右：策展人札记 -->
+    <aside class="border-l rule p-5 space-y-6">
+      <!-- 本月精选 -->
+      <div class="panel border soft-rule p-5 deco-frame">
+        <div class="chap text-sm font-mono uppercase tracking-[0.2em] mb-3">— 本月精选 —</div>
+        <div v-if="focus">
+          <span class="pill" :style="{borderColor:catColor(focus.category),color:catColor(focus.category)}">{{ catLabel(focus.category) }}</span>
+          <h4 class="font-serif font-bold text-lg leading-tight mt-2">{{ focus.title }}</h4>
+          <p class="font-cormorant text-sm mt-2 leading-relaxed" :style="{color:'var(--ink-2)'}">{{ focus.summary }}</p>
+          <div class="mt-3 pt-3 border-t soft-rule flex items-baseline justify-between">
+            <span class="num text-3xl vermillion">{{ focus.heat }}</span>
+            <span class="font-cormorant italic text-xs" :style="{color:'var(--ink-3)'}">热度 / 百</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 策展人札记 -->
+      <div class="panel-2 border soft-rule p-5 relative">
+        <div class="font-serif italic text-2xl vermillion mb-1">¶</div>
+        <p class="font-serif italic text-[15px] leading-relaxed">
+          本期 <span class="vermillion font-bold not-italic">{{ criticalCount }}</span> 件珍藏集中于
+          <span class="mustard font-bold not-italic">{{ topSector.label }}</span>，与上期相较，热度 <span class="forest font-bold not-italic">↑ 一成八</span>。建议先读珍藏，再及其余。
+        </p>
+        <div class="mt-4 pt-3 border-t soft-rule flex items-center justify-between">
+          <span class="font-cormorant italic text-sm" :style="{color:'var(--ink-3)'}">— 策展人</span>
+          <button class="font-mono text-[10px] uppercase tracking-widest vermillion hover:underline">读全札记 →</button>
+        </div>
+      </div>
+
+      <!-- 时序图谱 -->
+      <div>
+        <div class="chap text-sm font-mono uppercase tracking-[0.2em] mb-2">— 昼夜来稿 —</div>
+        <div class="panel border soft-rule p-3">
+          <div class="grid grid-cols-12 gap-px">
+            <span v-for="(h,i) in heatmap" :key="i" class="aspect-square"
+              :style="{background: h===0?'var(--panel-2)': h<3?hexA(cobaltHex,h/5): h<6?hexA(mustardHex,h/7):hexA(vermillionHex,h/8)}"></span>
+          </div>
+          <div class="flex justify-between font-mono text-[9px] mt-1.5" :style="{color:'var(--ink-3)'}">
+            <span>子</span><span>午</span><span>亥</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- 底部 -->
+  <footer class="border-t rule mt-4">
+    <div class="px-6 py-6 text-center">
+      <div class="ornament text-2xl mb-2">❦ ❦ ❦</div>
+      <div class="font-serif italic text-lg" :style="{color:'var(--ink-2)'}">— 陈列终 —</div>
+      <div class="font-mono text-[10px] uppercase tracking-[0.25em] mt-3" :style="{color:'var(--ink-3)'}">
+        Atelier 工坊 · 为 {{ stats.total.toLocaleString() }} 位订户而开 · © MMXXVI
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted, watch } = Vue;
+createApp({
+  setup() {
+    const ranges = [
+      { key:'today', label:'当日',  abbr:'日' },
+      { key:'3d',    label:'三日',  abbr:'III' },
+      { key:'1w',    label:'一周',  abbr:'VII' },
+      { key:'1m',    label:'一月',  abbr:'XXX' },
+      { key:'6m',    label:'半年',  abbr:'CLXXX' },
+      { key:'all',   label:'全部',  abbr:'∞' },
+    ];
+    const categories = [
+      { key:'ai',      label:'智能',  color:'#b8331c' },
+      { key:'bio',     label:'生医',  color:'#335a3a' },
+      { key:'quant',   label:'量子',  color:'#244b7a' },
+      { key:'climate', label:'气候',  color:'#a8780e' },
+      { key:'soc',     label:'人文',  color:'#9a3553' },
+    ];
+    const sorts = [ {key:'heat',label:'热度'},{key:'time',label:'时序'},{key:'src',label:'匠人'} ];
+
+    const theme = ref('light');
+    const toggleTheme = () => theme.value = theme.value==='light'?'dark':'light';
+    watch(theme, t => document.documentElement.classList.toggle('dark', t==='dark'));
+
+    const range = ref('1w');
+    const sort = ref('heat');
+    const activeCats = ref(['ai','bio','quant','climate','soc']);
+    const toggleCategory = (k) => {
+      if (activeCats.value.includes(k)) { if (activeCats.value.length>1) activeCats.value = activeCats.value.filter(c=>c!==k); }
+      else activeCats.value.push(k);
+    };
+
+    const now = Date.now();
+    const H=3600e3, D=24*H;
+    const raw = [
+      { id:1, t: now-2*H,  category:'ai',     source:'Anthropic',   title:'Claude 5 Opus 长程推理基准反超 GPT-6', summary:'ARC-AGI v3 与 SWE-Bench Multi-Repo 双榜 SOTA，核心在于层次化思维链剪枝与工具并行调度，于百万 token 上下文中仍保逻辑稳定。', heat:94, critical:true },
+      { id:2, t: now-5*H,  category:'quant',  source:'QuantInsider',title:'IBM Heron 1121 量子比特良率破 99.7%', summary:'tunable coupler 架构，门保真度 99.94%，纠错开销降四倍。', heat:88, critical:false },
+      { id:3, t: now-9*H,  category:'bio',    source:'Nature',      title:'AlphaFold 4 蛋白-小分子复合体达实验精度', summary:'PoseBuster RMSD<2Å 比例 78%，已开源非商业用途。', heat:91, critical:true },
+      { id:4, t: now-26*H, category:'ai',     source:'Hugging Face',title:'DeepSeek-Max-671B 开源上架，激活仅 37B', summary:'推理对标闭源旗舰，每百万 token $0.07。', heat:86, critical:false },
+      { id:5, t: now-30*H, category:'climate',source:'Carbon Pulse',title:'全球碳监测卫星组网，延迟降至 15 分钟', summary:'可定位单个油气设施甲烷泄漏。', heat:79, critical:false },
+      { id:6, t: now-50*H, category:'quant',  source:'Quanta',      title:'光量子纠错码首次实现逻辑比特增益', summary:'逻辑错误率随码距单调下降。', heat:82, critical:false },
+      { id:7, t: now-3*D,  category:'soc',    source:'Stratechery', title:'Agent 经济崛起：B2B API 调用量同比 +740%', summary:'函数调用 token 占主要云厂三成一账。', heat:75, critical:false },
+      { id:8, t: now-4*D,  category:'ai',     source:'MIT Tech',    title:'WorldLab-2 世界模型物理仿真长程一致性突破', summary:'72 小时视频物体永久性九成二。', heat:84, critical:false },
+      { id:9, t: now-6*D,  category:'bio',    source:'Science',     title:'通用 CRISPR-Cas14 输送载体通过 I 期临床', summary:'单次注射编辑效率 47%，无明显脱靶。', heat:80, critical:false },
+      { id:10,t: now-9*D,  category:'climate',source:'IEA',         title:'储能 LCOE 跌破 $0.05/kWh，光储平价提前 4 年', summary:'钠离子电池量产使四小时储能成本降三成八。', heat:77, critical:false },
+      { id:11,t: now-14*D, category:'ai',     source:'arXiv',       title:'推理时 Scaling Law 2.0：思考 token 拐点 10^5', summary:'超十万思考 token 后收益递减。', heat:72, critical:false },
+      { id:12,t: now-20*D, category:'quant',  source:'IEEE',        title:'VQE 在工业催化剂设计中实用化', summary:'127 量子比特筛选 3 种固氮催化剂。', heat:70, critical:false },
+      { id:13,t: now-40*D, category:'soc',    source:'The Info',    title:'AI 监管沙盒落地：欧盟首批 12 家获准商用', summary:'受控环境豁免部分条款。', heat:68, critical:false },
+      { id:14,t: now-75*D, category:'bio',    source:'Cell',        title:'AI 设计酶催化生成自然界不存在的碳-磷键', summary:'kcat 达 280/s。', heat:74, critical:false },
+      { id:15,t: now-120*D,category:'ai',     source:'DeepMind',    title:'AlphaProof 在 IMO 2025 几何题满分', summary:'结合 Lean 与神经搜索。', heat:81, critical:false },
+      { id:16,t: now-150*D,category:'climate',source:'BNEF',        title:'绿氢成本意外陡降，中东项目 $1.6/kg', summary:'电解槽过剩叠加风光电价下行。', heat:69, critical:false },
+    ];
+
+    const currentRangeLabel = computed(() => ranges.find(r=>r.key===range.value)?.label);
+    const cutoff = computed(() => {
+      const r = ranges.find(r=>r.key===range.value);
+      if (r.key==='today'){ const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); }
+      if (r.key==='all') return 0;
+      return now - ({'3d':3,'1w':7,'1m':30,'6m':182}[r.key])*D;
+    });
+    const filtered = computed(() => {
+      const list = raw.filter(i => i.t >= cutoff.value && activeCats.value.includes(i.category));
+      if (sort.value==='heat') list.sort((a,b)=>b.heat-a.heat);
+      else if (sort.value==='time') list.sort((a,b)=>b.t-a.t);
+      else list.sort((a,b)=>a.source.localeCompare(b.source));
+      return list;
+    });
+
+    const stats = { total:12847, sources:12 };
+    const avgHeat = computed(() => filtered.value.length?Math.round(filtered.value.reduce((s,i)=>s+i.heat,0)/filtered.value.length):0);
+    const sourceCount = computed(() => new Set(filtered.value.map(i=>i.source)).size);
+    const criticalCount = computed(() => filtered.value.filter(i=>i.critical).length);
+    const focus = computed(() => filtered.value[0] || null);
+    const topSector = computed(() => {
+      if (!filtered.value.length) return {label:'—'};
+      const cnt = {}; filtered.value.forEach(i => cnt[i.category]=(cnt[i.category]||0)+1);
+      const top = Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+      return categories.find(c=>c.key===top);
+    });
+
+    const catColor = k => categories.find(c=>c.key===k)?.color || '#888';
+    const catLabel = k => categories.find(c=>c.key===k)?.label || k;
+    const relTime = (t) => { const diff=now-t; if(diff<H) return Math.floor(diff/60000)+' 分前'; if(diff<D) return Math.floor(diff/H)+' 时前'; return Math.floor(diff/D)+' 日前'; };
+
+    const sourceStats = computed(() => {
+      const map = {}; filtered.value.forEach(i => map[i.source]=(map[i.source]||0)+1);
+      const palette = ['#b8331c','#244b7a','#335a3a','#a8780e','#9a3553','#5c4f3c'];
+      return Object.entries(map).map(([name,count],i)=>({name,count,color:palette[i%palette.length]})).sort((a,b)=>b.count-a.count).slice(0,6);
+    });
+    const maxSource = computed(() => Math.max(1,...sourceStats.value.map(s=>s.count)));
+
+    const navItems = computed(() => [
+      {label:'本期陈列', count: filtered.value.length},
+      {label:'珍藏首选', count: criticalCount.value},
+      {label:'已纳匣中', count: 142},
+      {label:'待复阅',   count: 7},
+      {label:'历史总藏', count: stats.total},
+    ]);
+
+    const heatmap = ref(Array.from({length:24},(_,i)=> (i>=8&&i<=22)?Math.floor(Math.random()*7)+1:Math.floor(Math.random()*2)));
+
+    const roman = (n) => {
+      const map=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+      let r=''; for(const [v,s] of map){ while(n>=v){r+=s;n-=v;} } return r;
+    };
+
+    const clock = ref('');
+    const today = new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});
+    const tickClock = () => clock.value = new Date().toLocaleTimeString('zh-CN',{hour12:false});
+    const vermillionHex='#b8331c', mustardHex='#a8780e', cobaltHex='#244b7a';
+    const hexA = (hex,a) => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${Math.min(1,a)})`; };
+
+    onMounted(() => { tickClock(); setInterval(tickClock,1000); });
+
+    return { ranges, categories, sorts, range, sort, activeCats, toggleCategory, filtered, stats, avgHeat, sourceCount, criticalCount, focus, topSector, catColor, catLabel, relTime, sourceStats, maxSource, navItems, heatmap, roman, clock, today, theme, toggleTheme, currentRangeLabel, hexA, vermillionHex, mustardHex, cobaltHex };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
