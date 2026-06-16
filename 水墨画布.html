@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+<title>墨韵 · 水墨画布</title>
+<style>
+  :root {
+    --paper: #ede0c4;
+    --paper-warm: #e6d4b0;
+    --ink: #1a1410;
+    --seal: #b8332a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--paper);
+    font-family: "STKaiti", "KaiTi", "楷体", "Songti SC", "STSong", "Noto Serif SC", serif;
+    color: var(--ink);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 纸张大纤维纹理（长波） */
+  .paper-fiber {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.3 0 0 0 0 0.15 0 0 0 0.32 0'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>");
+    mix-blend-mode: multiply;
+    opacity: 0.55;
+  }
+
+  /* 纸张细纤维（短波颗粒） */
+  .paper-grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.12 0 0 0 0 0.06 0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    mix-blend-mode: multiply;
+    opacity: 0.5;
+  }
+
+  /* 陈纸斑点 */
+  .paper-stains {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    background-image:
+      radial-gradient(circle at 14% 22%, rgba(140, 95, 45, 0.07) 0%, transparent 9%),
+      radial-gradient(circle at 82% 68%, rgba(135, 90, 40, 0.06) 0%, transparent 7%),
+      radial-gradient(circle at 46% 88%, rgba(120, 75, 35, 0.05) 0%, transparent 6%),
+      radial-gradient(circle at 71% 14%, rgba(130, 85, 40, 0.06) 0%, transparent 8%),
+      radial-gradient(circle at 28% 62%, rgba(125, 80, 38, 0.04) 0%, transparent 5%);
+  }
+
+  /* 纸张暗角（边缘老化） */
+  .paper-vignette {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    background: radial-gradient(ellipse 125% 125% at 50% 50%, transparent 38%, rgba(115, 78, 28, 0.09) 78%, rgba(85, 55, 18, 0.2) 100%);
+  }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    cursor: crosshair;
+    touch-action: none;
+    display: block;
+  }
+
+  /* 竖排标题 */
+  .title-block {
+    position: fixed;
+    top: 44px;
+    left: 52px;
+    z-index: 10;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    pointer-events: none;
+    animation: fadeSlide 1.6s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .title-block .title {
+    font-size: 54px;
+    font-weight: 400;
+    letter-spacing: 10px;
+    color: var(--ink);
+    line-height: 1;
+    font-family: "STKaiti", "KaiTi", "楷体", serif;
+    text-shadow: 0 1px 0 rgba(255, 250, 235, 0.4);
+  }
+
+  .title-block .subtitle {
+    font-size: 11px;
+    color: rgba(26, 20, 16, 0.42);
+    letter-spacing: 5px;
+    margin-top: 18px;
+    font-family: "Times New Roman", serif;
+    writing-mode: horizontal-tb;
+    transform: rotate(90deg) translateY(8px);
+    transform-origin: top left;
+  }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(-14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 提示文字 */
+  .hint {
+    position: fixed;
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-size: 14px;
+    color: rgba(26, 20, 16, 0.42);
+    letter-spacing: 7px;
+    pointer-events: none;
+    transition: opacity 0.8s ease;
+    animation: breathe 3.4s ease-in-out infinite;
+    white-space: nowrap;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.72; }
+  }
+
+  .hint.hidden { opacity: 0 !important; animation: none; }
+
+  /* 控制按钮 */
+  .controls {
+    position: fixed;
+    bottom: 44px;
+    right: 52px;
+    z-index: 10;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    animation: fadeSlide 1.6s 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .btn {
+    background: rgba(237, 224, 196, 0.35);
+    backdrop-filter: blur(2px);
+    border: 1px solid rgba(26, 20, 16, 0.22);
+    color: var(--ink);
+    padding: 9px 22px;
+    font-size: 14px;
+    letter-spacing: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.35s ease;
+    border-radius: 2px;
+  }
+
+  .btn:hover {
+    background: rgba(26, 20, 16, 0.08);
+    border-color: rgba(26, 20, 16, 0.45);
+    letter-spacing: 6px;
+  }
+
+  .btn:active {
+    transform: scale(0.97);
+  }
+
+  /* 落款印章 */
+  .seal {
+    position: fixed;
+    bottom: 50px;
+    left: 52px;
+    z-index: 10;
+    width: 50px;
+    height: 50px;
+    background: var(--seal);
+    color: #f5ecd8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-family: "STKaiti", "KaiTi", "楷体", serif;
+    border-radius: 5px;
+    box-shadow:
+      inset 0 0 0 2px rgba(245, 236, 216, 0.28),
+      inset 0 0 4px rgba(0, 0, 0, 0.3),
+      0 2px 6px rgba(0, 0, 0, 0.12);
+    transform: rotate(-4deg);
+    pointer-events: none;
+    line-height: 1;
+    opacity: 0.9;
+    filter: contrast(1.08);
+    /* 印章不均匀的斑驳感 */
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='50' height='50'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.4 -0.2'/></filter><rect width='50' height='50' fill='black' filter='url(%23m)'/></svg>");
+    -webkit-mask-size: 100% 100%;
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='50' height='50'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.4 -0.2'/></filter><rect width='50' height='50' fill='black' filter='url(%23m)'/></svg>");
+    mask-size: 100% 100%;
+    animation: stampIn 1.3s 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes stampIn {
+    0% { opacity: 0; transform: rotate(-4deg) scale(2.2); filter: blur(10px) contrast(1.08); }
+    55% { opacity: 1; transform: rotate(-4deg) scale(0.92); filter: blur(0) contrast(1.08); }
+    100% { opacity: 0.9; transform: rotate(-4deg) scale(1); filter: contrast(1.08); }
+  }
+
+  /* 角落装饰 - 极淡的边框线 */
+  .corner {
+    position: fixed;
+    z-index: 4;
+    pointer-events: none;
+    width: 28px;
+    height: 28px;
+    border-color: rgba(26, 20, 16, 0.18);
+    opacity: 0;
+    animation: cornerIn 1.2s 1s ease both;
+  }
+  .corner.tl { top: 28px; left: 28px; border-top: 1px solid; border-left: 1px solid; }
+  .corner.tr { top: 28px; right: 28px; border-top: 1px solid; border-right: 1px solid; }
+  .corner.bl { bottom: 28px; left: 28px; border-bottom: 1px solid; border-left: 1px solid; }
+  .corner.br { bottom: 28px; right: 28px; border-bottom: 1px solid; border-right: 1px solid; }
+
+  @keyframes cornerIn { to { opacity: 1; } }
+
+  /* 响应式 */
+  @media (max-width: 640px) {
+    .title-block { top: 26px; left: 26px; }
+    .title-block .title { font-size: 38px; letter-spacing: 7px; }
+    .title-block .subtitle { font-size: 9px; letter-spacing: 3px; }
+    .controls { bottom: 26px; right: 26px; }
+    .btn { padding: 8px 16px; font-size: 12px; letter-spacing: 3px; }
+    .seal { bottom: 26px; left: 26px; width: 40px; height: 40px; font-size: 20px; }
+    .hint { bottom: 88px; font-size: 12px; letter-spacing: 4px; }
+    .corner { width: 18px; height: 18px; }
+    .corner.tl, .corner.tr { top: 16px; }
+    .corner.bl, .corner.br { bottom: 16px; }
+    .corner.tl, .corner.bl { left: 16px; }
+    .corner.tr, .corner.br { right: 16px; }
+  }
+</style>
+</head>
+<body>
+  <!-- 纸张质感层 -->
+  <div class="paper-fiber"></div>
+  <div class="paper-grain"></div>
+  <div class="paper-stains"></div>
+  <div class="paper-vignette"></div>
+
+  <!-- 水墨画布 -->
+  <canvas id="ink"></canvas>
+
+  <!-- 装饰边角 -->
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <!-- 竖排标题 -->
+  <div class="title-block">
+    <div class="title">墨韵</div>
+  </div>
+
+  <!-- 提示 -->
+  <div class="hint" id="hint">轻触纸面 · 落墨成画</div>
+
+  <!-- 控制按钮 -->
+  <div class="controls">
+    <button class="btn" id="clear">洗 笔</button>
+  </div>
+
+  <!-- 落款印章 -->
+  <div class="seal">墨</div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    const canvas = document.getElementById('ink');
+    const ctx = canvas.getContext('2d');
+
+    // 离屏画布：存放已经"干透"的墨迹（性能优化）
+    const baked = document.createElement('canvas');
+    const bctx = baked.getContext('2d');
+
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 0, H = 0;
+
+    function setupCanvas(c, cx) {
+      c.width = Math.floor(W * DPR);
+      c.height = Math.floor(H * DPR);
+      c.style.width = W + 'px';
+      c.style.height = H + 'px';
+      cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+
+    function resize() {
+      const newW = window.innerWidth;
+      const newH = window.innerHeight;
+
+      // 保留已有墨迹
+      let snapshot = null;
+      if (baked.width > 0 && baked.height > 0) {
+        snapshot = document.createElement('canvas');
+        snapshot.width = baked.width;
+        snapshot.height = baked.height;
+        snapshot.getContext('2d').drawImage(baked, 0, 0);
+      }
+
+      W = newW;
+      H = newH;
+      setupCanvas(canvas, ctx);
+      setupCanvas(baked, bctx);
+
+      if (snapshot) {
+        bctx.save();
+        bctx.setTransform(1, 0, 0, 1, 0, 0);
+        bctx.drawImage(snapshot, 0, 0);
+        bctx.restore();
+      }
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 暖墨色（不是纯黑，带一点褐色，更像松烟墨）
+    const INK_R = 24, INK_G = 18, INK_B = 14;
+
+    // ============================================================
+    //  性能核心：预渲染墨点 sprite
+    //  启动时一次性生成 6 档浓淡 × 多尺寸的模糊墨点贴图，
+    //  渲染时只做 drawImage —— 不再每帧 createRadialGradient / filter:blur
+    // ============================================================
+    const SPRITE_LEVELS = 6;        // 浓淡档位
+    const SPRITE_SIZES = [10, 16, 24, 36, 52, 72]; // 各档尺寸（CSS px）
+    const sprites = [];             // sprites[level] = HTMLCanvas
+
+    function buildSprites() {
+      for (let lv = 0; lv < SPRITE_LEVELS; lv++) {
+        const alpha = 0.18 + (lv / (SPRITE_LEVELS - 1)) * 0.82; // 0.18 → 1.0
+        const size = SPRITE_SIZES[lv];
+        const pad = 8;
+        const phys = Math.ceil((size + pad * 2) * DPR);
+
+        const c = document.createElement('canvas');
+        c.width = phys;
+        c.height = phys;
+        const cx = c.getContext('2d');
+        cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+        // 一次性 blur 生成柔软毛边，之后永远不再重复
+        cx.filter = 'blur(1.4px)';
+        const cx2 = size / 2;
+        const grad = cx.createRadialGradient(cx2, cx2, 0, cx2, cx2, cx2);
+        grad.addColorStop(0, 'rgba(' + INK_R + ',' + INK_G + ',' + INK_B + ',' + alpha + ')');
+        grad.addColorStop(0.45, 'rgba(' + INK_R + ',' + INK_G + ',' + INK_B + ',' + (alpha * 0.5) + ')');
+        grad.addColorStop(1, 'rgba(' + INK_R + ',' + INK_G + ',' + INK_B + ',0)');
+        cx.fillStyle = grad;
+        cx.beginPath();
+        cx.arc(cx2, cx2, cx2, 0, Math.PI * 2);
+        cx.fill();
+        cx.filter = 'none';
+
+        sprites.push(c);
+      }
+    }
+    buildSprites();
+
+    // 把 sprite 画到指定 ctx（x,y 为中心，CSS 坐标，支持缩放）
+    function stampSprite(c, x, y, lv, scale) {
+      const sprite = sprites[lv];
+      const s = SPRITE_SIZES[lv] * (scale || 1);
+      const draw = s + 16; // 留 padding
+      // drawImage 用物理像素，但目标坐标在 CSS 系，需抵消 setTransform(DPR)
+      c.save();
+      const m = c.getTransform();
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      const dx = (x * m.a + m.e) - draw / 2;
+      const dy = (y * m.b + m.f) - draw / 2;
+      c.drawImage(sprite, dx, dy, draw, draw);
+      c.restore();
+    }
+
+    // 根据 alpha 映射到最近档位
+    function levelFor(alpha) {
+      let lv = Math.round(alpha * (SPRITE_LEVELS - 1));
+      if (lv < 0) lv = 0;
+      if (lv > SPRITE_LEVELS - 1) lv = SPRITE_LEVELS - 1;
+      return lv;
+    }
+
+    // ---------- 噪声函数（用于纸纤维扰动方向） ----------
+    function hash(x, y) {
+      const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+      return s - Math.floor(s);
+    }
+    function smoothNoise(x, y) {
+      const xi = Math.floor(x), yi = Math.floor(y);
+      const xf = x - xi, yf = y - yi;
+      const u = xf * xf * (3 - 2 * xf);
+      const v = yf * yf * (3 - 2 * yf);
+      const a = hash(xi, yi), b = hash(xi + 1, yi);
+      const c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+      return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
+    }
+
+    // ============================================================
+    //  水墨扩散单元（仅用于"点击落墨"）
+    //  粒子数大幅精简，渲染走 sprite，CPU 极轻
+    // ============================================================
+    class InkBlot {
+      constructor(x, y, opts) {
+        opts = opts || {};
+        this.cx = x;
+        this.cy = y;
+        this.age = 0;
+        this.maxAge = opts.maxAge || 90;
+        this.scale = opts.scale || 1;
+        this.darkness = opts.darkness == null ? 1 : opts.darkness;
+        this.particles = [];
+        this.splatters = [];
+        this.dead = false;
+        this.init();
+      }
+
+      init() {
+        const s = this.scale;
+        const dk = this.darkness;
+
+        // 浓墨核心（4 粒）
+        for (let i = 0; i < 4; i++) {
+          const a = (i / 4) * Math.PI * 2 + (Math.random() - 0.5) * 0.7;
+          this.particles.push({
+            angle: a, r: Math.random() * 3 * s,
+            vr: (0.1 + Math.random() * 0.12) * s,
+            sizeIdx: 4 + Math.floor(Math.random() * 2),
+            sc: 0.7 + Math.random() * 0.3,
+            alpha: (0.8 + Math.random() * 0.2) * dk,
+            maxR: (20 + Math.random() * 12) * s,
+            seed: Math.random() * 1000,
+            drift: (Math.random() - 0.5) * 0.01,
+          });
+        }
+        // 中间渗透（8 粒）
+        for (let i = 0; i < 8; i++) {
+          this.particles.push({
+            angle: Math.random() * Math.PI * 2,
+            r: Math.random() * 6 * s,
+            vr: (0.3 + Math.random() * 0.35) * s,
+            sizeIdx: 2 + Math.floor(Math.random() * 2),
+            sc: 0.7 + Math.random() * 0.4,
+            alpha: (0.34 + Math.random() * 0.22) * dk,
+            maxR: (30 + Math.random() * 26) * s,
+            seed: Math.random() * 1000,
+            drift: (Math.random() - 0.5) * 0.02,
+          });
+        }
+        // 边缘晕染（6 粒）
+        for (let i = 0; i < 6; i++) {
+          this.particles.push({
+            angle: Math.random() * Math.PI * 2,
+            r: (8 + Math.random() * 10) * s,
+            vr: (0.45 + Math.random() * 0.4) * s,
+            sizeIdx: 2 + Math.floor(Math.random() * 2),
+            sc: 0.8 + Math.random() * 0.5,
+            alpha: (0.12 + Math.random() * 0.12) * dk,
+            maxR: (42 + Math.random() * 30) * s,
+            seed: Math.random() * 1000,
+            drift: (Math.random() - 0.5) * 0.03,
+          });
+        }
+        // 飞溅
+        const sn = 3 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < sn; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const dist = (12 + Math.random() * 46) * s;
+          this.splatters.push({
+            x: this.cx + Math.cos(a) * dist,
+            y: this.cy + Math.sin(a) * dist,
+            r: (0.7 + Math.random() * 2) * s,
+            a: (0.25 + Math.random() * 0.35) * dk,
+          });
+        }
+      }
+
+      update() {
+        if (this.dead) return;
+        this.age++;
+        for (const p of this.particles) {
+          if (p.r < p.maxR) {
+            const decel = 1 - (p.r / p.maxR) * 0.6;
+            p.r += p.vr * decel;
+          }
+          const n = smoothNoise(p.seed + this.age * 0.02, p.r * 0.05);
+          p.angle += (n - 0.5) * 0.07 + p.drift;
+        }
+        if (this.age >= this.maxAge) this.dead = true;
+      }
+
+      draw(c) {
+        const t = this.age / this.maxAge;
+        const fade = 1 - Math.pow(t, 2.5) * 0.08;
+        for (const p of this.particles) {
+          const x = this.cx + Math.cos(p.angle) * p.r;
+          const y = this.cy + Math.sin(p.angle) * p.r;
+          stampSprite(c, x, y, levelFor(p.alpha * fade), p.sc);
+        }
+        // 飞溅用纯填充（数量少，开销低）
+        for (const sp of this.splatters) {
+          c.fillStyle = 'rgba(' + INK_R + ',' + INK_G + ',' + INK_B + ',' + sp.a + ')';
+          c.beginPath();
+          c.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2);
+          c.fill();
+        }
+      }
+    }
+
+    // ============================================================
+    //  状态与渲染循环（持续 RAF，避免 kick 抖动）
+    // ============================================================
+    const active = [];
+    let running = false;
+
+    function render() {
+      ctx.clearRect(0, 0, W, H);
+
+      // 铺干透的墨迹
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(baked, 0, 0);
+      ctx.restore();
+
+      let hasActive = false;
+      for (let i = active.length - 1; i >= 0; i--) {
+        const b = active[i];
+        b.update();
+        b.draw(ctx);
+        if (b.dead) {
+          b.draw(bctx);          // 干透 → 烘焙永久保存
+          active.splice(i, 1);
+        } else {
+          hasActive = true;
+        }
+      }
+
+      if (hasActive || drawing) {
+        requestAnimationFrame(render);
+      } else {
+        running = false;
+      }
+    }
+
+    function kick() {
+      if (running) return;
+      running = true;
+      requestAnimationFrame(render);
+    }
+
+    // 点击落大墨滴（走扩散动画）
+    function addBlot(x, y) {
+      active.push(new InkBlot(x, y, { scale: 1, darkness: 1, maxAge: 90 }));
+      kick();
+    }
+
+    // ============================================================
+    //  运笔：直接画到烘焙层（实时响应、零动画对象、零卡顿）
+    //  速度快→墨淡（飞白）；慢→浓
+    // ============================================================
+    function strokeAt(x, y, darkness, scale) {
+      const lv = levelFor(darkness);
+      stampSprite(bctx, x, y, lv, scale);
+      // 主画布也立即重绘这一笔（render 循环在 drawing 时持续）
+    }
+
+    // ---------- 交互 ----------
+    let drawing = false;
+    let lastX = 0, lastY = 0, lastT = 0;
+    let moved = false;
+    const hint = document.getElementById('hint');
+    let hintHidden = false;
+
+    function hideHint() {
+      if (!hintHidden) { hintHidden = true; hint.classList.add('hidden'); }
+    }
+
+    function getPos(e) {
+      if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function onDown(e) {
+      e.preventDefault();
+      const { x, y } = getPos(e);
+      drawing = true;
+      moved = false;
+      lastX = x; lastY = y; lastT = performance.now();
+      hideHint();
+      kick(); // 启动持续渲染（运笔时实时显示）
+    }
+
+    function onMove(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const { x, y } = getPos(e);
+      const now = performance.now();
+      const dx = x - lastX, dy = y - lastY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 4) {
+        moved = true;
+        const speed = dist / Math.max(1, now - lastT);
+        const darkness = Math.max(0.25, Math.min(0.85, 0.85 - speed * 0.05));
+        const scale = 0.55 + Math.random() * 0.2;
+
+        // 路径插值，确保笔迹连续
+        const steps = Math.ceil(dist / 4);
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          strokeAt(lastX + dx * t, lastY + dy * t,
+            darkness * (0.7 + Math.random() * 0.3), scale);
+        }
+
+        lastX = x; lastY = y; lastT = now;
+      }
+    }
+
+    function onUp() {
+      if (drawing && !moved) {
+        // 没移动 = 纯点击 → 落大墨滴（带扩散动画）
+        addBlot(lastX, lastY);
+      }
+      drawing = false;
+    }
+
+    canvas.addEventListener('mousedown', onDown);
+    canvas.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    canvas.addEventListener('mouseleave', onUp);
+
+    canvas.addEventListener('touchstart', onDown, { passive: false });
+    canvas.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+    window.addEventListener('touchcancel', onUp);
+
+    // 洗笔 —— 清空画布
+    document.getElementById('clear').addEventListener('click', function () {
+      active.length = 0;
+      bctx.save();
+      bctx.setTransform(1, 0, 0, 1, 0, 0);
+      bctx.clearRect(0, 0, baked.width, baked.height);
+      bctx.restore();
+      ctx.clearRect(0, 0, W, H);
+      hint.classList.remove('hidden');
+      hintHidden = false;
+      running = false;
+    });
+
+    // 键盘快捷键
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'c' || e.key === 'C') document.getElementById('clear').click();
+    });
+  })();
+  </script>
+</body>
+</html>

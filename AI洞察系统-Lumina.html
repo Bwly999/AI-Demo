@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>澄观 Lumina · AI 洞察引擎</title>
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF8F3; --paper-2:#F5F1E8; --paper-3:#EFEADD; --paper-4:#E8E2D2;
+    --ink:#1A1A18; --ink-2:#4A4A44; --ink-3:#7A7A70; --ink-4:#A5A096;
+    --line:#E5E0D2; --line-2:#D8D1BE;
+    --moss:#1F3A2E; --moss-2:#2D5A43; --moss-3:#3E7359; --moss-soft:#E8EFE9;
+    --amber:#B87514; --amber-2:#D49628; --amber-soft:#F5E9D0;
+    --clay:#A04428; --clay-soft:#F2DDD4;
+    --slate:#3D4A5C; --slate-soft:#E2E6EC;
+    --good:#3E7359; --warn:#B87514; --bad:#A04428;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--paper);color:var(--ink);font-size:14px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:'Noto Serif SC',Georgia,serif}
+  .mono{font-family:'JetBrains Mono',monospace}
+  ::selection{background:var(--amber-soft)}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:8px;border:2px solid var(--paper)}
+  ::-webkit-scrollbar-thumb:hover{background:var(--ink-4)}
+
+  /* ===== Layout ===== */
+  #root{display:flex;height:100vh;overflow:hidden}
+  .sidebar{
+    width:230px;flex-shrink:0;background:var(--moss);color:#E8E2D2;
+    display:flex;flex-direction:column;padding:0;
+  }
+  .brand{padding:22px 22px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .brand-mark{display:flex;align-items:center;gap:10px}
+  .brand-dot{width:13px;height:13px;border-radius:50%;background:var(--amber-2);
+    box-shadow:0 0 0 4px rgba(212,150,40,.18);animation:pulse 3.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(212,150,40,.18)}50%{box-shadow:0 0 0 7px rgba(212,150,40,.08)}}
+  .brand-name{font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#fff;letter-spacing:.02em}
+  .brand-sub{font-size:10.5px;color:rgba(232,226,210,.5);margin-top:3px;letter-spacing:.14em;text-transform:uppercase}
+
+  .role-switch{margin:16px 14px 8px;display:flex;background:rgba(0,0,0,.22);border-radius:9px;padding:3px}
+  .role-switch button{flex:1;border:0;background:transparent;color:rgba(232,226,210,.6);
+    padding:7px 4px;font-size:12px;font-weight:500;cursor:pointer;border-radius:7px;transition:.18s;
+    font-family:inherit}
+  .role-switch button.active{background:var(--amber-2);color:#1A1A18;font-weight:600}
+
+  .nav-section{padding:6px 0}
+  .nav-label{font-size:10px;color:rgba(232,226,210,.38);padding:14px 22px 6px;letter-spacing:.16em;text-transform:uppercase}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:8px 22px;font-size:13px;
+    color:rgba(232,226,210,.72);cursor:pointer;border-left:2.5px solid transparent;transition:.15s}
+  .nav-item:hover{background:rgba(255,255,255,.04);color:#fff}
+  .nav-item.active{background:rgba(255,255,255,.06);color:#fff;border-left-color:var(--amber-2)}
+  .nav-item .ni-ico{width:16px;height:16px;flex-shrink:0;opacity:.85}
+  .nav-item .ni-badge{margin-left:auto;font-size:10px;background:var(--amber-2);color:#1A1A18;
+    padding:1px 6px;border-radius:8px;font-weight:600}
+
+  .sidebar-foot{margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);
+    display:flex;align-items:center;gap:10px}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--moss-3);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;flex-shrink:0}
+  .sf-info{flex:1;min-width:0}
+  .sf-name{font-size:12.5px;color:#fff;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sf-role{font-size:10.5px;color:rgba(232,226,210,.45)}
+
+  .main{flex:1;overflow-y:auto;position:relative}
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(250,248,243,.88);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);display:flex;align-items:center;gap:18px;padding:0 36px;height:58px}
+  .topbar h1{font-family:'Noto Serif SC',serif;font-size:18px;font-weight:600;color:var(--ink)}
+  .topbar .crumb{font-size:12px;color:var(--ink-3)}
+  .topbar .tb-spacer{flex:1}
+  .search-box{display:flex;align-items:center;gap:8px;background:var(--paper-2);border:1px solid var(--line);
+    border-radius:8px;padding:6px 12px;width:280px}
+  .search-box input{border:0;background:transparent;outline:none;font-family:inherit;font-size:12.5px;
+    color:var(--ink);width:100%}
+  .search-box input::placeholder{color:var(--ink-4)}
+  .tb-icon-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--paper-2);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-2);position:relative;transition:.15s}
+  .tb-icon-btn:hover{background:var(--paper-3)}
+  .tb-dot{position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--clay);border:1.5px solid var(--paper)}
+  .content{padding:30px 36px 60px;max-width:1320px}
+
+  /* ===== Cards / generic ===== */
+  .card{background:#fff;border:1px solid var(--line);border-radius:11px}
+  .card-pad{padding:22px}
+  .eyebrow{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .muted{color:var(--ink-3)}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:20px;
+    font-weight:500;white-space:nowrap}
+  .chip-moss{background:var(--moss-soft);color:var(--moss)}
+  .chip-amber{background:var(--amber-soft);color:var(--amber)}
+  .chip-clay{background:var(--clay-soft);color:var(--clay)}
+  .chip-slate{background:var(--slate-soft);color:var(--slate)}
+  .chip-line{background:transparent;border:1px solid var(--line-2);color:var(--ink-2)}
+
+  .btn{font-family:inherit;border:1px solid var(--line-2);background:#fff;color:var(--ink);
+    padding:8px 15px;font-size:12.5px;border-radius:8px;cursor:pointer;font-weight:500;transition:.15s;
+    display:inline-flex;align-items:center;gap:7px}
+  .btn:hover{background:var(--paper-2)}
+  .btn-primary{background:var(--moss);border-color:var(--moss);color:#fff}
+  .btn-primary:hover{background:var(--moss-2)}
+  .btn-amber{background:var(--amber-2);border-color:var(--amber-2);color:#1A1A18;font-weight:600}
+  .btn-amber:hover{background:var(--amber)}
+  .btn-sm{padding:5px 11px;font-size:11.5px}
+
+  /* ===== Insight feed ===== */
+  .feed-grid{display:grid;grid-template-columns:1fr 320px;gap:26px;align-items:start}
+  .insight-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 24px;
+    cursor:pointer;transition:.16s;margin-bottom:16px;position:relative}
+  .insight-card:hover{border-color:var(--ink-4);box-shadow:0 6px 22px rgba(31,58,46,.07);transform:translateY(-1px)}
+  .insight-card.seen{opacity:.62}
+  .ic-head{display:flex;align-items:center;gap:9px;margin-bottom:11px;flex-wrap:wrap}
+  .ic-priority{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
+  .pri-1{color:var(--clay)}
+  .pri-2{color:var(--amber)}
+  .pri-3{color:var(--ink-3)}
+  .ic-priority .pri-dot{width:7px;height:7px;border-radius:50%}
+  .pri-1 .pri-dot{background:var(--clay)}
+  .pri-2 .pri-dot{background:var(--amber-2)}
+  .pri-3 .pri-dot{background:var(--ink-4)}
+  .ic-time{font-size:11px;color:var(--ink-4);margin-left:auto}
+  .ic-title{font-family:'Noto Serif SC',serif;font-size:17.5px;font-weight:600;color:var(--ink);
+    line-height:1.45;margin-bottom:9px}
+  .ic-summary{font-size:13px;color:var(--ink-2);line-height:1.7}
+  .ic-foot{display:flex;align-items:center;gap:14px;margin-top:15px;padding-top:14px;border-top:1px dashed var(--line);flex-wrap:wrap}
+  .ic-stat{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-3)}
+  .ic-conf{display:flex;align-items:center;gap:7px}
+  .conf-bar{width:54px;height:5px;background:var(--paper-3);border-radius:4px;overflow:hidden}
+  .conf-fill{height:100%;border-radius:4px}
+  .ic-direction-tag{font-size:11px;color:var(--moss-2);font-weight:500}
+
+  .side-panel{position:sticky;top:84px}
+  .side-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:18px}
+  .side-title{font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+  /* trend mini */
+  .trend-row{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--paper-2)}
+  .trend-row:last-child{border:0}
+  .trend-name{flex:1;font-size:12.5px;color:var(--ink)}
+  .trend-val{font-family:'Noto Serif SC',serif;font-size:15px;font-weight:600;color:var(--moss)}
+  .trend-spark{width:60px;height:22px}
+
+  /* ===== Detail view ===== */
+  .detail-hero{margin-bottom:24px}
+  .detail-title{font-family:'Noto Serif SC',serif;font-size:27px;font-weight:700;line-height:1.32;margin:10px 0 6px;color:var(--ink);max-width:780px}
+  .detail-summary{font-size:14.5px;color:var(--ink-2);line-height:1.8;max-width:760px;margin-top:14px}
+  .detail-grid{display:grid;grid-template-columns:1fr 300px;gap:30px}
+  .detail-body h3{font-family:'Noto Serif SC',serif;font-size:15px;font-weight:600;margin:26px 0 12px;color:var(--ink);display:flex;align-items:center;gap:9px}
+  .detail-body p{font-size:13.5px;color:var(--ink-2);line-height:1.85;margin-bottom:10px}
+
+  .evidence-chain{display:flex;flex-direction:column;gap:11px}
+  .evidence{display:flex;gap:13px;padding:14px;background:var(--paper);border:1px solid var(--line);border-radius:9px}
+  .ev-num{width:24px;height:24px;border-radius:50%;background:var(--moss);color:#fff;font-size:11px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600}
+  .ev-body{flex:1;min-width:0}
+  .ev-src{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-3);margin-bottom:4px}
+  .ev-text{font-size:12.5px;color:var(--ink-2);line-height:1.6}
+  .ev-link{font-size:11px;color:var(--moss-2);margin-top:5px;display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+
+  .action-card{display:flex;gap:14px;padding:15px 16px;background:var(--moss-soft);border:1px solid #CFE0D2;border-radius:10px;margin-bottom:10px;align-items:flex-start}
+  .action-icon{width:30px;height:30px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--moss);flex-shrink:0}
+  .action-body{flex:1}
+  .action-title{font-size:13px;font-weight:600;color:var(--moss);margin-bottom:3px}
+  .action-desc{font-size:12px;color:var(--ink-2);line-height:1.55}
+
+  .meta-side .meta-block{padding:16px 18px;border:1px solid var(--line);border-radius:10px;margin-bottom:14px;background:#fff}
+  .meta-label{font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px;font-weight:600}
+
+  /* ===== Today / Overview ===== */
+  .hero-strip{background:linear-gradient(115deg,var(--moss) 0%,#274734 60%,#1F3A2E 100%);
+    border-radius:16px;padding:30px 34px;color:#EDE9DC;margin-bottom:28px;position:relative;overflow:hidden}
+  .hero-strip::after{content:'';position:absolute;right:-40px;top:-40px;width:240px;height:240px;
+    background:radial-gradient(circle,rgba(212,150,40,.16),transparent 65%)}
+  .hero-greet{font-size:12px;color:rgba(237,233,220,.6);letter-spacing:.1em}
+  .hero-headline{font-family:'Noto Serif SC',serif;font-size:24px;font-weight:600;margin-top:6px;color:#fff;max-width:640px;line-height:1.4}
+  .hero-sub{font-size:13px;color:rgba(237,233,220,.7);margin-top:8px;max-width:600px;line-height:1.6}
+  .hero-stats{display:flex;gap:34px;margin-top:22px}
+  .hero-stat-num{font-family:'Noto Serif SC',serif;font-size:30px;font-weight:700;color:var(--amber-2);line-height:1}
+  .hero-stat-lbl{font-size:11px;color:rgba(237,233,220,.6);margin-top:5px}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:11px;padding:18px 20px}
+  .kpi-lbl{font-size:11px;color:var(--ink-3);font-weight:500}
+  .kpi-val{font-family:'Noto Serif SC',serif;font-size:26px;font-weight:700;margin:6px 0 4px;color:var(--ink)}
+  .kpi-trend{font-size:11px;display:flex;align-items:center;gap:4px}
+  .kpi-up{color:var(--good)}
+  .kpi-down{color:var(--bad)}
+
+  .two-col{display:grid;grid-template-columns:1.4fr 1fr;gap:22px}
+
+  /* ===== Admin: directions ===== */
+  .dir-card{display:flex;gap:18px;padding:20px 22px;background:#fff;border:1px solid var(--line);border-radius:11px;margin-bottom:14px;align-items:flex-start;cursor:pointer;transition:.15s}
+  .dir-card:hover{border-color:var(--ink-4);box-shadow:0 4px 16px rgba(31,58,46,.06)}
+  .dir-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
+  .dir-body{flex:1;min-width:0}
+  .dir-title{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:600;color:var(--ink);margin-bottom:4px}
+  .dir-desc{font-size:12.5px;color:var(--ink-2);line-height:1.6;margin-bottom:11px}
+  .dir-meta{display:flex;gap:18px;font-size:11px;color:var(--ink-3);flex-wrap:wrap}
+  .dir-meta span{display:inline-flex;align-items:center;gap:5px}
+  .dir-toggle{display:flex;align-items:center}
+  .toggle{width:38px;height:21px;border-radius:11px;background:var(--paper-3);position:relative;cursor:pointer;transition:.2s;flex-shrink:0}
+  .toggle.on{background:var(--moss)}
+  .toggle::after{content:'';position:absolute;width:17px;height:17px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .toggle.on::after{left:19px}
+
+  /* ===== Admin: sources table ===== */
+  .src-table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .src-table th{text-align:left;padding:11px 14px;font-size:11px;color:var(--ink-3);font-weight:600;
+    text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--line)}
+  .src-table td{padding:13px 14px;border-bottom:1px solid var(--paper-2);vertical-align:middle}
+  .src-table tr:hover td{background:var(--paper)}
+  .src-name{display:flex;align-items:center;gap:10px;font-weight:500;color:var(--ink)}
+  .src-favicon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:600}
+  .health{display:inline-flex;align-items:center;gap:6px;font-size:11.5px}
+  .health-dot{width:7px;height:7px;border-radius:50%}
+
+  /* ===== Schedule ===== */
+  .timeline{position:relative;padding-left:24px}
+  .timeline::before{content:'';position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line-2)}
+  .tl-item{position:relative;padding:0 0 22px 22px}
+  .tl-item::before{content:'';position:absolute;left:-22px;top:5px;width:12px;height:12px;border-radius:50%;background:#fff;border:2.5px solid var(--moss)}
+  .tl-item.next::before{border-color:var(--amber-2);background:var(--amber-2)}
+  .tl-time{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-3);font-weight:500}
+  .tl-name{font-size:13.5px;color:var(--ink);font-weight:500;margin:3px 0 4px}
+
+  /* ===== Knowledge base ===== */
+  .kb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px}
+  .kb-stat{padding:20px;background:#fff;border:1px solid var(--line);border-radius:11px}
+  .kb-num{font-family:'Noto Serif SC',serif;font-size:28px;font-weight:700;color:var(--moss)}
+
+  .prompt-box{background:#1F2430;color:#D8DCE6;border-radius:11px;padding:18px 20px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.75;overflow-x:auto}
+  .prompt-box .k{color:#8AB4D8}
+  .prompt-box .s{color:#D4A028}
+  .prompt-box .c{color:#6E7585}
+
+  /* ===== Monitor ===== */
+  .monitor-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .chart-card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:20px}
+  .chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .chart-title{font-size:13px;font-weight:600;color:var(--ink)}
+
+  .bar-chart{display:flex;align-items:flex-end;gap:8px;height:130px;padding-top:10px}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .bar{width:100%;border-radius:4px 4px 0 0;transition:.3s;min-height:3px}
+  .bar-lbl{font-size:10px;color:var(--ink-3)}
+
+  .donut-wrap{display:flex;align-items:center;gap:24px}
+  .legend{display:flex;flex-direction:column;gap:9px}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:12px}
+  .legend-dot{width:9px;height:9px;border-radius:2px}
+  .legend-val{margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--ink-2)}
+
+  /* ===== misc animations ===== */
+  .fade-in{animation:fadeIn .4s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .progress-track{height:6px;background:var(--paper-3);border-radius:5px;overflow:hidden;width:100%}
+  .progress-fill{height:100%;border-radius:5px;background:var(--moss)}
+
+  .empty-note{font-size:11.5px;color:var(--ink-3);font-style:italic;padding:10px;background:var(--paper);border:1px dashed var(--line-2);border-radius:8px}
+
+  .section-title{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:600;color:var(--ink);margin:0 0 4px}
+  .section-desc{font-size:12.5px;color:var(--ink-3);margin-bottom:20px}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:24px}
+  .tab{padding:10px 16px;font-size:13px;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;font-weight:500;transition:.15s}
+  .tab:hover{color:var(--ink-2)}
+  .tab.active{color:var(--moss);border-bottom-color:var(--moss);font-weight:600}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const {useState,useEffect} = React;
+
+/* =========================================================
+   ICONS (inline SVG, minimal stroke style)
+========================================================= */
+const Ico = {
+  feed:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M4 11h16M4 6h16M4 16h10M4 21h7"/></svg>,
+  today:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>,
+  sub:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>,
+  lib:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+  dash:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>,
+  dir:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="9"/><path d="m9 15 2-6 4-2-2 6z"/></svg>,
+  src:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>,
+  clock:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>,
+  brain:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M9.5 2A2.5 2.5 0 0 0 7 4.5v0A2.5 2.5 0 0 0 4.5 7v0A2.5 2.5 0 0 0 4 11.5v1A2.5 2.5 0 0 0 6.5 17v0A2.5 2.5 0 0 0 9 19.5v0A2.5 2.5 0 0 0 12 22V4.5A2.5 2.5 0 0 0 9.5 2zM14.5 2A2.5 2.5 0 0 1 17 4.5v0A2.5 2.5 0 0 1 19.5 7v0A2.5 2.5 0 0 1 20 11.5v1A2.5 2.5 0 0 1 17.5 17v0A2.5 2.5 0 0 1 15 19.5v0A2.5 2.5 0 0 1 12 22"/></svg>,
+  model:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>,
+  chart:(p)=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 3v18h18"/><path d="m7 14 4-4 4 2 5-6"/></svg>,
+  bell:(p)=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
+  search:(p)=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+  arrow:(p)=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 12h14M12 5l7 7-7 7"/></svg>,
+  back:(p)=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M19 12H5M12 19l-7-7 7-7"/></svg>,
+  doc:(p)=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>,
+  link:(p)=><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>,
+  plus:(p)=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 5v14M5 12h14"/></svg>,
+  check:(p)=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M20 6 9 17l-5-5"/></svg>,
+  eye:(p)=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>,
+  bolt:(p)=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>,
+  warn:(p)=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4M12 17h.01"/></svg>,
+};
+
+/* =========================================================
+   DATA — 洞察、方向、数据源 等（真实感业务内容）
+========================================================= */
+const INSIGHTS = [
+  {
+    id:'i1', priority:1, confidence:91, direction:'新能源车市场',
+    title:'比亚迪刀片电池二线供应商替代加速，LFP 单瓦成本跌破 0.42 元',
+    summary:'监测到三家二线电池厂在 7 月集中获得新势力定点，LFP 电芯报价较 Q1 下探 11%。结合上游碳酸锂库存周期，判断未来两季度行业平均 pack 成本有望进入 0.62 元/Wh 区间，对 10-15 万元价格带车型毛利构成实质支撑。',
+    time:'14 分钟前', seen:false, views:1284, agrees:47, comments:12,
+    tags:['成本结构','供应链','LFP'],
+    evidence:[
+      {src:'亿纬锂能 投资者交流纪要', type:'纪要', snip:'7 月 LFP 电芯对二线客户报价区间已下探至 0.40-0.44 元/Wh，较 Q1 下降约 11%。'},
+      {src:'上海钢联 · 碳酸锂周报', type:'数据', snip:'电池级碳酸锂现货 8.7 万元/吨，连续 6 周去库，库存周转天数降至 23 天。'},
+      {src:'零跑 B10 申报信息', type:'公告', snip:'新款 B10 搭载二线供应商电芯，整包成本下降预估 2400 元/台。'},
+    ],
+    reasoning:'三组证据分别覆盖「上游原料成本下降 → 电芯报价传导 → 主机厂定点落地」全链路，因果链完整。碳酸锂去库趋势与电芯报价下行的时序吻合，排除单纯价格战叙事。',
+    actions:[
+      {t:'关注 10-15 万元价格带整车厂的 Q3 毛利率指引', d:'吉利银河、深蓝、零跑的财报电话会可能上修毛利率预期。'},
+      {t:'跟踪二线电池厂（亿纬、国轩、欣旺达）产能利用率', d:'成本下行若伴随产能利用率回升，是行业拐点信号而非内卷。'},
+    ],
+    model:'GLM-5.2 · 深度推理',
+    sources:8, related:3,
+  },
+  {
+    id:'i2', priority:1, confidence:84, direction:'半导体供应链',
+    title:'HBM3e 现货溢价回落至 8%，AI 算力卡需求预期差正在收窄',
+    summary:'三星 HBM3e 产能良率突破后，现货市场溢价从 22% 快速回落。叠加 Cloud 厂商 Capex 指引趋于理性，先前「算力短缺」的单边叙事出现裂口，建议关注相关产业链估值再平衡。',
+    time:'1 小时前', seen:false, views:892, agrees:31, comments:8,
+    tags:['HBM','算力','估值'],
+    evidence:[
+      {src:'TrendForce 周报', type:'研报', snip:'HBM3e 现货溢价由 22% 回落至 8%，渠道库存回补至健康水位。'},
+      {src:'Meta Q2 财报电话会', type:'纪要', snip:'2026 年 AI 基础设施 Capex 增速指引由 45% 下修至 30%。'},
+    ],
+    reasoning:'供给端（三星良率）与需求端（Cloud Capex 理性化）同向变化，溢价回落非短期波动。',
+    actions:[
+      {t:'审视算力链高估值标的', d:'先前基于「持续短缺」假设的高估值需重新定价。'},
+      {t:'关注二线 HBM 受益标的的预期差', d:'良率突破利好国产替代进程。'},
+    ],
+    model:'GLM-5.2 · 深度推理', sources:6, related:2,
+  },
+  {
+    id:'i3', priority:2, confidence:72, direction:'消费趋势',
+    title:'「平替」搜索量同比 +146%，但客单价下滑斜率放缓——消费分级而非降级',
+    summary:'小红书 / 抖音「平替」关键词搜索量持续走高，但平台大盘客单价下滑速度连续 3 个月收窄。数据并不支持单边「消费降级」叙事，更符合「分级」特征：必需品追求性价比，体验型品类仍愿意付费。',
+    time:'3 小时前', seen:false, views:1543, agrees:68, comments:24,
+    tags:['消费分级','平替','客单价'],
+    evidence:[
+      {src:'巨量算数 · 行业大盘', type:'数据', snip:'「平替」搜索指数同比 +146%，环比 +18%。'},
+      {src:'美团 · 餐饮品类报告', type:'研报', snip:'人均 30 元以下快餐客单价环比仅 -0.8%，降幅连续 3 月收窄。'},
+    ],
+    reasoning:'搜索热度与客单价背离，说明「平替」更多是主动选择而非被动压缩。',
+    actions:[
+      {t:'区分「性价比」与「体验型」品类制定投放策略', d:'一刀切的降价促销在体验型品类是无效甚至反向的。'},
+    ],
+    model:'GLM-5.2 · 快速洞察', sources:5, related:4,
+  },
+  {
+    id:'i4', priority:3, confidence:88, direction:'AI 应用落地',
+    title:'代码 Agent 类产品 MAU 突破 1200 万，但 7 日留存出现分化',
+    summary:'Cursor、Windsurf、Trae 等代码 Agent 合计 MAU 突破 1200 万里程碑，但 7 日留存呈现明显分化：深度集成 IDE 的产品留存 >65%，纯 Web 形态 <30%。形态比功能更重要。',
+    time:'5 小时前', seen:true, views:2104, agrees:89, comments:31,
+    tags:['代码 Agent','留存','形态'],
+    evidence:[
+      {src:'Similarweb 流量数据', type:'数据', snip:'Cursor MAU 达 480 万，环比 +22%。'},
+      {src:'开发者问卷 N=1240', type:'调研', snip:'78% 开发者偏好「在现有 IDE 内」使用 Agent，而非切换工具。'},
+    ],
+    reasoning:'留存分化与「是否融入既有工作流」高度相关，验证了集成深度 > 功能数量的假设。',
+    actions:[
+      {t:'AI 编程产品评估应纳入「集成深度」权重', d:'纯功能对比会高估 Web 形态产品的竞争力。'},
+    ],
+    model:'GLM-5.2 · 深度推理', sources:7, related:5,
+  },
+  {
+    id:'i5', priority:2, confidence:79, direction:'跨境电商',
+    title:'东南亚 Shopee 调整佣金结构，跨境中小卖家利润空间承压',
+    summary:'Shopee 7 月起对跨境店铺佣金上调 1.5-2 个百分点，同时收紧免运补贴门槛。叠加人民币汇率波动，中小卖家净利率面临 3-4 pct 压缩，头部品牌凭借规模议价能力相对稳健。',
+    time:'昨天', seen:true, views:678, agrees:22, comments:9,
+    tags:['东南亚','佣金','利润'],
+    evidence:[
+      {src:'Shopee 卖家中心公告', type:'公告', snip:'7 月 1 日起跨境店铺佣金率调整，详见新费率表。'},
+      {src:'海关总署出口数据', type:'数据', snip:'对东南亚跨境电商出口额环比 -4.2%。'},
+    ],
+    reasoning:'政策变更 + 汇率双向叠加，是确定性较强的利润压缩信号。',
+    actions:[
+      {t:'东南亚业务依赖度高的标的需下调 Q3 利润预期', d:'关注是否具备向消费者转嫁成本的能力。'},
+    ],
+    model:'GLM-5.2 · 快速洞察', sources:4, related:2,
+  },
+];
+
+const DIRECTIONS = [
+  {id:'d1',name:'新能源车市场',icon:'⚡',color:'#3E7359',bg:'#E8EFE9',on:true,
+   desc:'追踪动力电池成本、车型定价、政策补贴、销量结构与产业链毛利变化，识别价格带迁移与竞争格局拐点。',
+   keywords:['LFP','刀片电池','碳酸锂','以旧换新','增程','800V'],
+   schedule:'每 2 小时',sources:12,insights:347,owner:'林知夏'},
+  {id:'d2',name:'半导体供应链',icon:'◇',color:'#B87514',bg:'#F5E9D0',on:true,
+   desc:'监测 HBM / 先进制程 / 设备国产化动态，跟踪 Cloud Capex 与下游需求预期差，判断周期位置。',
+   keywords:['HBM3e','EUV','CoWoS','国产替代','存储周期'],
+   schedule:'每 4 小时',sources:9,insights:218,owner:'陆衡之'},
+  {id:'d3',name:'消费趋势',icon:'◎',color:'#A04428',bg:'#F2DDD4',on:true,
+   desc:'从社媒声量、客单价、品类分化中识别「分级 vs 降级」的真实结构，而非单边叙事。',
+   keywords:['平替','客单价','体验经济','性价比','消费分级'],
+   schedule:'每天 09:00',sources:15,insights:412,owner:'苏婉清'},
+  {id:'d4',name:'AI 应用落地',icon:'✦',color:'#3D4A5C',bg:'#E2E6EC',on:true,
+   desc:'追踪 Agent / 编程 / 多模态产品的 MAU、留存、付费转化，区分「功能」与「形态」竞争力。',
+   keywords:['代码 Agent','MAU','留存','付费率','多模态'],
+   schedule:'每 2 小时',sources:18,insights:289,owner:'陆衡之'},
+  {id:'d5',name:'跨境电商',icon:'◈',color:'#3E7359',bg:'#E8EFE9',on:false,
+   desc:'监控平台政策、佣金结构、汇率与关税变化，预警中小卖家利润空间与头部品牌韧性差。',
+   keywords:['Shopee','佣金','汇率','关税','TikTok Shop'],
+   schedule:'每天 18:00',sources:7,insights:156,owner:'林知夏'},
+];
+
+const SOURCES = [
+  {name:'36氪',type:'行业媒体',cat:'媒体',health:'good',vol:'2.4k/天',color:'#3E7359',on:true,tag:'中文'},
+  {name:'雪球 · 热帖',type:'投资者讨论',cat:'社媒',health:'good',vol:'8.1k/天',color:'#A04428',on:true,tag:'金融'},
+  {name:'arXiv',type:'学术论文',cat:'学术',health:'good',vol:'340/天',color:'#B87514',on:true,tag:'AI'},
+  {name:'SEC EDGAR',type:'监管公告',cat:'公告',health:'good',vol:'120/天',color:'#3D4A5C',on:true,tag:'美股'},
+  {name:'巨量算数',type:'趋势数据',cat:'数据',health:'warn',vol:'限流中',color:'#A04428',on:true,tag:'消费'},
+  {name:'TrendForce',type:'行业研报',cat:'研报',health:'good',vol:'15/天',color:'#3E7359',on:true,tag:'半导体'},
+  {name:'GitHub Trending',type:'开源动态',cat:'技术',health:'good',vol:'500/天',color:'#3D4A5C',on:true,tag:'AI'},
+  {name:'Reuters',type:'国际通讯社',cat:'媒体',health:'bad',vol:'已中断 2h',color:'#A04428',on:false,tag:'英文'},
+  {name:'小红书 · 笔记',type:'消费社媒',cat:'社媒',health:'good',vol:'12k/天',color:'#A04428',on:true,tag:'消费'},
+];
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+function Sidebar({role,setRole,view,setView,insight,setInsight}){
+  const userNav=[
+    {id:'today',label:'今日概览',ico:Ico.today},
+    {id:'feed',label:'洞察 Feed',ico:Ico.feed,badge:'5'},
+    {id:'sub',label:'我的订阅',ico:Ico.sub},
+    {id:'lib',label:'洞察文库',ico:Ico.lib},
+  ];
+  const adminNav=[
+    {id:'dash',label:'控制台',ico:Ico.dash},
+    {id:'dir',label:'洞察方向',ico:Ico.dir},
+    {id:'src',label:'数据源',ico:Ico.src},
+    {id:'sched',label:'调度引擎',ico:Ico.clock},
+    {id:'kb',label:'知识库',ico:Ico.brain},
+    {id:'model',label:'模型与提示词',ico:Ico.model},
+    {id:'mon',label:'效果监控',ico:Ico.chart},
+  ];
+  const nav = role==='user'?userNav:adminNav;
+  return (
+    <aside className="sidebar">
+      <div className="brand">
+        <div className="brand-mark">
+          <span className="brand-dot"></span>
+          <span className="brand-name">澄观</span>
+        </div>
+        <div className="brand-sub">Lumina · Insight Engine</div>
+      </div>
+
+      <div className="role-switch">
+        <button className={role==='user'?'active':''} onClick={()=>{setRole('user');setView('today')}}>用户视角</button>
+        <button className={role==='admin'?'active':''} onClick={()=>{setRole('admin');setView('dash')}}>管理视角</button>
+      </div>
+
+      <div className="nav-section">
+        <div className="nav-label">{role==='user'?'洞察消费':'系统编排'}</div>
+        {nav.map(n=>(
+          <div key={n.id} className={`nav-item ${view===n.id?'active':''}`}
+            onClick={()=>{setView(n.id);setInsight(null)}}>
+            <span className="ni-ico">{n.ico()}</span>
+            <span>{n.label}</span>
+            {n.badge && <span className="ni-badge">{n.badge}</span>}
+          </div>
+        ))}
+      </div>
+
+      <div className="sidebar-foot">
+        <div className="avatar">{role==='user'?'林':'管'}</div>
+        <div className="sf-info">
+          <div className="sf-name">{role==='user'?'林知夏':'系统管理员'}</div>
+          <div className="sf-role">{role==='user'?'消费 · 决策':'编排 · 治理'}</div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function Topbar({title,crumb,role}){
+  return (
+    <div className="topbar">
+      <div>
+        <h1>{title}</h1>
+        {crumb && <div className="crumb">{crumb}</div>}
+      </div>
+      <div className="tb-spacer"></div>
+      <div className="search-box">
+        {Ico.search({})}
+        <input placeholder={role==='user'?'搜索洞察、方向、关键词…':'搜索方向、数据源、任务…'} />
+      </div>
+      <div className="tb-icon-btn" title="告警">{Ico.bell({})}<span className="tb-dot"></span></div>
+      <div className="tb-icon-btn" title="新建">{Ico.plus({})}</div>
+    </div>
+  );
+}
+
+/* =========================================================
+   USER VIEWS
+========================================================= */
+function Sparkline({color='#3E7359',pts=[3,5,4,7,6,9,8,12]}){
+  const w=60,h=22,max=Math.max(...pts),min=Math.min(...pts);
+  const step=w/(pts.length-1);
+  const d=pts.map((p,i)=>`${i===0?'M':'L'}${i*step},${h-((p-min)/(max-min))*(h-3)-1.5}`).join(' ');
+  const area=`${d} L${w},${h} L0,${h} Z`;
+  return (
+    <svg className="trend-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+      <path d={area} fill={color} opacity="0.12"/>
+      <path d={d} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function ConfidenceBar({val}){
+  const color = val>=85?'#3E7359':val>=70?'#B87514':'#A04428';
+  return (
+    <span className="ic-conf">
+      <span className="muted" style={{fontSize:'11px'}}>置信</span>
+      <span className="conf-bar"><span className="conf-fill" style={{width:val+'%',background:color}}></span></span>
+      <span className="mono" style={{fontSize:'11.5px',color,fontWeight:600}}>{val}</span>
+    </span>
+  );
+}
+
+function InsightCard({ins,setInsight}){
+  const pri = ins.priority===1?'pri-1':ins.priority===2?'pri-2':'pri-3';
+  const priText = ins.priority===1?'高优先级':ins.priority===2?'值得关注':'常规';
+  return (
+    <div className={`insight-card ${ins.seen?'seen':''} fade-in`} onClick={()=>setInsight(ins)}>
+      <div className="ic-head">
+        <span className={`ic-priority ${pri}`}><span className="pri-dot"></span>{priText}</span>
+        <span className="chip chip-moss">{ins.direction}</span>
+        {ins.tags.slice(0,2).map(t=><span key={t} className="chip chip-line">{t}</span>)}
+        <span className="ic-time">{ins.time}</span>
+      </div>
+      <div className="ic-title">{ins.title}</div>
+      <div className="ic-summary">{ins.summary}</div>
+      <div className="ic-foot">
+        <ConfidenceBar val={ins.confidence}/>
+        <span className="ic-stat">{Ico.eye({})}{ins.views.toLocaleString()}</span>
+        <span className="ic-stat">{Ico.check({})}{ins.agrees} 认同</span>
+        <span className="ic-stat">{Ico.doc({})}{ins.comments} 讨论</span>
+        <span className="ic-stat" style={{marginLeft:'auto'}}>{Ico.bolt({})}{ins.model}</span>
+      </div>
+    </div>
+  );
+}
+
+function FeedView({setInsight}){
+  return (
+    <div className="feed-grid fade-in">
+      <div>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:'18px'}}>
+          <div className="section-title">实时洞察流</div>
+          <span className="chip chip-amber">{Ico.bolt({})}3 条新洞察</span>
+          <div style={{marginLeft:'auto',display:'flex',gap:8}}>
+            <button className="btn btn-sm">全部方向</button>
+            <button className="btn btn-sm">优先级</button>
+            <button className="btn btn-sm">时间</button>
+          </div>
+        </div>
+        {INSIGHTS.map(ins=><InsightCard key={ins.id} ins={ins} setInsight={setInsight}/>)}
+      </div>
+      <div className="side-panel">
+        <div className="side-card">
+          <div className="side-title">{Ico.chart({})}今日方向热度</div>
+          {[
+            {n:'新能源车市场',v:'+12%',pts:[2,3,4,5,7,8,11]},
+            {n:'AI 应用落地',v:'+9%',pts:[4,5,4,6,8,9,10]},
+            {n:'半导体供应链',v:'+6%',pts:[3,4,5,5,6,7,8]},
+            {n:'消费趋势',v:'+3%',pts:[5,5,6,6,7,7,8]},
+          ].map(r=>(
+            <div className="trend-row" key={r.n}>
+              <span className="trend-name">{r.n}</span>
+              <Sparkline pts={r.pts}/>
+              <span className="trend-val">{r.v}</span>
+            </div>
+          ))}
+        </div>
+        <div className="side-card">
+          <div className="side-title">{Ico.warn({})}数据源健康度</div>
+          <div className="trend-row"><span className="trend-name">巨量算数</span><span className="chip chip-amber">限流</span></div>
+          <div className="trend-row"><span className="trend-name">Reuters</span><span className="chip chip-clay">中断 2h</span></div>
+          <div className="trend-row"><span className="trend-name">其余 7 个数据源</span><span className="chip chip-moss">正常</span></div>
+        </div>
+        <div className="empty-note" style={{borderColor:'var(--amber-soft)',background:'var(--amber-soft)'}}>
+          💡 高优先级洞察将即时推送，无需等待定时。可在「我的订阅」配置推送规则。
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailView({ins,setInsight}){
+  const priText = ins.priority===1?'高优先级 · 即时推送':ins.priority===2?'值得关注':'常规洞察';
+  return (
+    <div className="fade-in">
+      <button className="btn btn-sm" style={{marginBottom:'18px'}} onClick={()=>setInsight(null)}>
+        {Ico.back({})}返回 Feed
+      </button>
+      <div className="detail-hero">
+        <div className="ic-head" style={{marginBottom:'8px'}}>
+          <span className="chip chip-moss">{ins.direction}</span>
+          {ins.tags.map(t=><span key={t} className="chip chip-line">{t}</span>)}
+          <span className="ic-time">{ins.time}</span>
+        </div>
+        <h2 className="detail-title">{ins.title}</h2>
+        <div style={{display:'flex',gap:'18px',alignItems:'center',flexWrap:'wrap'}}>
+          <ConfidenceBar val={ins.confidence}/>
+          <span className="ic-stat">{Ico.bolt({})}生成模型 · {ins.model}</span>
+          <span className="chip chip-amber">{priText}</span>
+        </div>
+        <p className="detail-summary">{ins.summary}</p>
+      </div>
+
+      <div className="detail-grid">
+        <div className="detail-body">
+          <h3>{Ico.doc({})}证据链 · {ins.sources} 个信源</h3>
+          <div className="evidence-chain">
+            {ins.evidence.map((e,i)=>(
+              <div className="evidence" key={i}>
+                <div className="ev-num">{i+1}</div>
+                <div className="ev-body">
+                  <div className="ev-src">
+                    <span className="chip chip-slate" style={{padding:'1px 7px'}}>{e.type}</span>
+                    <span>{e.src}</span>
+                  </div>
+                  <div className="ev-text">「{e.snip}」</div>
+                  <span className="ev-link">{Ico.link({})}查看原始来源</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <h3>{Ico.brain({})}推理归因</h3>
+          <p>{ins.reasoning}</p>
+
+          <h3>{Ico.bolt({})}建议行动 · {ins.actions.length} 项</h3>
+          {ins.actions.map((a,i)=>(
+            <div className="action-card" key={i}>
+              <div className="action-icon">{Ico.arrow({})}</div>
+              <div className="action-body">
+                <div className="action-title">{a.t}</div>
+                <div className="action-desc">{a.d}</div>
+              </div>
+            </div>
+          ))}
+
+          <div style={{display:'flex',gap:'10px',marginTop:'24px'}}>
+            <button className="btn btn-primary">{Ico.check({})}认同并采纳</button>
+            <button className="btn">{Ico.doc({})}转入决策库</button>
+            <button className="btn">分享给团队</button>
+            <button className="btn">反馈偏差</button>
+          </div>
+        </div>
+
+        <div className="meta-side">
+          <div className="meta-block">
+            <div className="meta-label">元信息</div>
+            <div style={{fontSize:'12.5px',lineHeight:'2.1'}}>
+              <div className="muted">方向归属</div>
+              <div style={{fontWeight:500}}>{ins.direction}</div>
+              <div className="muted" style={{marginTop:'6px'}}>信源数量</div>
+              <div className="mono">{ins.sources} 个 · 跨 {ins.evidence.length} 类</div>
+              <div className="muted" style={{marginTop:'6px'}}>关联洞察</div>
+              <div className="mono">{ins.related} 条</div>
+              <div className="muted" style={{marginTop:'6px'}}>生成耗时</div>
+              <div className="mono">38 秒 · 12.4k tokens</div>
+            </div>
+          </div>
+          <div className="meta-block">
+            <div className="meta-label">社区反馈</div>
+            <div style={{fontSize:'12.5px',lineHeight:'2'}}>
+              <div className="muted">阅读</div><div className="mono">{ins.views.toLocaleString()}</div>
+              <div className="muted" style={{marginTop:'4px'}}>认同</div><div className="mono">{ins.agrees} 人 · 采纳率 73%</div>
+              <div className="muted" style={{marginTop:'4px'}}>讨论</div><div className="mono">{ins.comments} 条</div>
+            </div>
+          </div>
+          <div className="empty-note">
+            此洞察已沉淀至知识图谱，未来相关方向的推理将引用其结论。
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TodayView({setInsight}){
+  return (
+    <div className="fade-in">
+      <div className="hero-strip">
+        <div className="hero-greet">早上好，知夏 · 今天是 6 月 16 日 周二</div>
+        <div className="hero-headline">过去 24 小时，引擎从 9 个数据源中提炼出 12 条洞察，其中 2 条高优先级已为你置顶。</div>
+        <div className="hero-sub">核心信号集中在「新能源车成本下行」与「HBM 供给松动」，可能与你的「制造业转型」关注池高度相关。</div>
+        <div className="hero-stats">
+          <div><div className="hero-stat-num">12</div><div className="hero-stat-lbl">新增洞察</div></div>
+          <div><div className="hero-stat-num">2</div><div className="hero-stat-lbl">高优先级</div></div>
+          <div><div className="hero-stat-num">73%</div><div className="hero-stat-lbl">7 日采纳率</div></div>
+          <div><div className="hero-stat-num">4</div><div className="hero-stat-lbl">订阅方向</div></div>
+        </div>
+      </div>
+
+      <div className="kpi-row">
+        <div className="kpi">
+          <div className="kpi-lbl">本周洞察产出</div>
+          <div className="kpi-val">86</div>
+          <div className="kpi-trend kpi-up">↑ 14% vs 上周</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-lbl">平均置信度</div>
+          <div className="kpi-val">81</div>
+          <div className="kpi-trend kpi-up">↑ 3 分</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-lbl">我的采纳</div>
+          <div className="kpi-val">23</div>
+          <div className="kpi-trend kpi-up">↑ 6 条</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-lbl">待处理</div>
+          <div className="kpi-val">5</div>
+          <div className="kpi-trend kpi-down">建议尽快查看</div>
+        </div>
+      </div>
+
+      <div className="two-col">
+        <div>
+          <div style={{display:'flex',alignItems:'baseline',gap:10,marginBottom:'14px'}}>
+            <div className="section-title">置顶洞察</div>
+            <span className="muted" style={{fontSize:'12px'}}>按优先级排序</span>
+          </div>
+          {INSIGHTS.slice(0,3).map(ins=><InsightCard key={ins.id} ins={ins} setInsight={setInsight}/>)}
+        </div>
+        <div>
+          <div className="side-card">
+            <div className="side-title">{Ico.clock({})}我的关注方向</div>
+            {['新能源车市场','半导体供应链','AI 应用落地'].map(d=>(
+              <div className="trend-row" key={d}>
+                <span className="trend-name">{d}</span>
+                <span className="chip chip-moss">活跃</span>
+              </div>
+            ))}
+            <button className="btn btn-sm" style={{width:'100%',marginTop:'10px',justifyContent:'center'}}>{Ico.plus({})}添加方向</button>
+          </div>
+          <div className="side-card">
+            <div className="side-title">{Ico.today({})}今日调度</div>
+            <div className="timeline" style={{paddingLeft:'18px'}}>
+              <div className="tl-item"><div className="tl-time">09:00</div><div className="tl-name">消费趋势 · 日报已生成</div></div>
+              <div className="tl-item next"><div className="tl-time">12:00</div><div className="tl-name">新能源车 · 即将运行</div></div>
+              <div className="tl-item"><div className="tl-time">16:00</div><div className="tl-name">半导体 · 待执行</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SubView(){
+  return (
+    <div className="fade-in">
+      <div className="section-title">我的订阅</div>
+      <div className="section-desc">管理你关注的洞察方向、推送规则与通知偏好</div>
+      <div className="kb-grid" style={{gridTemplateColumns:'repeat(2,1fr)'}}>
+        {DIRECTIONS.filter(d=>d.on).map(d=>(
+          <div className="dir-card" key={d.id} style={{marginBottom:0,cursor:'default'}}>
+            <div className="dir-icon" style={{background:d.bg,color:d.color}}>{d.icon}</div>
+            <div className="dir-body">
+              <div className="dir-title">{d.name}</div>
+              <div className="dir-desc" style={{marginBottom:'8px'}}>{d.desc.slice(0,46)}…</div>
+              <div style={{display:'flex',gap:'14px',fontSize:'11px',color:'var(--ink-3)'}}>
+                <span>调度 · {d.schedule}</span>
+                <span>已产 {d.insights} 条</span>
+              </div>
+            </div>
+            <div className="dir-toggle"><span className="toggle on"></span></div>
+          </div>
+        ))}
+      </div>
+      <div className="card card-pad" style={{marginTop:'22px'}}>
+        <div className="side-title" style={{marginBottom:'16px'}}>{Ico.bell({})}推送规则</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px 32px',fontSize:'13px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span>高优先级洞察</span><span className="chip chip-clay">即时推送</span></div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span>每日摘要</span><span className="chip chip-moss">08:30 邮件</span></div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span>置信度阈值</span><span className="mono">≥ 70</span></div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span>免打扰时段</span><span className="mono">22:00 — 07:30</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LibView(){
+  return (
+    <div className="fade-in">
+      <div className="section-title">洞察文库</div>
+      <div className="section-desc">已沉淀的洞察归档，支持按方向、置信度、采纳状态筛选与全文检索</div>
+      <div className="kpi-row">
+        <div className="kpi"><div className="kpi-lbl">归档洞察</div><div className="kpi-val">1,422</div></div>
+        <div className="kpi"><div className="kpi-lbl">已采纳</div><div className="kpi-val">487</div><div className="kpi-trend kpi-up">采纳率 34%</div></div>
+        <div className="kpi"><div className="kpi-lbl">知识节点</div><div className="kpi-val">3,108</div></div>
+        <div className="kpi"><div className="kpi-lbl">关联边</div><div className="kpi-val">8,742</div></div>
+      </div>
+      <div className="tabs">
+        <div className="tab active">全部</div>
+        <div className="tab">已采纳</div>
+        <div className="tab">已归档</div>
+        <div className="tab">争议中</div>
+      </div>
+      <div className="card card-pad">
+        <div className="empty-note">此处展示按筛选条件归档的洞察列表（原型略，逻辑同 Feed）。每条洞察可回溯其证据链、被哪些后续洞察引用，形成知识飞轮。</div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   ADMIN VIEWS
+========================================================= */
+function AdminDash(){
+  return (
+    <div className="fade-in">
+      <div className="hero-strip">
+        <div className="hero-greet">控制台 · 系统全景</div>
+        <div className="hero-headline">引擎运行健康，9 个数据源在线、5 个方向运行中、24 小时产出 47 条洞察。</div>
+        <div className="hero-sub">2 个异常待处理：Reuters 数据源中断、巨量算数触发限流。建议检查源配置。</div>
+        <div className="hero-stats">
+          <div><div className="hero-stat-num">47</div><div className="hero-stat-lbl">24h 产出</div></div>
+          <div><div className="hero-stat-num">81</div><div className="hero-stat-lbl">平均置信</div></div>
+          <div><div className="hero-stat-num">¥3.2k</div><div className="hero-stat-lbl">24h 成本</div></div>
+          <div><div className="hero-stat-num">34%</div><div className="hero-stat-lbl">采纳率</div></div>
+        </div>
+      </div>
+      <div className="kpi-row">
+        <div className="kpi"><div className="kpi-lbl">活跃方向</div><div className="kpi-val">4/5</div><div className="kpi-trend kpi-up">跨境电商 已暂停</div></div>
+        <div className="kpi"><div className="kpi-lbl">在线数据源</div><div className="kpi-val">7/9</div><div className="kpi-trend kpi-down">2 个异常</div></div>
+        <div className="kpi"><div className="kpi-lbl">本月 Token 消耗</div><div className="kpi-val">86k</div><div className="kpi-trend kpi-up">预算 42%</div></div>
+        <div className="kpi"><div className="kpi-lbl">知识库条目</div><div className="kpi-val">3.1k</div><div className="kpi-trend kpi-up">+312 本月</div></div>
+      </div>
+      <div className="two-col">
+        <div className="card card-pad">
+          <div className="chart-head"><div className="chart-title">洞察产出趋势（近 14 天）</div></div>
+          <div className="bar-chart">
+            {[32,28,41,38,35,45,52,48,55,47,60,58,51,47].map((v,i)=>(
+              <div className="bar-col" key={i}>
+                <div className="bar" style={{height:(v/60*100)+'%',background:i>=11?'var(--moss)':'var(--moss-3)'}}></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="card card-pad">
+          <div className="chart-head"><div className="chart-title">成本构成（本月）</div></div>
+          <div className="donut-wrap">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+              <circle cx="55" cy="55" r="42" fill="none" stroke="var(--paper-3)" strokeWidth="14"/>
+              <circle cx="55" cy="55" r="42" fill="none" stroke="#1F3A2E" strokeWidth="14" strokeDasharray="145 264" transform="rotate(-90 55 55)"/>
+              <circle cx="55" cy="55" r="42" fill="none" stroke="#B87514" strokeWidth="14" strokeDasharray="68 264" strokeDashoffset="-145" transform="rotate(-90 55 55)"/>
+              <circle cx="55" cy="55" r="42" fill="none" stroke="#A04428" strokeWidth="14" strokeDasharray="38 264" strokeDashoffset="-213" transform="rotate(-90 55 55)"/>
+              <text x="55" y="59" textAnchor="middle" className="serif" style={{fontSize:'18px',fontWeight:700,fill:'var(--ink)'}}>¥3.2k</text>
+            </svg>
+            <div className="legend">
+              <div className="legend-item"><span className="legend-dot" style={{background:'#1F3A2E'}}></span>LLM 推理<span className="legend-val">55%</span></div>
+              <div className="legend-item"><span className="legend-dot" style={{background:'#B87514'}}></span>Embedding<span className="legend-val">26%</span></div>
+              <div className="legend-item"><span className="legend-dot" style={{background:'#A04428'}}></span>数据源 API<span className="legend-val">14%</span></div>
+              <div className="legend-item"><span className="legend-dot" style={{background:'var(--paper-3)'}}></span>存储<span className="legend-val">5%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DirView(){
+  return (
+    <div className="fade-in">
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:'6px'}}>
+        <div className="section-title">洞察方向</div>
+        <button className="btn btn-amber btn-sm" style={{marginLeft:'auto'}}>{Ico.plus({})}新建方向</button>
+      </div>
+      <div className="section-desc">定义「引擎看什么」——每个方向是一组关键词、数据源、调度与模型的组合，决定洞察的主题与质量</div>
+      {DIRECTIONS.map(d=>(
+        <div className="dir-card" key={d.id}>
+          <div className="dir-icon" style={{background:d.bg,color:d.color}}>{d.icon}</div>
+          <div className="dir-body">
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <div className="dir-title">{d.name}</div>
+              {!d.on && <span className="chip chip-line">已暂停</span>}
+            </div>
+            <div className="dir-desc">{d.desc}</div>
+            <div className="dir-meta">
+              <span>{Ico.src({})}{d.sources} 个数据源</span>
+              <span>{Ico.clock({})}{d.schedule}</span>
+              <span>{Ico.feed({})}{d.insights} 条已产</span>
+              <span>{Ico.eye({})}负责人 {d.owner}</span>
+            </div>
+            <div style={{display:'flex',gap:'6px',marginTop:'10px',flexWrap:'wrap'}}>
+              {d.keywords.map(k=><span key={k} className="chip chip-line" style={{fontSize:'10.5px'}}>{k}</span>)}
+            </div>
+          </div>
+          <div className="dir-toggle"><span className={`toggle ${d.on?'on':''}`}></span></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SrcView(){
+  const healthMap={good:['#3E7359','健康'],warn:['#B87514','限流'],bad:['#A04428','异常']};
+  return (
+    <div className="fade-in">
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:'6px'}}>
+        <div className="section-title">数据源</div>
+        <button className="btn btn-amber btn-sm" style={{marginLeft:'auto'}}>{Ico.plus({})}接入数据源</button>
+      </div>
+      <div className="section-desc">配置引擎的「眼睛」——行业媒体、社媒、研报、公告、学术、开源等多类型信源</div>
+      <div className="card" style={{overflow:'hidden'}}>
+        <table className="src-table">
+          <thead><tr>
+            <th>数据源</th><th>类型</th><th>分类</th><th>采集量</th><th>健康度</th><th>状态</th><th></th>
+          </tr></thead>
+          <tbody>
+            {SOURCES.map(s=>{
+              const [c,t]=healthMap[s.health];
+              return (
+                <tr key={s.name}>
+                  <td>
+                    <div className="src-name">
+                      <span className="src-favicon" style={{background:s.color}}>{s.name[0]}</span>
+                      {s.name}
+                      <span className="chip chip-line" style={{fontSize:'10px'}}>{s.tag}</span>
+                    </div>
+                  </td>
+                  <td className="muted">{s.type}</td>
+                  <td><span className="chip chip-slate">{s.cat}</span></td>
+                  <td className="mono">{s.vol}</td>
+                  <td><span className="health"><span className="health-dot" style={{background:c}}></span>{t}</span></td>
+                  <td><span className={`toggle ${s.on?'on':''}`} style={{transform:'scale(.85)'}}></span></td>
+                  <td><span className="muted" style={{cursor:'pointer'}}>配置</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SchedView(){
+  const jobs=[
+    {t:'02:00',n:'知识库向量化重建',s:'每日',st:'done',d:'增量索引 312 条新文档'},
+    {t:'06:00',n:'数据源全量拉取',s:'每日',st:'done',d:'采集 42,180 条原始数据'},
+    {t:'09:00',n:'消费趋势 · 日报生成',s:'每日',st:'done',d:'产出 3 条洞察'},
+    {t:'12:00',n:'新能源车市场 · 定时挖掘',s:'每 2h',st:'next',d:'即将执行 · 预计 14 分钟'},
+    {t:'16:00',n:'半导体供应链 · 定时挖掘',s:'每 4h',st:'pending',d:'待执行'},
+    {t:'18:00',n:'跨境电商 · 汇总（已暂停）',s:'每日',st:'paused',d:'方向已关闭'},
+  ];
+  return (
+    <div className="fade-in">
+      <div className="section-title">调度引擎</div>
+      <div className="section-desc">配置洞察挖掘的节奏——定时全量、增量挖掘、知识库重建与告警触发的优先级</div>
+      <div className="two-col">
+        <div className="card card-pad">
+          <div className="chart-head"><div className="chart-title">今日调度时间线</div>
+            <span className="chip chip-moss">{Ico.clock({})}本地时区</span>
+          </div>
+          <div className="timeline">
+            {jobs.map((j,i)=>(
+              <div className={`tl-item ${j.st==='next'?'next':''}`} key={i}>
+                <div className="tl-time">{j.t}</div>
+                <div className="tl-name">{j.n}</div>
+                <div className="muted" style={{fontSize:'11.5px'}}>
+                  <span className="chip chip-line" style={{marginRight:'6px',padding:'1px 7px'}}>{j.s}</span>
+                  {j.d}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="card card-pad" style={{marginBottom:'16px'}}>
+            <div className="chart-title" style={{marginBottom:'14px'}}>调度策略</div>
+            <div style={{fontSize:'12.5px',lineHeight:'2.2'}}>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span>增量挖掘频率</span><span className="mono">每 2 小时</span></div>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span>全量重建</span><span className="mono">每日 02:00</span></div>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span>高优先级触发</span><span className="chip chip-clay">即时</span></div>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span>并发上限</span><span className="mono">4 任务</span></div>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span>失败重试</span><span className="mono">3 次 · 退避</span></div>
+            </div>
+          </div>
+          <div className="card card-pad">
+            <div className="chart-title" style={{marginBottom:'14px'}}>告警规则</div>
+            <div style={{fontSize:'12.5px',lineHeight:'2'}}>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span>置信度 ≥ 85 且优先级 1</span><span className="chip chip-clay">即时推送</span></div>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span>数据源连续失败 ≥ 3 次</span><span className="chip chip-amber">告警</span></div>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span>单方向产出骤降 >50%</span><span className="chip chip-amber">告警</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KbView(){
+  return (
+    <div className="fade-in">
+      <div className="section-title">知识库 · 数据储备</div>
+      <div className="section-desc">引擎的「记忆与先验」——历史洞察、行业知识、私有文档向量化后形成的可检索知识图谱</div>
+      <div className="kb-grid">
+        <div className="kb-stat"><div className="muted" style={{fontSize:'11px'}}>知识节点</div><div className="kb-num">3,108</div><div className="muted" style={{fontSize:'11px'}}>↑ 312 本月新增</div></div>
+        <div className="kb-stat"><div className="muted" style={{fontSize:'11px'}}>关联边</div><div className="kb-num">8,742</div><div className="muted" style={{fontSize:'11px'}}>归因 / 引用 / 衍生</div></div>
+        <div className="kb-stat"><div className="muted" style={{fontSize:'11px'}}>向量维度</div><div className="kb-num">1,536</div><div className="muted" style={{fontSize:'11px'}}>bge-m3 · 中文优化</div></div>
+      </div>
+      <div className="two-col" style={{gridTemplateColumns:'1fr 1fr'}}>
+        <div className="card card-pad">
+          <div className="chart-title" style={{marginBottom:'14px'}}>知识来源构成</div>
+          <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+            {[
+              {n:'历史洞察沉淀',v:'42%',c:'#1F3A2E'},
+              {n:'私有上传文档',v:'28%',c:'#B87514'},
+              {n:'行业知识库',v:'18%',c:'#3E7359'},
+              {n:'实时信源快照',v:'12%',c:'#A04428'},
+            ].map(r=>(
+              <div key={r.n}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:'12.5px',marginBottom:'5px'}}>
+                  <span>{r.n}</span><span className="mono">{r.v}</span>
+                </div>
+                <div className="progress-track"><div className="progress-fill" style={{width:r.v,background:r.c}}></div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="card card-pad">
+          <div className="chart-title" style={{marginBottom:'14px'}}>检索示例 · 向量召回</div>
+          <div className="prompt-box" style={{fontSize:'11.5px'}}>
+            <span className="c"># 查询</span><br/>
+            <span className="k">query</span>: <span className="s">"LFP 电池成本下行对中端车型毛利的影响"</span><br/><br/>
+            <span className="c"># 召回 Top-3 相关知识节点</span><br/>
+            <span className="k">node</span> #1842 · <span className="s">比亚迪刀片电池供应链（置信 0.91）</span><br/>
+            <span className="k">node</span> #0731 · <span className="s">碳酸锂价格周期（置信 0.87）</span><br/>
+            <span className="k">node</span> #2205 · <span className="s">10-15万价格带竞争（置信 0.83）</span>
+          </div>
+          <div style={{display:'flex',gap:'8px',marginTop:'14px'}}>
+            <button className="btn btn-sm">上传私有文档</button>
+            <button className="btn btn-sm">重建索引</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModelView(){
+  return (
+    <div className="fade-in">
+      <div className="section-title">模型与提示词</div>
+      <div className="section-desc">按方向配置「用什么脑子看」——模型路由、提示词模板与生成参数的成本/能力权衡</div>
+      <div className="card card-pad" style={{marginBottom:'18px'}}>
+        <div className="chart-title" style={{marginBottom:'14px'}}>模型路由策略</div>
+        <table className="src-table">
+          <thead><tr><th>方向</th><th>推理模型</th><th>用途</th><th>温度</th><th>单条成本</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><strong>新能源车市场</strong></td><td>GLM-5.2 深度推理</td><td className="muted">多步归因</td><td className="mono">0.3</td><td className="mono">¥0.18</td><td><span className="muted" style={{cursor:'pointer'}}>编辑</span></td></tr>
+            <tr><td><strong>半导体供应链</strong></td><td>GLM-5.2 深度推理</td><td className="muted">周期判断</td><td className="mono">0.3</td><td className="mono">¥0.21</td><td><span className="muted" style={{cursor:'pointer'}}>编辑</span></td></tr>
+            <tr><td><strong>消费趋势</strong></td><td>GLM-5.2 快速洞察</td><td className="muted">高频低延迟</td><td className="mono">0.5</td><td className="mono">¥0.06</td><td><span className="muted" style={{cursor:'pointer'}}>编辑</span></td></tr>
+            <tr><td><strong>AI 应用落地</strong></td><td>GLM-5.2 深度推理</td><td className="muted">留存分析</td><td className="mono">0.4</td><td className="mono">¥0.19</td><td><span className="muted" style={{cursor:'pointer'}}>编辑</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="card card-pad">
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'14px'}}>
+          <div className="chart-title">提示词模板 · 深度推理</div>
+          <div style={{display:'flex',gap:'8px'}}>
+            <span className="chip chip-moss">v2.3</span>
+            <button className="btn btn-sm">{Ico.doc({})}版本历史</button>
+          </div>
+        </div>
+        <div className="prompt-box">
+<span className="c"># 角色</span><br/>
+你是一位资深{`{{direction}}`}行业分析师，擅长从多源异构数据中提炼可执行洞察。<br/><br/>
+<span className="c"># 任务</span><br/>
+基于以下信源数据，识别<span className="s">非显而易见的趋势、预期差或因果链</span>，而非复述信息。<br/><br/>
+<span className="c"># 信源数据</span><br/>
+<span className="k">{`{{sources}}`}</span><br/><br/>
+<span className="c"># 输出要求</span><br/>
+1. <span className="k">洞察标题</span>：一句话核心结论（含方向性判断）<br/>
+2. <span className="k">证据链</span>：≥3 条，标注来源与类型，注明因果传导逻辑<br/>
+3. <span className="k">置信度</span>：0-100，须说明扣分项（数据缺口 / 因果薄弱 / 时效风险）<br/>
+4. <span className="k">建议行动</span>：≥1 条可执行的具体动作<br/><br/>
+<span className="c"># 约束</span><br/>
+- 禁止编造来源，数据不足时如实降低置信度<br/>
+- 区分<span className="s">事实</span>与<span className="s">推断</span>，推断须显式标注<br/>
+- 警惕单一来源主导结论，需交叉验证
+        </div>
+        <div style={{display:'flex',gap:'8px',marginTop:'14px'}}>
+          <button className="btn btn-primary btn-sm">{Ico.check({})}保存版本</button>
+          <button className="btn btn-sm">{Ico.bolt({})}试运行</button>
+          <button className="btn btn-sm">A/B 测试</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MonView(){
+  return (
+    <div className="fade-in">
+      <div className="section-title">效果监控</div>
+      <div className="section-desc">洞察是否真的有用？——采纳率、反馈、成本效率与方向质量的闭环度量</div>
+      <div className="kpi-row">
+        <div className="kpi"><div className="kpi-lbl">7 日采纳率</div><div className="kpi-val">34%</div><div className="kpi-trend kpi-up">↑ 5 pct</div></div>
+        <div className="kpi"><div className="kpi-lbl">用户认同率</div><div className="kpi-val">61%</div><div className="kpi-trend kpi-up">↑ 3 pct</div></div>
+        <div className="kpi"><div className="kpi-lbl">反馈偏差率</div><div className="kpi-val">7.2%</div><div className="kpi-trend kpi-down">↓ 1.8 pct</div></div>
+        <div className="kpi"><div className="kpi-lbl">单洞察成本</div><div className="kpi-val">¥0.14</div><div className="kpi-trend kpi-up">↓ ¥0.03</div></div>
+      </div>
+      <div className="monitor-grid">
+        <div className="chart-card">
+          <div className="chart-head"><div className="chart-title">各方向采纳率对比</div></div>
+          <div style={{display:'flex',flexDirection:'column',gap:'14px',marginTop:'8px'}}>
+            {[
+              {n:'AI 应用落地',v:48,c:'#1F3A2E'},
+              {n:'新能源车市场',v:41,c:'#3E7359'},
+              {n:'半导体供应链',v:33,c:'#B87514'},
+              {n:'消费趋势',v:28,c:'#A04428'},
+            ].map(r=>(
+              <div key={r.n}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:'12.5px',marginBottom:'5px'}}>
+                  <span>{r.n}</span><span className="mono" style={{color:r.c,fontWeight:600}}>{r.v}%</span>
+                </div>
+                <div className="progress-track"><div className="progress-fill" style={{width:r.v+'%',background:r.c}}></div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="chart-card">
+          <div className="chart-head"><div className="chart-title">置信度 vs 实际采纳（校准）</div></div>
+          <div className="bar-chart" style={{height:'120px'}}>
+            {[
+              {b:'60-70',a:18},{b:'70-80',a:29},{b:'80-90',a:44},{b:'90+',a:62}
+            ].map(r=>(
+              <div className="bar-col" key={r.b}>
+                <div className="bar" style={{height:(r.a/70*100)+'%',background:'var(--amber-2)'}}></div>
+                <div className="bar-lbl">{r.b}</div>
+              </div>
+            ))}
+          </div>
+          <div className="muted" style={{fontSize:'11px',marginTop:'8px',textAlign:'center'}}>置信度越高，采纳率越高 —— 校准良好 ✓</div>
+        </div>
+        <div className="chart-card">
+          <div className="chart-head"><div className="chart-title">近期用户反馈</div></div>
+          <div style={{display:'flex',flexDirection:'column',gap:'11px',fontSize:'12px'}}>
+            <div style={{paddingBottom:'10px',borderBottom:'1px solid var(--paper-2)'}}>
+              <div style={{fontWeight:500,marginBottom:'3px'}}>「HBM3e 现货溢价」洞察 <span className="chip chip-moss" style={{marginLeft:'4px'}}>认同</span></div>
+              <div className="muted">帮助我们及时调整了算力链仓位，避免追高。—— 林知夏</div>
+            </div>
+            <div style={{paddingBottom:'10px',borderBottom:'1px solid var(--paper-2)'}}>
+              <div style={{fontWeight:500,marginBottom:'3px'}}>「消费降级」相关洞察 <span className="chip chip-clay" style={{marginLeft:'4px'}}>偏差</span></div>
+              <div className="muted">单边降级叙事过于简化，未体现分级结构。—— 苏婉清</div>
+            </div>
+            <div>
+              <div style={{fontWeight:500,marginBottom:'3px'}}>「代码 Agent 留存」洞察 <span className="chip chip-moss" style={{marginLeft:'4px'}}>认同</span></div>
+              <div className="muted">集成深度的视角很有启发，已纳入产品评估。—— 陆衡之</div>
+            </div>
+          </div>
+        </div>
+        <div className="chart-card">
+          <div className="chart-head"><div className="chart-title">成本效率趋势</div></div>
+          <div className="bar-chart" style={{height:'120px'}}>
+            {[0.22,0.19,0.20,0.17,0.16,0.15,0.14].map((v,i)=>(
+              <div className="bar-col" key={i}>
+                <div className="bar" style={{height:(v/0.25*100)+'%',background:'var(--moss-2)'}}></div>
+                <div className="bar-lbl">W{i+1}</div>
+              </div>
+            ))}
+          </div>
+          <div className="muted" style={{fontSize:'11px',marginTop:'8px',textAlign:'center'}}>单洞察成本持续下降 —— ¥0.22 → ¥0.14</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   APP ROOT
+========================================================= */
+function App(){
+  const [role,setRole]=useState('user');
+  const [view,setView]=useState('today');
+  const [insight,setInsight]=useState(null);
+
+  useEffect(()=>{
+    const sc=document.querySelector('.main');
+    if(sc) sc.scrollTop=0;
+  },[view,insight,role]);
+
+  const titles={
+    user:{today:['今日概览','你关注的方向与今日要点'],feed:['洞察 Feed','实时流动的洞察流'],
+          sub:['我的订阅','方向与推送规则'],lib:['洞察文库','已沉淀的洞察归档']},
+    admin:{dash:['控制台','系统全景监控'],dir:['洞察方向','定义引擎看什么'],
+          src:['数据源','配置引擎的眼睛'],sched:['调度引擎','挖掘节奏与告警'],
+          kb:['知识库','数据储备与向量索引'],model:['模型与提示词','模型路由与生成模板'],
+          mon:['效果监控','洞察价值的闭环度量']}
+  };
+  const [title,crumb]=titles[role][view]||['',''];
+
+  return (
+    <React.Fragment>
+      <Sidebar role={role} setRole={setRole} view={view} setView={setView} insight={insight} setInsight={setInsight}/>
+      <div className="main">
+        <Topbar title={title} crumb={crumb} role={role}/>
+        <div className="content">
+          {role==='user' && (
+            insight ? <DetailView ins={insight} setInsight={setInsight}/> :
+            view==='today'?<TodayView setInsight={setInsight}/>:
+            view==='feed'?<FeedView setInsight={setInsight}/>:
+            view==='sub'?<SubView/>:<LibView/>
+          )}
+          {role==='admin' && (
+            view==='dash'?<AdminDash/>:
+            view==='dir'?<DirView/>:
+            view==='src'?<SrcView/>:
+            view==='sched'?<SchedView/>:
+            view==='kb'?<KbView/>:
+            view==='model'?<ModelView/>:<MonView/>
+          )}
+        </div>
+      </div>
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
