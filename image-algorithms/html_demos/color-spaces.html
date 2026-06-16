@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>颜色空间可视化 · 图像算法教学</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;800&family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+<style>
+  :root {
+    --bg: #06080D; --bg2: #0A0E15; --panel: #0E131C; --panel2: #131A26;
+    --border: #1B2330; --border2: #28344A;
+    --text: #E9EFF8; --text2: #9AA6BC; --muted: #586378;
+    --accent: #FF6B8A; --accent2: #3B9EFF; --accent3: #00D4AA;
+  }
+  html,body { background: var(--bg); color: var(--text); height: 100%; margin: 0; }
+  body {
+    font-family: 'Geist', 'IBM Plex Sans', 'Noto Sans SC', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .font-display { font-family: 'Unbounded', 'Noto Sans SC', sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+  .font-zh { font-family: 'Noto Sans SC', sans-serif; }
+
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .25;
+    background-image:
+      linear-gradient(rgba(80,100,130,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(80,100,130,.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(100% 100% at 50% 50%, #000 50%, transparent 95%);
+  }
+
+  .glow-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(20px);
+    position: relative;
+    z-index: 1;
+    transition: border-color .3s;
+  }
+  .glow-card:hover { border-color: var(--border2); }
+
+  /* 颜色滑块定制样式 */
+  input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: white; border: 2px solid var(--border2); cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  }
+  .slider-r { background: linear-gradient(90deg, #000, #FF3333); }
+  .slider-g { background: linear-gradient(90deg, #000, #33FF33); }
+  .slider-b { background: linear-gradient(90deg, #000, #3366FF); }
+  .slider-h { background: linear-gradient(90deg, #FF0000, #FFFF00, #00FF00, #00FFFF, #0000FF, #FF00FF, #FF0000); }
+  .slider-s { background: linear-gradient(90deg, #888, var(--accent)); }
+  .slider-v { background: linear-gradient(90deg, #000, #FFF); }
+
+  /* 颜色预览块 */
+  .color-preview {
+    width: 100%; height: 120px; border-radius: 12px;
+    border: 2px solid var(--border2);
+    transition: background-color .1s;
+  }
+
+  /* 颜色立方体映射区 */
+  .cube-2d {
+    width: 100%; aspect-ratio: 1;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* 颜色通道分解 */
+  .channel-strip {
+    display: flex; gap: 2px; height: 40px; border-radius: 8px; overflow: hidden;
+  }
+  .channel-strip-item {
+    flex: 1; min-width: 1px;
+  }
+
+  .value-badge {
+    background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px 12px; font-size: 14px;
+  }
+
+  .section-title {
+    font-family: 'Unbounded', 'Noto Sans SC', sans-serif;
+    font-size: 13px; letter-spacing: 0.08em; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 16px;
+  }
+
+  /* 概念提示气泡 */
+  .tip-badge {
+    background: rgba(59,158,255,.1); border: 1px solid rgba(59,158,255,.25);
+    border-radius: 20px; padding: 8px 16px; font-size: 13px; color: var(--accent2);
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- 背景 -->
+  <div class="bg-grid"></div>
+
+  <!-- 顶部标题栏 -->
+  <div style="position:relative;z-index:2;padding:32px 40px 0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <h1 class="font-display" style="font-size:28px;font-weight:600;">
+          颜色空间可视化
+          <span style="font-size:14px;color:var(--muted);font-weight:300;margin-left:12px;">Color Space Explorer</span>
+        </h1>
+        <p style="color:var(--text2);font-size:14px;margin-top:4px;">
+          理解图片在计算机中的表示方式 — RGB、HSV、灰度空间
+        </p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <span class="tip-badge">📐 RGB 加色模型</span>
+        <span class="tip-badge" style="background:rgba(0,212,170,.1);border-color:rgba(0,212,170,.25);color:var(--accent3);">🎨 HSV 直观选色</span>
+        <span class="tip-badge">⬛ 灰度 = 0.299R + 0.587G + 0.114B</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主体内容 -->
+  <div style="position:relative;z-index:2;padding:24px 40px 40px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;max-width:1600px;">
+
+    <!-- 列1：颜色预览 + RGB 滑块 -->
+    <div class="glow-card" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="section-title">🎯 实时颜色</div>
+
+      <!-- 颜色预览 -->
+      <div class="color-preview" :style="{backgroundColor: previewColor}"></div>
+
+      <!-- HEX 显示 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="color:var(--text2);font-size:13px;">HEX</span>
+        <span class="font-mono value-badge">{{ hexColor }}</span>
+      </div>
+
+      <!-- RGB 值 -->
+      <div style="display:flex;gap:8px;">
+        <div class="font-mono value-badge" style="border-color:#FF333355;">R: {{ rgb.r }}</div>
+        <div class="font-mono value-badge" style="border-color:#33FF3355;">G: {{ rgb.g }}</div>
+        <div class="font-mono value-badge" style="border-color:#3366FF55;">B: {{ rgb.b }}</div>
+      </div>
+
+      <!-- RGB 滑块 -->
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:#FF5555;">🔴 R (红)</span>
+          <span class="font-mono" style="color:var(--text2);">{{ rgb.r }}</span>
+        </div>
+        <input type="range" class="slider-r" v-model.number="rgb.r" min="0" max="255" />
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:#55FF55;">🟢 G (绿)</span>
+          <span class="font-mono" style="color:var(--text2);">{{ rgb.g }}</span>
+        </div>
+        <input type="range" class="slider-g" v-model.number="rgb.g" min="0" max="255" />
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:#5555FF;">🔵 B (蓝)</span>
+          <span class="font-mono" style="color:var(--text2);">{{ rgb.b }}</span>
+        </div>
+        <input type="range" class="slider-b" v-model.number="rgb.b" min="0" max="255" />
+      </div>
+
+      <!-- 预设颜色按钮 -->
+      <div>
+        <div style="color:var(--text2);font-size:12px;margin-bottom:8px;">预设颜色</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button v-for="preset in presets" :key="preset.name"
+            @click="setColor(preset.r, preset.g, preset.b)"
+            :style="{backgroundColor: preset.hex}"
+            style="width:32px;height:32px;border-radius:8px;border:2px solid var(--border);cursor:pointer;transition:transform .15s;"
+            :title="preset.name"
+            @mouseenter="$event.target.style.transform='scale(1.15)'"
+            @mouseleave="$event.target.style.transform='scale(1)'">
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 列2：HSV 颜色空间 -->
+    <div class="glow-card" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="section-title">🎨 HSV 颜色空间</div>
+
+      <p style="color:var(--text2);font-size:13px;line-height:1.6;">
+        HSV 是更符合人直觉的颜色模型：<br/>
+        <b style="color:#FFB627;">H (色调)</b> = 颜色种类 &nbsp;
+        <b style="color:var(--accent);">S (饱和度)</b> = 鲜艳程度 &nbsp;
+        <b style="color:var(--text2);">V (明度)</b> = 亮度
+      </p>
+
+      <!-- H 色相环预览 -->
+      <div style="width:100%;aspect-ratio:1;max-width:200px;margin:0 auto;border-radius:50%;
+        background: conic-gradient(
+          #FF0000, #FF8800, #FFFF00, #88FF00, #00FF00, #00FF88,
+          #00FFFF, #0088FF, #0000FF, #8800FF, #FF00FF, #FF0088, #FF0000
+        );
+        position:relative;border:2px solid var(--border2);">
+        <div :style="{
+          position:'absolute', width:'12px', height:'12px', borderRadius:'50%',
+          background:'white', border:'2px solid #222',
+          top: (100 - hsv.v) + '%',
+          left: '50%', marginLeft: '-6px', marginTop: '-6px',
+          transform: `rotate(${hsv.h * 360}deg)`,
+          transformOrigin: '50% ' + (hsv.v) + '%'
+        }" style="display:none;"></div>
+      </div>
+
+      <!-- HSV 值 -->
+      <div style="display:flex;gap:8px;">
+        <div class="font-mono value-badge" style="border-color:#FFB62755;">H: {{ hsv.h.toFixed(2) }}</div>
+        <div class="font-mono value-badge" style="border-color:var(--accent);">S: {{ hsv.s.toFixed(2) }}</div>
+        <div class="font-mono value-badge">V: {{ hsv.v.toFixed(2) }}</div>
+      </div>
+
+      <!-- HSV 滑块 -->
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:#FFB627;">🌈 H (色调)</span>
+          <span class="font-mono" style="color:var(--text2);">{{ (hsv.h * 360).toFixed(0) }}°</span>
+        </div>
+        <input type="range" class="slider-h" v-model.number="hsv.h" min="0" max="1" step="0.001" />
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:var(--accent);">💧 S (饱和度)</span>
+          <span class="font-mono" style="color:var(--text2);">{{ (hsv.s * 100).toFixed(0) }}%</span>
+        </div>
+        <input type="range" class="slider-s" v-model.number="hsv.s" min="0" max="1" step="0.01"
+          :style="{background: `linear-gradient(90deg, #999, hsl(${hsv.h * 360}, 100%, 50%))`}" />
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:var(--text2);">☀️ V (明度)</span>
+          <span class="font-mono" style="color:var(--text2);">{{ (hsv.v * 100).toFixed(0) }}%</span>
+        </div>
+        <input type="range" class="slider-v" v-model.number="hsv.v" min="0" max="1" step="0.01" />
+      </div>
+
+      <!-- HSV 转 RGB 转换公式说明 -->
+      <div style="background:var(--panel2);border-radius:10px;padding:12px;font-size:12px;color:var(--text2);line-height:1.7;">
+        <div style="color:var(--accent3);font-weight:500;margin-bottom:4px;">📖 HSV → RGB 转换</div>
+        <code style="font-size:11px;">
+          C = V × S<br/>
+          X = C × (1 - |(H×6) mod 2 - 1|)<br/>
+          m = V - C<br/>
+          (R',G',B') = 根据H扇区查表<br/>
+          (R,G,B) = (R'+m, G'+m, B'+m) × 255
+        </code>
+      </div>
+    </div>
+
+    <!-- 列3：灰度 & 通道分解 -->
+    <div class="glow-card" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="section-title">⬛ 灰度转换</div>
+
+      <p style="color:var(--text2);font-size:13px;line-height:1.6;">
+        灰度值通过加权平均计算，绿色权重最高是因为人眼对绿光最敏感。
+      </p>
+
+      <!-- 灰度预览 -->
+      <div style="display:flex;gap:8px;align-items:stretch;">
+        <div :style="{backgroundColor: previewColor, width:'60px', borderRadius:'10px', border:'2px solid var(--border2)'}"></div>
+        <div style="display:flex;align-items:center;font-size:24px;color:var(--text2);">→</div>
+        <div :style="{backgroundColor: grayColor, width:'60px', borderRadius:'10px', border:'2px solid var(--border2)'}"></div>
+      </div>
+
+      <div class="font-mono value-badge" style="text-align:center;">
+        灰度值: {{ grayValue }}
+      </div>
+
+      <!-- 加权公式 -->
+      <div style="background:var(--panel2);border-radius:10px;padding:16px;text-align:center;">
+        <div style="font-size:18px;color:var(--text);margin-bottom:8px;" class="font-mono">
+          Gray = <span style="color:#FF5555;">0.299·R</span> + <span style="color:#55FF55;">0.587·G</span> + <span style="color:#5555FF;">0.114·B</span>
+        </div>
+        <div style="font-size:13px;color:var(--muted);">
+          = 0.299×{{ rgb.r }} + 0.587×{{ rgb.g }} + 0.114×{{ rgb.b }}
+        </div>
+        <div style="font-size:16px;color:var(--accent3);margin-top:4px;" class="font-mono">
+          ≈ {{ grayValue }}
+        </div>
+      </div>
+
+      <!-- 三通道分解 -->
+      <div class="section-title" style="margin-top:8px;">📊 通道分解</div>
+      <p style="color:var(--text2);font-size:13px;">彩色图片本质上是3个独立的灰度图层叠加而成：</p>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+          <span style="color:#FF5555;">R 通道 (红色分量)</span>
+          <span class="font-mono" style="color:var(--text2);">{{ rgb.r }}</span>
+        </div>
+        <div class="channel-strip" style="margin-bottom:8px;">
+          <div class="channel-strip-item" :style="{backgroundColor: `rgb(${rgb.r},0,0)`}"></div>
+          <div class="channel-strip-item" style="background:#000;flex:0.3;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+          <span style="color:#55FF55;">G 通道 (绿色分量)</span>
+          <span class="font-mono" style="color:var(--text2);">{{ rgb.g }}</span>
+        </div>
+        <div class="channel-strip" style="margin-bottom:8px;">
+          <div class="channel-strip-item" :style="{backgroundColor: `rgb(0,${rgb.g},0)`}"></div>
+          <div class="channel-strip-item" style="background:#000;flex:0.3;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+          <span style="color:#5555FF;">B 通道 (蓝色分量)</span>
+          <span class="font-mono" style="color:var(--text2);">{{ rgb.b }}</span>
+        </div>
+        <div class="channel-strip">
+          <div class="channel-strip-item" :style="{backgroundColor: `rgb(0,0,${rgb.b})`}"></div>
+          <div class="channel-strip-item" style="background:#000;flex:0.3;"></div>
+        </div>
+      </div>
+
+      <!-- 知识点 -->
+      <div style="background:rgba(255,182,39,.08);border:1px solid rgba(255,182,39,.2);border-radius:10px;padding:12px;font-size:13px;color:#FFB627;line-height:1.6;">
+        <b>💡 关键认知：</b> 在NumPy/OpenCV中，一张 1920×1080 的彩色图片本质上是
+        <code style="background:rgba(255,255,255,.05);padding:1px 4px;border-radius:3px;">(1080, 1920, 3)</code>
+        的三维数组，每个像素是3个 0-255 的整数。
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+Vue.createApp({
+  data() {
+    return {
+      rgb: { r: 200, g: 120, b: 80 },
+      hsv: { h: 0.072, s: 0.60, v: 0.784 },
+      hsvLocked: false, // 防止循环更新
+      presets: [
+        { name: '纯红', r: 255, g: 0, b: 0, hex: '#FF0000' },
+        { name: '纯绿', r: 0, g: 255, b: 0, hex: '#00FF00' },
+        { name: '纯蓝', r: 0, g: 0, b: 255, hex: '#0000FF' },
+        { name: '金黄', r: 255, g: 200, b: 0, hex: '#FFC800' },
+        { name: '品红', r: 255, g: 0, b: 255, hex: '#FF00FF' },
+        { name: '青色', r: 0, g: 255, b: 255, hex: '#00FFFF' },
+        { name: '天蓝', r: 70, g: 130, b: 200, hex: '#4682C8' },
+        { name: '森林绿', r: 34, g: 139, b: 34, hex: '#228B22' },
+        { name: '橙色', r: 255, g: 140, b: 0, hex: '#FF8C00' },
+        { name: '深紫', r: 138, g: 43, b: 226, hex: '#8A2BE2' },
+        { name: '暖灰', r: 128, g: 128, b: 128, hex: '#808080' },
+        { name: '纯白', r: 255, g: 255, b: 255, hex: '#FFFFFF' },
+        { name: '纯黑', r: 0, g: 0, b: 0, hex: '#000000' },
+        { name: '肤色', r: 255, g: 204, b: 153, hex: '#FFCC99' },
+        { name: '海军蓝', r: 0, g: 0, b: 128, hex: '#000080' },
+        { name: '珊瑚', r: 255, g: 127, b: 80, hex: '#FF7F50' },
+      ]
+    }
+  },
+
+  computed: {
+    previewColor() {
+      return `rgb(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b})`;
+    },
+    hexColor() {
+      const toHex = (v) => v.toString(16).padStart(2, '0').toUpperCase();
+      return `#${toHex(this.rgb.r)}${toHex(this.rgb.g)}${toHex(this.rgb.b)}`;
+    },
+    grayValue() {
+      return Math.round(0.299 * this.rgb.r + 0.587 * this.rgb.g + 0.114 * this.rgb.b);
+    },
+    grayColor() {
+      const g = this.grayValue;
+      return `rgb(${g}, ${g}, ${g})`;
+    }
+  },
+
+  watch: {
+    // RGB → HSV 同步
+    'rgb.r'() { if (!this.hsvLocked) this.rgbToHsv(); },
+    'rgb.g'() { if (!this.hsvLocked) this.rgbToHsv(); },
+    'rgb.b'() { if (!this.hsvLocked) this.rgbToHsv(); },
+    // HSV → RGB 同步
+    'hsv.h'() { this.hsvToRgb(); },
+    'hsv.s'() { this.hsvToRgb(); },
+    'hsv.v'() { this.hsvToRgb(); },
+  },
+
+  methods: {
+    setColor(r, g, b) {
+      this.rgb.r = r;
+      this.rgb.g = g;
+      this.rgb.b = b;
+    },
+
+    rgbToHsv() {
+      const r = this.rgb.r / 255;
+      const g = this.rgb.g / 255;
+      const b = this.rgb.b / 255;
+
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const delta = max - min;
+
+      let h = 0;
+      if (delta !== 0) {
+        if (max === r) h = ((g - b) / delta) % 6;
+        else if (max === g) h = (b - r) / delta + 2;
+        else h = (r - g) / delta + 4;
+        h = h / 6;
+        if (h < 0) h += 1;
+      }
+
+      const s = max === 0 ? 0 : delta / max;
+      const v = max;
+
+      this.hsvLocked = true;
+      this.hsv.h = h;
+      this.hsv.s = s;
+      this.hsv.v = v;
+      this.$nextTick(() => { this.hsvLocked = false; });
+    },
+
+    hsvToRgb() {
+      this.hsvLocked = true;
+      const h = this.hsv.h;
+      const s = this.hsv.s;
+      const v = this.hsv.v;
+
+      const c = v * s;
+      const x = c * (1 - Math.abs(((h * 6) % 2) - 1));
+      const m = v - c;
+
+      let rp = 0, gp = 0, bp = 0;
+      const h6 = h * 6;
+
+      if (h6 < 1) { rp = c; gp = x; bp = 0; }
+      else if (h6 < 2) { rp = x; gp = c; bp = 0; }
+      else if (h6 < 3) { rp = 0; gp = c; bp = x; }
+      else if (h6 < 4) { rp = 0; gp = x; bp = c; }
+      else if (h6 < 5) { rp = x; gp = 0; bp = c; }
+      else { rp = c; gp = 0; bp = x; }
+
+      this.rgb.r = Math.round((rp + m) * 255);
+      this.rgb.g = Math.round((gp + m) * 255);
+      this.rgb.b = Math.round((bp + m) * 255);
+      this.$nextTick(() => { this.hsvLocked = false; });
+    }
+  },
+
+  mounted() {
+    this.rgbToHsv();
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

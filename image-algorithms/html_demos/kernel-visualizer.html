@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>卷积核可视化 · 图像算法教学</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;800&family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+<style>
+  :root {
+    --bg: #06080D; --bg2: #0A0E15; --panel: #0E131C; --panel2: #131A26;
+    --border: #1B2330; --border2: #28344A;
+    --text: #E9EFF8; --text2: #9AA6BC; --muted: #586378;
+    --accent: #FF6B8A; --accent2: #3B9EFF; --accent3: #00D4AA;
+  }
+  html,body { background: var(--bg); color: var(--text); height: 100%; margin: 0; }
+  body {
+    font-family: 'Geist', 'IBM Plex Sans', 'Noto Sans SC', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .font-display { font-family: 'Unbounded', 'Noto Sans SC', sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .25;
+    background-image:
+      linear-gradient(rgba(80,100,130,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(80,100,130,.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(100% 100% at 50% 50%, #000 50%, transparent 95%);
+  }
+
+  .glow-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(20px);
+    position: relative;
+    z-index: 1;
+  }
+
+  .kernel-cell {
+    width: 56px; height: 56px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all .2s;
+    cursor: pointer;
+    user-select: none;
+  }
+  .kernel-cell:hover { border-color: var(--accent2); background: rgba(59,158,255,.1); }
+  .kernel-cell.active {
+    border-color: var(--accent);
+    background: rgba(255,107,138,.15);
+    box-shadow: 0 0 12px rgba(255,107,138,.2);
+  }
+  .kernel-cell.selected {
+    border-color: var(--accent3);
+    background: rgba(0,212,170,.15);
+    box-shadow: 0 0 12px rgba(0,212,170,.2);
+  }
+
+  .image-pixel {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 3px;
+    font-size: 10px;
+    transition: all .15s;
+    color: rgba(255,255,255,.6);
+  }
+  .image-pixel.highlight {
+    border-color: var(--accent);
+    border-width: 2px;
+    z-index: 2;
+    box-shadow: 0 0 10px rgba(255,107,138,.4);
+  }
+  .image-pixel.result-cell {
+    border-color: var(--accent3);
+    border-width: 2px;
+    box-shadow: 0 0 10px rgba(0,212,170,.4);
+  }
+
+  .preset-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel2);
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .preset-btn:hover { border-color: var(--accent2); color: var(--text); }
+  .preset-btn.active { border-color: var(--accent3); background: rgba(0,212,170,.1); color: var(--accent3); }
+
+  .calc-step {
+    font-size: 13px; padding: 3px 0; color: var(--text2);
+  }
+  .calc-highlight {
+    color: var(--accent3); font-weight: 600;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; outline: none;
+    background: var(--border2);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent2); border: 2px solid white; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="bg-grid"></div>
+
+  <!-- 顶部标题 -->
+  <div style="position:relative;z-index:2;padding:28px 36px 0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <h1 class="font-display" style="font-size:26px;font-weight:600;">
+          卷积核可视化
+          <span style="font-size:13px;color:var(--muted);font-weight:300;margin-left:10px;">Kernel Visualizer</span>
+        </h1>
+        <p style="color:var(--text2);font-size:13px;margin-top:2px;">
+          直观理解卷积操作 — 图像滤波的核心数学运算
+        </p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <span style="background:rgba(59,158,255,.1);border:1px solid rgba(59,158,255,.25);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--accent2);">📐 滑动窗口</span>
+        <span style="background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.25);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--accent3);">✖️ 逐元素相乘</span>
+        <span style="background:rgba(255,182,39,.08);border:1px solid rgba(255,182,39,.2);padding:6px 14px;border-radius:20px;font-size:12px;color:#FFB627;">Σ 求和</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主体：三列布局 -->
+  <div style="position:relative;z-index:2;padding:20px 36px 36px;display:grid;grid-template-columns:380px 1fr 420px;gap:20px;max-width:1800px;">
+
+    <!-- 左栏：预设模板 + 参数 -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="glow-card">
+        <div style="font-family:'Unbounded';font-size:12px;letter-spacing:.06em;color:var(--accent);margin-bottom:12px;">📦 预设卷积核</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button v-for="preset in presets" :key="preset.name"
+            class="preset-btn" :class="{active: activePreset === preset.name}"
+            @click="applyPreset(preset)">
+            {{ preset.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="glow-card">
+        <div style="font-family:'Unbounded';font-size:12px;letter-spacing:.06em;color:var(--accent);margin-bottom:12px;">⚙️ 参数</div>
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <span style="color:var(--text2);">卷积核大小</span>
+            <span class="font-mono" style="color:var(--accent2);">{{ kernelSize }}×{{ kernelSize }}</span>
+          </div>
+          <input type="range" v-model.number="kernelSize" min="2" max="5" step="1" />
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <span style="color:var(--text2);">图片亮度</span>
+            <span class="font-mono" style="color:var(--accent2);">{{ imageBrightness }}</span>
+          </div>
+          <input type="range" v-model.number="imageBrightness" min="0.3" max="1.5" step="0.05" />
+        </div>
+      </div>
+
+      <!-- 卷积核矩阵 -->
+      <div class="glow-card">
+        <div style="font-family:'Unbounded';font-size:12px;letter-spacing:.06em;color:var(--accent);margin-bottom:14px;">
+          🔢 卷积核 (Kernel) <span style="color:var(--text2);font-weight:400;">— 点击单元格编辑</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div v-for="(row, ri) in kernelMatrix" style="display:flex;gap:4px;">
+            <div v-for="(val, ci) in row" class="kernel-cell"
+              :class="{active: ri === hoverKR && ci === hoverKC, selected: editingCell === `${ri},${ci}`}"
+              @click="startEdit(ri, ci)"
+              @mouseenter="hoverKR=ri; hoverKC=ci;"
+              @mouseleave="hoverKR=-1; hoverKC=-1;">
+              {{ kernelDisplay(val) }}
+            </div>
+          </div>
+        </div>
+        <div v-if="editingCell" style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+          <input type="number" v-model="editValue" step="0.1" style="width:80px;background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;color:var(--text);font-family:'JetBrains Mono';" @keyup.enter="commitEdit" />
+          <button @click="commitEdit" style="background:var(--accent3);border:none;padding:6px 14px;border-radius:6px;color:#000;cursor:pointer;font-weight:600;">确定</button>
+          <button @click="cancelEdit" style="background:transparent;border:1px solid var(--border);padding:6px 14px;border-radius:6px;color:var(--text2);cursor:pointer;">取消</button>
+        </div>
+      </div>
+
+      <!-- 应用效果说明 -->
+      <div class="glow-card" v-if="activePreset">
+        <div style="font-family:'Unbounded';font-size:12px;letter-spacing:.06em;color:var(--accent3);margin-bottom:8px;">💡 当前核的作用</div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;">{{ presetDescription }}</p>
+      </div>
+    </div>
+
+    <!-- 中栏：输入图片 + 滑动卷积动画 -->
+    <div class="glow-card" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+      <div style="font-family:'Unbounded';font-size:12px;letter-spacing:.06em;color:var(--accent);align-self:flex-start;">
+        🖼️ 输入图片 (5×5 像素)
+        <span style="color:var(--text2);font-weight:400;font-size:11px;">— 被卷积核扫过的区域高亮显示</span>
+      </div>
+
+      <!-- 图片像素网格 -->
+      <div style="display:flex;flex-direction:column;gap:2px;position:relative;">
+        <div v-for="(row, ri) in imageMatrix" style="display:flex;gap:2px;">
+          <div v-for="(val, ci) in row" class="image-pixel"
+            :class="{highlight: isHighlighted(ri, ci), 'result-cell': isResultCell(ri, ci)}"
+            :style="{backgroundColor: pixelBg(val)}">
+            {{ Math.round(val * 9) }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 卷积动画控制 -->
+      <div style="display:flex;gap:12px;align-items:center;">
+        <button @click="prevStep" :disabled="animStep === 0"
+          style="background:var(--panel2);border:1px solid var(--border);padding:8px 16px;border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;"
+          :style="{opacity: animStep===0?0.4:1}">
+          ◀ 上一步
+        </button>
+        <button @click="animRunning ? pauseAnim() : playAnim()"
+          style="background:var(--accent2);border:none;padding:8px 20px;border-radius:8px;color:#fff;cursor:pointer;font-weight:600;font-size:13px;min-width:100px;">
+          {{ animRunning ? '⏸ 暂停' : '▶ 自动演示' }}
+        </button>
+        <button @click="nextStep" :disabled="animStep >= maxSteps"
+          style="background:var(--panel2);border:1px solid var(--border);padding:8px 16px;border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;"
+          :style="{opacity: animStep>=maxSteps?0.4:1}">
+          下一步 ▶
+        </button>
+        <button @click="resetAnim"
+          style="background:transparent;border:1px solid var(--border);padding:8px 16px;border-radius:8px;color:var(--text2);cursor:pointer;font-size:13px;">
+          ↺ 重置
+        </button>
+      </div>
+
+      <div style="font-size:12px;color:var(--muted);">
+        步骤 {{ animStep + 1 }} / {{ maxSteps + 1 }} &nbsp;
+        <span v-if="animStep < maxSteps">
+          — 窗口位置: ({{ currentRow }}, {{ currentCol }})
+        </span>
+        <span v-else style="color:var(--accent3);">— 完成！</span>
+      </div>
+    </div>
+
+    <!-- 右栏：计算过程 + 输出 -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <!-- 实时计算 -->
+      <div class="glow-card">
+        <div style="font-family:'Unbounded';font-size:12px;letter-spacing:.06em;color:var(--accent);margin-bottom:12px;">
+          🧮 当前窗口计算
+          <span style="color:var(--text2);font-weight:400;">— 逐元素相乘再求和</span>
+        </div>
+
+        <div v-if="animStep < maxSteps" style="font-size:13px;line-height:1.8;">
+          <div v-for="(row, ri) in kernelMatrix" style="margin-bottom:2px;">
+            <span v-for="(kv, ci) in row" style="margin-right:6px;">
+              <span style="color:var(--text2);">(</span>
+              <span style="color:var(--accent2);">{{ imageValAt(ri, ci) }}</span>
+              <span style="color:var(--text2);">×{{ kernelDisplay(kv) }})</span>
+              <span v-if="ci < row.length - 1" style="color:var(--muted);"> + </span>
+            </span>
+          </div>
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+            <span style="color:var(--text2);">计算结果 = </span>
+            <span class="font-mono" style="color:var(--accent3);font-size:18px;font-weight:600;">
+              {{ currentCalcResult }}
+            </span>
+            <span style="color:var(--muted);font-size:12px;margin-left:8px;">
+              (截断到 [0, 1])
+            </span>
+          </div>
+        </div>
+        <div v-else style="color:var(--text2);font-size:13px;text-align:center;padding:20px 0;">
+          ✅ 所有位置计算完成，查看下方输出矩阵
+        </div>
+      </div>
+
+      <!-- 输出矩阵 -->
+      <div class="glow-card">
+        <div style="font-family:'Unbounded';font-size:12px;letter-spacing:.06em;color:var(--accent3);margin-bottom:12px;">
+          📤 输出特征图 ({{ outputSize }}×{{ outputSize }})
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+          <div v-for="(row, ri) in outputMatrix" style="display:flex;gap:3px;">
+            <div v-for="(val, ci) in row"
+              class="image-pixel"
+              :class="{'result-cell': ri === currentRow && ci === currentCol && animStep < maxSteps}"
+              :style="{backgroundColor: `rgba(0,212,170,${val})`, width:'44px', height:'44px', fontSize:'13px', color: val > 0.5 ? '#000' : '#fff'}">
+              {{ val.toFixed(2) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 关键概念 -->
+      <div style="background:rgba(255,182,39,.06);border:1px solid rgba(255,182,39,.15);border-radius:12px;padding:14px;font-size:12px;color:#FFB627;line-height:1.7;">
+        <b>💡 三个关键概念：</b><br/>
+        <b>1. 滑动窗口</b> — 卷积核在图片上逐像素滑动<br/>
+        <b>2. 逐元素相乘</b> — 核值与对应像素值相乘<br/>
+        <b>3. 求和</b> — 所有乘积相加得到输出像素<br/>
+        <span style="color:var(--text2);">这就是CNN中卷积层的基础运算！</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+Vue.createApp({
+  data() {
+    return {
+      kernelSize: 3,
+      imageBrightness: 0.75,
+      kernelMatrix: [],
+      activePreset: null,
+
+      // 动画状态
+      animStep: 0,
+      animRunning: false,
+      animTimer: null,
+      hoverKR: -1,
+      hoverKC: -1,
+      editingCell: null,
+      editValue: 0,
+
+      // 图片数据（5×5固定大小以便清晰展示卷积过程）
+      imageData: [
+        [0.1, 0.5, 0.8, 0.6, 0.2],
+        [0.3, 0.9, 0.7, 0.4, 0.1],
+        [0.5, 0.6, 0.3, 0.8, 0.5],
+        [0.2, 0.4, 0.9, 0.5, 0.3],
+        [0.1, 0.3, 0.5, 0.4, 0.2],
+      ],
+
+      presets: [
+        {
+          name: 'identity', label: '恒等 (Identity)',
+          kernel: [[0,0,0],[0,1,0],[0,0,0]],
+          desc: '恒等核：输出=输入，卷积核中心为1其余为0，图片不变。这是理解卷积的起点——核不做任何变换。'
+        },
+        {
+          name: 'blur', label: '均值模糊 (Box Blur)',
+          kernel: [[1,1,1],[1,1,1],[1,1,1]],
+          factor: 1/9,
+          desc: '均值模糊：每个输出像素是周围9个像素的平均值。核值全为1，最后除以9。效果是图片变模糊、噪点被平滑。'
+        },
+        {
+          name: 'gaussian', label: '高斯模糊',
+          kernel: [[1,2,1],[2,4,2],[1,2,1]],
+          factor: 1/16,
+          desc: '高斯模糊：中心权重大、边缘权重小（符合正态分布）。比均值模糊更自然——近的像素影响大，远的影响小。'
+        },
+        {
+          name: 'sharpen', label: '锐化 (Sharpen)',
+          kernel: [[0,-1,0],[-1,5,-1],[0,-1,0]],
+          desc: '锐化核：中心×5 减去周围像素。强化边缘对比度，让图片看起来更清晰。过度的锐化会产生光晕伪影。'
+        },
+        {
+          name: 'edge_h', label: '水平边缘检测',
+          kernel: [[-1,-1,-1],[0,0,0],[1,1,1]],
+          desc: '水平边缘检测：上方为负、下方为正。检测明暗的水平变化——上方暗下方亮产生正值。垂直方向不变的边缘不会响应。'
+        },
+        {
+          name: 'edge_v', label: '垂直边缘检测',
+          kernel: [[-1,0,1],[-1,0,1],[-1,0,1]],
+          desc: '垂直边缘检测：左边为负、右边为正。检测明暗的垂直变化——左边暗右边亮产生正值。等同于Sobel算子的简化版。'
+        },
+        {
+          name: 'emboss', label: '浮雕效果',
+          kernel: [[-2,-1,0],[-1,1,1],[0,1,2]],
+          desc: '浮雕核：从左上到右下的梯度。产生类似浮雕的3D效果——图片看起来像刻在石头上。对角线方向产生强烈的方向感。'
+        },
+      ]
+    }
+  },
+
+  computed: {
+    imageMatrix() {
+      return this.imageData.map(row =>
+        row.map(v => Math.min(1, Math.max(0.1, v * this.imageBrightness)))
+      );
+    },
+    maxSteps() {
+      const s = 5; // 图片固定5×5
+      const k = this.kernelSize;
+      return (s - k + 1) * (s - k + 1);
+    },
+    outputSize() {
+      return 5 - this.kernelSize + 1;
+    },
+    currentRow() {
+      const step = Math.min(this.animStep, this.maxSteps - 1);
+      return Math.floor(step / this.outputSize);
+    },
+    currentCol() {
+      const step = Math.min(this.animStep, this.maxSteps - 1);
+      return step % this.outputSize;
+    },
+    currentCalcResult() {
+      if (this.animStep >= this.maxSteps) return '—';
+      let sum = 0;
+      const kr = this.currentRow;
+      const kc = this.currentCol;
+      const ks = this.kernelSize;
+      for (let ri = 0; ri < ks; ri++) {
+        for (let ci = 0; ci < ks; ci++) {
+          sum += this.imageMatrix[kr + ri][kc + ci] * this.kernelMatrix[ri][ci];
+        }
+      }
+      return Math.max(0, Math.min(1, sum)).toFixed(3);
+    },
+    outputMatrix() {
+      const size = this.outputSize;
+      const ks = this.kernelSize;
+      const result = [];
+      const img = this.imageMatrix;
+      const kernel = this.kernelMatrix;
+
+      for (let r = 0; r < size; r++) {
+        const row = [];
+        for (let c = 0; c < size; c++) {
+          let sum = 0;
+          for (let kr = 0; kr < ks; kr++) {
+            for (let kc = 0; kc < ks; kc++) {
+              sum += img[r + kr][c + kc] * kernel[kr][kc];
+            }
+          }
+          row.push(Math.max(0, Math.min(1, sum)));
+        }
+        result.push(row);
+      }
+      return result;
+    },
+    presetDescription() {
+      const p = this.presets.find(p => p.name === this.activePreset);
+      return p ? p.desc : '';
+    }
+  },
+
+  watch: {
+    kernelSize() {
+      this.resetKernel();
+    }
+  },
+
+  methods: {
+    kernelDisplay(v) {
+      return Number(v).toFixed(1);
+    },
+
+    pixelBg(val) {
+      // 将 0-1 的值映射为 黑-白 灰度
+      const g = Math.round(val * 220 + 20);
+      return `rgb(${g},${g},${g})`;
+    },
+
+    isHighlighted(ri, ci) {
+      if (this.animStep >= this.maxSteps) return false;
+      const kr = this.currentRow, kc = this.currentCol;
+      const ks = this.kernelSize;
+      return ri >= kr && ri < kr + ks && ci >= kc && ci < kc + ks;
+    },
+
+    isResultCell(ri, ci) {
+      return false; // 结果在输出矩阵中高亮
+    },
+
+    imageValAt(ri, ci) {
+      const r = this.currentRow + ri;
+      const c = this.currentCol + ci;
+      if (r < 5 && c < 5) return this.imageMatrix[r][c].toFixed(2);
+      return '?';
+    },
+
+    initKernel(ks, values, factor) {
+      const m = [];
+      for (let i = 0; i < ks; i++) {
+        const row = [];
+        for (let j = 0; j < ks; j++) {
+          row.push(values ? values[i][j] * (factor || 1) : 0);
+        }
+        m.push(row);
+      }
+      this.kernelMatrix = m;
+    },
+
+    resetKernel() {
+      // 默认初始化为3×3恒等核
+      const m = [];
+      for (let i = 0; i < this.kernelSize; i++) {
+        const row = [];
+        for (let j = 0; j < this.kernelSize; j++) {
+          const mid = Math.floor(this.kernelSize / 2);
+          row.push(i === mid && j === mid ? 1 : 0);
+        }
+        m.push(row);
+      }
+      this.kernelMatrix = m;
+      this.activePreset = null;
+    },
+
+    applyPreset(preset) {
+      if (this.kernelSize !== preset.kernel.length) {
+        this.kernelSize = preset.kernel.length;
+      }
+      this.initKernel(preset.kernel.length, preset.kernel, preset.factor || 1);
+      this.activePreset = preset.name;
+      this.resetAnim();
+    },
+
+    startEdit(ri, ci) {
+      this.editingCell = `${ri},${ci}`;
+      this.editValue = this.kernelMatrix[ri][ci];
+    },
+    commitEdit() {
+      if (this.editingCell) {
+        const [ri, ci] = this.editingCell.split(',').map(Number);
+        this.kernelMatrix[ri][ci] = parseFloat(this.editValue) || 0;
+        this.editingCell = null;
+        this.activePreset = null;
+        this.resetAnim();
+      }
+    },
+    cancelEdit() {
+      this.editingCell = null;
+    },
+
+    prevStep() { if (this.animStep > 0) this.animStep--; },
+    nextStep() { if (this.animStep < this.maxSteps) this.animStep++; },
+    resetAnim() {
+      this.pauseAnim();
+      this.animStep = 0;
+    },
+
+    playAnim() {
+      if (this.animRunning) return;
+      if (this.animStep >= this.maxSteps) this.animStep = 0;
+      this.animRunning = true;
+      this.animTimer = setInterval(() => {
+        if (this.animStep < this.maxSteps) {
+          this.animStep++;
+        } else {
+          this.pauseAnim();
+        }
+      }, 800);
+    },
+    pauseAnim() {
+      this.animRunning = false;
+      if (this.animTimer) { clearInterval(this.animTimer); this.animTimer = null; }
+    }
+  },
+
+  mounted() {
+    this.resetKernel();
+  },
+
+  beforeUnmount() {
+    this.pauseAnim();
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

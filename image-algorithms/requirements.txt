@@ -1,0 +1,24 @@
+# ===== 图像算法教学项目 — 依赖清单 =====
+# 安装方式：pip install -r requirements.txt
+# 建议使用虚拟环境：python -m venv venv && venv\Scripts\activate
+
+# ===== 阶段一：经典图像处理 =====
+numpy>=1.24
+scipy>=1.11
+matplotlib>=3.7
+scikit-image>=0.22
+opencv-python>=4.9
+pillow>=10.0
+
+# ===== 阶段二：深度学习 =====
+torch>=2.2
+torchvision>=0.17
+albumentations>=1.4
+
+# ===== 交互式演示 =====
+gradio>=4.0
+jupyter>=1.0
+ipywidgets>=8.0
+
+# ===== 目标检测（YOLO预训练模型推理）=====
+ultralytics>=8.0
