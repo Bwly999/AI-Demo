@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>INSIGHT TERMINAL · 01 / DARK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============== TOKENS ============== */
+  :root{
+    --bg:#0a0a0a;
+    --bg-elev:#111111;
+    --bg-elev-2:#161616;
+    --border:#1f1f1f;
+    --border-strong:#2c2c2c;
+    --text:#e8e8e8;
+    --text-dim:#888;
+    --text-faint:#555;
+    --amber:#ffb300;
+    --amber-soft:rgba(255,179,0,.12);
+    --green:#00ff88;
+    --red:#ff4444;
+    --mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:13px;
+    line-height:1.5;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+    /* faint scanline overlay */
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse 1200px 600px at 70% -10%, rgba(255,179,0,.05), transparent 60%);
+  }
+  ::selection{background:var(--amber);color:#000}
+  a{color:inherit;text-decoration:none}
+
+  /* ============== TICKER ============== */
+  .ticker{
+    height:26px;
+    background:#000;
+    border-bottom:1px solid var(--border);
+    overflow:hidden;
+    position:relative;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.04em;
+  }
+  .ticker-track{
+    display:inline-flex;
+    gap:36px;
+    padding:7px 0 7px 100%;
+    white-space:nowrap;
+    animation:tick 70s linear infinite;
+  }
+  .ticker:hover .ticker-track{animation-play-state:paused}
+  @keyframes tick{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+  .tk{color:var(--text-dim)}
+  .tk b{color:var(--amber);font-weight:600}
+  .tk .up{color:var(--green)}
+  .tk .dn{color:var(--red)}
+  .tk-tag{color:var(--text-faint);margin-right:6px}
+
+  /* ============== HEADER ============== */
+  header.bar{
+    display:flex;align-items:center;
+    height:54px;
+    padding:0 22px;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,#0d0d0d,#080808);
+    gap:24px;
+  }
+  .logo{
+    font-family:var(--mono);
+    font-weight:800;
+    font-size:14px;
+    letter-spacing:.18em;
+    color:var(--amber);
+    display:flex;align-items:center;gap:10px;
+  }
+  .logo::before{
+    content:"";width:9px;height:9px;background:var(--amber);
+    box-shadow:0 0 12px var(--amber);
+    animation:blink 1.6s ease-in-out infinite;
+  }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+  .logo small{color:var(--text-faint);font-weight:400;letter-spacing:.1em;font-size:10px}
+  .bar-search{
+    flex:1;max-width:520px;
+    display:flex;align-items:center;gap:10px;
+    background:#070707;
+    border:1px solid var(--border);
+    padding:7px 12px;
+    font-family:var(--mono);font-size:12px;
+    color:var(--text-dim);
+  }
+  .bar-search .prompt{color:var(--amber)}
+  .bar-search input{
+    background:transparent;border:0;outline:0;
+    color:var(--text);font-family:var(--mono);font-size:12px;
+    flex:1;
+  }
+  .bar-search input::placeholder{color:var(--text-faint)}
+  .bar-meta{
+    margin-left:auto;
+    display:flex;gap:18px;align-items:center;
+    font-family:var(--mono);font-size:11px;color:var(--text-dim);
+  }
+  .bar-meta .kv b{color:var(--text);font-weight:500;margin-left:6px}
+  .bar-meta .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);display:inline-block;margin-right:6px;vertical-align:middle}
+
+  /* ============== LAYOUT ============== */
+  .layout{
+    display:grid;
+    grid-template-columns:240px 1fr 280px;
+    min-height:calc(100vh - 80px);
+  }
+
+  /* ============== LEFT RAIL ============== */
+  aside.left{
+    border-right:1px solid var(--border);
+    padding:22px 18px 60px;
+    position:sticky;top:0;height:calc(100vh - 80px);
+    overflow-y:auto;
+  }
+  .rail-h{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.22em;
+    color:var(--text-faint);
+    margin:0 0 12px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .rail-h .count{color:var(--amber);font-weight:600}
+
+  .time-list{display:flex;flex-direction:column;gap:2px;margin-bottom:34px}
+  .time-btn{
+    appearance:none;background:transparent;border:0;cursor:pointer;
+    text-align:left;
+    padding:9px 12px;
+    color:var(--text-dim);
+    font-family:var(--mono);font-size:12px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-left:2px solid transparent;
+    transition:.18s;
+    letter-spacing:.04em;
+  }
+  .time-btn:hover{color:var(--text);background:var(--bg-elev)}
+  .time-btn .n{color:var(--text-faint);font-size:10px}
+  .time-btn.active{
+    color:var(--amber);
+    background:var(--amber-soft);
+    border-left-color:var(--amber);
+  }
+  .time-btn.active .n{color:var(--amber)}
+
+  .topic-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:34px}
+  .topic-chip{
+    font-family:var(--mono);font-size:11px;
+    padding:5px 9px;
+    background:transparent;
+    border:1px solid var(--border-strong);
+    color:var(--text-dim);
+    cursor:pointer;
+    transition:.15s;
+    letter-spacing:.02em;
+  }
+  .topic-chip:hover{border-color:var(--text-dim);color:var(--text)}
+  .topic-chip.on{background:var(--amber);border-color:var(--amber);color:#000;font-weight:600}
+
+  .source-list{display:flex;flex-direction:column;gap:1px}
+  .source-row{
+    display:flex;align-items:center;gap:10px;
+    padding:6px 4px;
+    font-family:var(--mono);font-size:11px;color:var(--text-dim);
+  }
+  .source-row .sq{
+    width:14px;height:14px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:8px;font-weight:700;
+    color:#000;
+  }
+  .source-row .n{margin-left:auto;color:var(--text-faint)}
+
+  /* ============== CENTER ============== */
+  main.center{padding:22px 26px 80px;min-width:0}
+  .stats-bar{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    margin-bottom:24px;
+  }
+  .stat{
+    background:var(--bg-elev);
+    padding:14px 16px;
+  }
+  .stat .l{font-family:var(--mono);font-size:10px;color:var(--text-faint);letter-spacing:.16em;margin-bottom:6px}
+  .stat .v{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.02em}
+  .stat .v.amber{color:var(--amber)}
+  .stat .v.green{color:var(--green)}
+  .stat .v.red{color:var(--red)}
+  .stat .d{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:4px}
+
+  .feed-title{
+    display:flex;align-items:baseline;gap:14px;margin-bottom:18px;
+    font-family:var(--mono);
+  }
+  .feed-title h2{font-size:14px;font-weight:700;color:var(--text);letter-spacing:.16em}
+  .feed-title .scope{font-size:11px;color:var(--amber);letter-spacing:.14em}
+  .feed-title .live{margin-left:auto;font-size:10px;color:var(--text-faint);letter-spacing:.18em}
+  .feed-title .live::before{content:"●";color:var(--green);margin-right:6px;animation:blink 1.6s infinite}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+  }
+
+  .card{
+    background:var(--bg-elev);
+    padding:18px 18px 14px;
+    position:relative;
+    transition:.18s;
+    border-left:2px solid transparent;
+    animation:cardin .4s ease both;
+  }
+  @keyframes cardin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .card:hover{
+    background:var(--bg-elev-2);
+    border-left-color:var(--amber);
+  }
+  .card:hover .src-abbr{transform:scale(1.05)}
+
+  .card-h{
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:12px;
+  }
+  .src-abbr{
+    width:24px;height:24px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:11px;font-weight:800;
+    color:#000;
+    transition:.18s;
+  }
+  .src-name{
+    font-family:var(--mono);font-size:11px;
+    color:var(--text-dim);letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .card-time{
+    margin-left:auto;
+    font-family:var(--mono);font-size:10px;color:var(--text-faint);
+    letter-spacing:.1em;
+  }
+  .imp{
+    display:inline-flex;gap:2px;
+  }
+  .imp i{
+    width:6px;height:6px;background:var(--border-strong);
+    display:block;
+  }
+  .imp i.on{background:var(--amber)}
+
+  .card-title{
+    font-family:var(--mono);
+    font-size:15px;
+    font-weight:700;
+    color:var(--text);
+    line-height:1.35;
+    letter-spacing:-.005em;
+    margin-bottom:10px;
+    /* clamp 2 */
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .card-sum{
+    font-size:12.5px;
+    color:#bcbcbc;
+    line-height:1.6;
+    margin-bottom:14px;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  }
+
+  .card-foot{
+    display:flex;align-items:center;gap:14px;
+    padding-top:12px;
+    border-top:1px dashed var(--border-strong);
+    font-family:var(--mono);font-size:10.5px;
+  }
+  .tags{display:flex;gap:6px;color:var(--text-dim)}
+  .tags span::before{content:"#";color:var(--text-faint);margin-right:1px}
+  .metric{
+    margin-left:auto;
+    display:flex;align-items:center;gap:8px;
+    color:var(--text);
+  }
+  .metric .ml{color:var(--text-faint)}
+  .metric .mv{font-weight:700}
+  .metric .md.up{color:var(--green)}
+  .metric .md.dn{color:var(--red)}
+  .metric .md.flat{color:var(--text-faint)}
+
+  .card-link{
+    position:absolute;top:18px;right:18px;
+    font-family:var(--mono);font-size:10px;color:var(--text-faint);
+    opacity:0;transition:.18s;
+    letter-spacing:.1em;
+  }
+  .card:hover .card-link{opacity:1;color:var(--amber)}
+
+  /* ============== RIGHT RAIL ============== */
+  aside.right{
+    border-left:1px solid var(--border);
+    padding:22px 20px 60px;
+    position:sticky;top:0;height:calc(100vh - 80px);
+    overflow-y:auto;
+  }
+  .watch-h{
+    font-family:var(--mono);
+    font-size:11px;color:var(--amber);
+    letter-spacing:.2em;
+    margin-bottom:14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .watch-h::before{content:"▸"}
+  .watch-block{margin-bottom:30px}
+
+  .trend-bar{
+    display:flex;flex-direction:column;gap:9px;
+  }
+  .trend-row{
+    display:grid;grid-template-columns:1fr auto;
+    gap:10px;align-items:center;
+    font-family:var(--mono);font-size:11px;
+  }
+  .trend-row .lab{color:var(--text-dim);position:relative;padding-left:14px}
+  .trend-row .lab::before{
+    content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+    width:6px;height:6px;background:var(--amber);opacity:.6;
+  }
+  .trend-row .pct{color:var(--text);font-weight:600}
+  .trend-row .bar{
+    grid-column:1/-1;
+    height:3px;background:var(--bg-elev-2);position:relative;overflow:hidden;
+  }
+  .trend-row .bar i{
+    position:absolute;left:0;top:0;height:100%;
+    background:linear-gradient(90deg,var(--amber),rgba(255,179,0,.3));
+    animation:barin .8s ease both;
+  }
+  @keyframes barin{from{width:0}}
+
+  .conf-list{display:flex;flex-direction:column;gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .conf-row{
+    background:var(--bg-elev);
+    padding:9px 4px;
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:11px;
+  }
+  .conf-row .ci{width:18px;color:var(--text-faint)}
+  .conf-row .ct{color:var(--text-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .conf-row .cv{font-weight:600}
+  .conf-row .cv.hi{color:var(--green)}
+  .conf-row .cv.md{color:var(--amber)}
+  .conf-row .cv.lo{color:var(--red)}
+
+  .pulse{
+    margin-top:18px;
+    padding:14px;
+    border:1px solid var(--border-strong);
+    background:linear-gradient(135deg,rgba(255,179,0,.06),transparent);
+  }
+  .pulse-h{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:.18em;margin-bottom:8px}
+  .pulse-b{font-size:12px;color:var(--text);line-height:1.55}
+  .pulse-b b{color:var(--amber);font-weight:500}
+
+  /* ============== EMPTY ============== */
+  .empty{
+    grid-column:1/-1;
+    padding:60px 30px;
+    text-align:center;
+    color:var(--text-faint);
+    font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+  }
+
+  /* ============== SCROLLBAR ============== */
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:#0a0a0a}
+  ::-webkit-scrollbar-thumb{background:#222}
+  ::-webkit-scrollbar-thumb:hover{background:#333}
+
+  @media (max-width:1200px){
+    .layout{grid-template-columns:200px 1fr}
+    aside.right{display:none}
+  }
+  @media (max-width:760px){
+    .layout{grid-template-columns:1fr}
+    aside.left{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border)}
+    .grid{grid-template-columns:1fr}
+    .stats-bar{grid-template-columns:repeat(2,1fr)}
+    .bar-search{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    <span class="tk"><span class="tk-tag">FEED</span><b>BLOOMBERG</b> FED CUT PROB ↑ 78% <span class="up">+12pp</span></span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>36KR</b> 豆包 MAU 1.6亿 <span class="up">+23%</span></span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>TECHCRUNCH</b> Sora 2 ships w/ 60s native audio</span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>ARXIV</b> DeepMind 200B reasoning scaling laws</span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>REUTERS</b> Vision Pro 2 → Q4 2025 @ $1500</span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>ECONOMIST</b> China's quiet pivot to manufacturing</span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>NATURE</b> Willow: exponential error suppression</span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>智东西</b> 小鹏 P7+ 首周订单 3万</span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>WIRED</b> RWA tokenization → $50B on-chain</span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>STRATECHERY</b> Aggregation Theory, revisited</span>
+    <!-- duplicate for seamless loop -->
+    <span class="tk"><span class="tk-tag">FEED</span><b>BLOOMBERG</b> FED CUT PROB ↑ 78% <span class="up">+12pp</span></span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>36KR</b> 豆包 MAU 1.6亿 <span class="up">+23%</span></span>
+    <span class="tk"><span class="tk-tag">FEED</span><b>TECHCRUNCH</b> Sora 2 ships w/ 60s native audio</span>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="bar">
+  <div class="logo">INSIGHT.TERMINAL <small>// v2.4</small></div>
+  <div class="bar-search">
+    <span class="prompt">▸</span>
+    <input placeholder="query feed:  source: bloomberg  topic: 货币  …" />
+    <span style="color:var(--text-faint)">⌘K</span>
+  </div>
+  <div class="bar-meta">
+    <span class="kv"><span class="dot"></span>LIVE</span>
+    <span class="kv">LAT<b id="lat">12ms</b></span>
+    <span class="kv">SRC<b>32</b></span>
+    <span class="kv">SES<b>04:21:18</b></span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT RAIL -->
+  <aside class="left">
+    <div class="rail-h">TIME WINDOW <span class="count" id="timeCount">10</span></div>
+    <div class="time-list" id="timeList">
+      <button class="time-btn" data-range="24">当天 / 24H <span class="n">3</span></button>
+      <button class="time-btn" data-range="72">3天内 / 72H <span class="n">5</span></button>
+      <button class="time-btn active" data-range="168">一周 / 7D <span class="n">6</span></button>
+      <button class="time-btn" data-range="720">一个月 / 30D <span class="n">8</span></button>
+      <button class="time-btn" data-range="4320">半年 / 180D <span class="n">9</span></button>
+      <button class="time-btn" data-range="99999">全部 / ALL <span class="n">10</span></button>
+    </div>
+
+    <div class="rail-h">TOPIC FILTER</div>
+    <div class="topic-grid" id="topicGrid">
+      <button class="topic-chip on" data-topic="ALL">ALL</button>
+      <button class="topic-chip" data-topic="宏观">宏观</button>
+      <button class="topic-chip" data-topic="货币">货币</button>
+      <button class="topic-chip" data-topic="AI">AI</button>
+      <button class="topic-chip" data-topic="互联网">互联网</button>
+      <button class="topic-chip" data-topic="硬件">硬件</button>
+      <button class="topic-chip" data-topic="汽车">汽车</button>
+      <button class="topic-chip" data-topic="金融">金融</button>
+      <button class="topic-chip" data-topic="科技">科技</button>
+      <button class="topic-chip" data-topic="战略">战略</button>
+    </div>
+
+    <div class="rail-h">SUBSCRIBED SOURCES</div>
+    <div class="source-list">
+      <div class="source-row"><span class="sq" style="background:#ffb300">B</span>Bloomberg<span class="n">14</span></div>
+      <div class="source-row"><span class="sq" style="background:#00d97e">36</span>36氪<span class="n">22</span></div>
+      <div class="source-row"><span class="sq" style="background:#fff">TC</span>TechCrunch<span class="n">9</span></div>
+      <div class="source-row"><span class="sq" style="background:#b31b1b;color:#fff">aX</span>arXiv<span class="n">31</span></div>
+      <div class="source-row"><span class="sq" style="background:#ff8000">R</span>Reuters<span class="n">18</span></div>
+      <div class="source-row"><span class="sq" style="background:#e3120b">E</span>The Economist<span class="n">7</span></div>
+      <div class="source-row"><span class="sq" style="background:#2200cc;color:#fff">N</span>Nature<span class="n">12</span></div>
+      <div class="source-row"><span class="sq" style="background:#00a4ff">智</span>智东西<span class="n">15</span></div>
+    </div>
+  </aside>
+
+  <!-- CENTER -->
+  <main class="center">
+
+    <div class="stats-bar">
+      <div class="stat"><div class="l">IN WINDOW</div><div class="v amber" id="sCount">6</div><div class="d">条洞察匹配</div></div>
+      <div class="stat"><div class="l">AVG CONFIDENCE</div><div class="v green" id="sConf">89%</div><div class="d">AI 置信度均值</div></div>
+      <div class="stat"><div class="l">HIGH IMPACT</div><div class="v" id="sImp">4</div><div class="d">●●●●○+ 条目</div></div>
+      <div class="stat"><div class="l">SOURCES</div><div class="v" id="sSrc">6</div><div class="d">去重订阅源</div></div>
+    </div>
+
+    <div class="feed-title">
+      <h2>INSIGHT FEED</h2>
+      <span class="scope" id="scopeLabel">// SCOPE: 7D</span>
+      <span class="live">STREAMING</span>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <!-- RIGHT RAIL -->
+  <aside class="right">
+    <div class="watch-block">
+      <div class="watch-h">AI 观察哨 · 热度信号</div>
+      <div class="trend-bar">
+        <div class="trend-row"><span class="lab">降息周期启动</span><span class="pct">94</span><div class="bar"><i style="width:94%"></i></div></div>
+        <div class="trend-row"><span class="lab">AI Native 应用爆发</span><span class="pct">88</span><div class="bar"><i style="width:88%"></i></div></div>
+        <div class="trend-row"><span class="lab">推理模型 Scaling</span><span class="pct">76</span><div class="bar"><i style="width:76%"></i></div></div>
+        <div class="trend-row"><span class="lab">中国制造出海</span><span class="pct">71</span><div class="bar"><i style="width:71%"></i></div></div>
+        <div class="trend-row"><span class="lab">量子纠错突破</span><span class="pct">63</span><div class="bar"><i style="width:63%"></i></div></div>
+        <div class="trend-row"><span class="lab">RWA 代币化</span><span class="pct">42</span><div class="bar"><i style="width:42%"></i></div></div>
+      </div>
+    </div>
+
+    <div class="watch-block">
+      <div class="watch-h">置信度排行</div>
+      <div class="conf-list">
+        <div class="conf-row"><span class="ci">01</span><span class="ct">Willow 量子纠错</span><span class="cv hi">.97</span></div>
+        <div class="conf-row"><span class="ci">02</span><span class="ct">DeepMind scaling laws</span><span class="cv hi">.95</span></div>
+        <div class="conf-row"><span class="ci">03</span><span class="ct">Fed 9月降息</span><span class="cv hi">.92</span></div>
+        <div class="conf-row"><span class="ci">04</span><span class="ct">中国新三样出口</span><span class="cv hi">.90</span></div>
+        <div class="conf-row"><span class="ci">05</span><span class="ct">豆包 MAU 第一</span><span class="cv md">.88</span></div>
+        <div class="conf-row"><span class="ci">06</span><span class="ct">Sora 2 60s 音频</span><span class="cv md">.85</span></div>
+        <div class="conf-row"><span class="ci">07</span><span class="ct">小鹏 P7+ 订单</span><span class="cv md">.82</span></div>
+        <div class="conf-row"><span class="ci">08</span><span class="ct">聚合理论再审视</span><span class="cv md">.80</span></div>
+        <div class="conf-row"><span class="ci">09</span><span class="ct">Vision Pro 2 定价</span><span class="cv lo">.78</span></div>
+        <div class="conf-row"><span class="ci">10</span><span class="ct">RWA 链上美债</span><span class="cv lo">.75</span></div>
+      </div>
+    </div>
+
+    <div class="pulse">
+      <div class="pulse-h">▸ AI DIGEST · 本周</div>
+      <div class="pulse-b">三件事主导本周：<b>货币转向</b>（Fed 9月降息概率 78%）、<b>AI 应用规模化</b>（豆包破 1.6亿 MAU）、<b>推理 scaling 持续</b>（200B token 仍幂律增长）。建议关注：消费、半导体、AIinfra 板块资金流向。</div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+const INSIGHTS = [
+  { id:1, source:"Bloomberg", abbr:"B", color:"#ffb300", title:"Fed Seen Cutting Rates as Powell Signals Cooling Inflation", summary:"美联储官员暗示9月可能降息，CME利率期货显示概率升至78%。鲍威尔在杰克逊霍尔讲话中强调通胀正稳步回到2%目标，劳动力市场降温明显，房价与服务业通胀仍是关键变量。", hours:2, topics:["宏观","货币"], importance:5, confidence:0.92, metric:{label:"9月降息概率", value:"78%", delta:"+12pp", dir:"up"} },
+  { id:2, source:"36氪", abbr:"36", color:"#00d97e", title:"字节豆包大模型月活突破1.6亿，国内AI应用第一", summary:"QuestMobile数据显示，豆包App 8月MAU达1.6亿，环比增长23%，在国内AI原生应用中位居首位，远超第二名Kimi的4500万。多模态能力与低价策略是核心驱动。", hours:5, topics:["AI","互联网"], importance:4, confidence:0.88, metric:{label:"8月MAU", value:"1.6亿", delta:"+23%", dir:"up"} },
+  { id:3, source:"TechCrunch", abbr:"TC", color:"#ffffff", title:"OpenAI Ships Sora 2 With 60s Native Audio Generation", summary:"OpenAI发布Sora重大更新，原生支持60秒带音频的视频生成，画面稳定性显著提升，物体持久性与物理一致性接近真实。已向Pro用户开放，企业版下月推出。", hours:12, topics:["AI","产品"], importance:5, confidence:0.85, metric:{label:"最长时长", value:"60s", delta:"+100%", dir:"up"} },
+  { id:4, source:"arXiv", abbr:"aX", color:"#b31b1b", title:"Scaling Laws for Reasoning Models — A 200B Token Study", summary:"DeepMind新论文系统验证：推理模型在200B token训练量下仍呈幂律增长，未现饱和。CoT深度与模型规模呈线性关系，意味着reasoning能力天花板远未到顶，scaling 继续。", hours:36, topics:["AI","论文"], importance:4, confidence:0.95, metric:{label:"训练规模", value:"200B", delta:"+50%", dir:"up"} },
+  { id:5, source:"Reuters", abbr:"R", color:"#ff8000", title:"Apple's Vision Pro 2 Slated for Q4 2025 With Half the Price", summary:"路透社独家：苹果第二代Vision Pro预计2025年Q4发布，定价1500美元左右，重量减轻40%。供应链消息显示量产已在郑州富士康启动，芯片升级至M5。", hours:50, topics:["硬件","消费"], importance:4, confidence:0.78, metric:{label:"定价", value:"$1500", delta:"-50%", dir:"down"} },
+  { id:6, source:"The Economist", abbr:"E", color:"#e3120b", title:"China's Quiet Pivot: How Beijing Is Re-Engineering Growth", summary:"经济学人封面文章：中国正悄然从地产+基建驱动转向制造+出海驱动。新能源汽车、锂电池、光伏\"新三样\"占出口比重已达15%，是2018年的3倍，结构性转型已不可逆。", hours:100, topics:["宏观","产业"], importance:5, confidence:0.90, metric:{label:"新三样出口占比", value:"15%", delta:"+10pp", dir:"up"} },
+  { id:7, source:"Nature", abbr:"N", color:"#2200cc", title:"Google's Willow Chip Demonstrates Exponential Error Suppression", summary:"Google量子AI团队Nature论文：Willow 105-qubit芯片首次实验演示指数级错误抑制，关键里程碑。纠错后逻辑量子比特错误率随规模增加而下降，量子纠错之路打通。", hours:150, topics:["科技","量子"], importance:5, confidence:0.97, metric:{label:"逻辑比特错误率", value:"-2×/scale", delta:"▲", dir:"up"} },
+  { id:8, source:"智东西", abbr:"智", color:"#00a4ff", title:"小鹏P7+上市首周订单破3万，端到端智驾成关键卖点", summary:"小鹏P7+上市一周锁单突破3万辆，搭载全新\"全天候\"端到端智驾系统，全国无图城市NGP覆盖300+城市，起售价18.68万，订单转化率远超行业均值。", hours:400, topics:["汽车","AI"], importance:3, confidence:0.82, metric:{label:"首周订单", value:"3万", delta:"+150%", dir:"up"} },
+  { id:9, source:"Wired", abbr:"W", color:"#000000", title:"The Quiet Resurrection of Crypto Under a New Name: RWA", summary:"Wired深度报道：真实世界资产（RWA）代币化正成为加密货币2.0。贝莱德、富兰克林邓普顿等传统巨头入场，链上美债规模突破50亿美元，机构化进程明显加速。", hours:1000, topics:["金融","加密"], importance:3, confidence:0.75, metric:{label:"链上美债", value:"$50亿", delta:"+400%", dir:"up"} },
+  { id:10, source:"Stratechery", abbr:"S", color:"#1c1c1c", title:"The Aggregation Theory Revisited: AI as the New Distribution", summary:"Ben Thompson长文重新审视聚合理论：AI正在重塑分发逻辑。从搜索到对话，用户不再\"找内容\"而是\"等答案\"，平台权力从聚合器转向模型层，老聚合器面临结构性挑战。", hours:5000, topics:["战略","AI"], importance:4, confidence:0.80, metric:{label:"阅读时长", value:"28min", delta:"—", dir:"flat"} }
+];
+
+const SCOPE_LABEL = { 24:"24H", 72:"72H / 3D", 168:"7D", 720:"30D", 4320:"180D", 99999:"ALL" };
+
+let curRange = 168;
+let curTopic = "ALL";
+
+const grid = document.getElementById("grid");
+const scopeLabel = document.getElementById("scopeLabel");
+const timeCount = document.getElementById("timeCount");
+const sCount = document.getElementById("sCount");
+const sConf = document.getElementById("sConf");
+const sImp = document.getElementById("sImp");
+const sSrc = document.getElementById("sSrc");
+
+function fmtAgo(h){
+  if(h<24) return h+"H AGO";
+  if(h<168) return Math.round(h/24)+"D AGO";
+  if(h<720) return Math.round(h/24)+"D AGO";
+  return Math.round(h/24)+"D AGO";
+}
+
+function impDots(n){
+  let s="";for(let i=0;i<5;i++) s+=`<i class="${i<n?"on":""}"></i>`;
+  return `<span class="imp">${s}</span>`;
+}
+
+function render(){
+  const list = INSIGHTS.filter(x=>x.hours<=curRange && (curTopic==="ALL" || x.topics.includes(curTopic)));
+  scopeLabel.textContent = `// SCOPE: ${SCOPE_LABEL[curRange]}${curTopic!=="ALL"?" · #"+curTopic:""}`;
+  timeCount.textContent = list.length;
+  sCount.textContent = list.length;
+  if(list.length){
+    sConf.textContent = Math.round(list.reduce((a,b)=>a+b.confidence,0)/list.length*100)+"%";
+    sImp.textContent = list.filter(x=>x.importance>=4).length;
+    sSrc.textContent = new Set(list.map(x=>x.source)).size;
+  }else{
+    sConf.textContent="—";sImp.textContent="0";sSrc.textContent="0";
+  }
+
+  if(!list.length){
+    grid.innerHTML = `<div class="empty">▌ NO SIGNAL IN CURRENT WINDOW ▌<br/><br/>尝试扩大时间窗或清除主题过滤</div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map((x,i)=>`
+    <article class="card" style="animation-delay:${i*40}ms">
+      <a class="card-link" href="#">原文 ↗</a>
+      <header class="card-h">
+        <span class="src-abbr" style="background:${x.color};color:${x.color==="#ffffff"||x.color==="#00d97e"||x.color==="#ffb300"||x.color==="#ff8000"||x.color==="#00a4ff"?"#000":"#fff"}">${x.abbr}</span>
+        <span class="src-name">${x.source}</span>
+        <span class="card-time">${fmtAgo(x.hours)}</span>
+        ${impDots(x.importance)}
+      </header>
+      <h3 class="card-title">${x.title}</h3>
+      <p class="card-sum">${x.summary}</p>
+      <div class="card-foot">
+        <div class="tags">${x.topics.map(t=>`<span>${t}</span>`).join("")}</div>
+        <div class="metric">
+          <span class="ml">${x.metric.label}</span>
+          <span class="mv">${x.metric.value}</span>
+          <span class="md ${x.metric.dir}">${x.metric.delta}</span>
+        </div>
+      </div>
+    </article>
+  `).join("");
+}
+
+// Time filter
+document.getElementById("timeList").addEventListener("click",e=>{
+  const b=e.target.closest(".time-btn");if(!b)return;
+  document.querySelectorAll(".time-btn").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  curRange = +b.dataset.range;
+  render();
+});
+
+// Topic filter
+document.getElementById("topicGrid").addEventListener("click",e=>{
+  const c=e.target.closest(".topic-chip");if(!c)return;
+  document.querySelectorAll(".topic-chip").forEach(x=>x.classList.remove("on"));
+  c.classList.add("on");
+  curTopic = c.dataset.topic;
+  render();
+});
+
+// Live clock + latency jitter
+setInterval(()=>{
+  const d=new Date();
+  const s=String(d.getSeconds()).padStart(2,"0");
+  const m=String(d.getMinutes()).padStart(2,"0");
+  const h=String(d.getHours()).padStart(2,"0");
+  const ses=document.querySelector(".bar-meta .kv:last-child b");
+  if(ses) ses.textContent=`${h}:${m}:${s}`;
+  document.getElementById("lat").textContent = (10+Math.floor(Math.random()*8))+"ms";
+},1000);
+
+render();
+</script>
+
+</body>
+</html>

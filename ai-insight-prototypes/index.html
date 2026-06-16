@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AI For Insight · 四版原型对比</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Inter",system-ui,sans-serif;
+    background:#0e0e10;
+    color:#e8e8ea;
+    min-height:100vh;
+    padding:48px 32px 80px;
+    background-image:
+      radial-gradient(ellipse 1000px 500px at 80% -10%, rgba(124,58,237,.18), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 10% 110%, rgba(251,191,36,.10), transparent 60%);
+  }
+  .wrap{max-width:1280px;margin:0 auto}
+  header.top{margin-bottom:48px}
+  .eyebrow{
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;letter-spacing:.24em;
+    color:#a78bfa;text-transform:uppercase;
+    margin-bottom:18px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"";width:32px;height:1px;background:#a78bfa}
+  h1{
+    font-family:"Fraunces",serif;
+    font-weight:900;
+    font-size:62px;
+    line-height:1;
+    letter-spacing:-.025em;
+    margin-bottom:18px;
+  }
+  h1 em{
+    font-style:italic;
+    background:linear-gradient(120deg,#fbbf24,#f472b6);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{
+    font-size:17px;color:#a1a1aa;line-height:1.6;max-width:680px;
+  }
+  .meta-row{
+    margin-top:24px;display:flex;gap:24px;
+    font-family:"JetBrains Mono",monospace;font-size:12px;
+    color:#71717a;letter-spacing:.04em;
+  }
+  .meta-row b{color:#e8e8ea;font-weight:500}
+
+  .grid{
+    display:grid;grid-template-columns:repeat(2,1fr);
+    gap:24px;margin-top:48px;
+  }
+
+  .card{
+    background:rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:18px;
+    overflow:hidden;
+    transition:.25s cubic-bezier(.2,.7,.3,1);
+    text-decoration:none;color:inherit;
+    display:flex;flex-direction:column;
+    position:relative;
+  }
+  .card:hover{
+    transform:translateY(-4px);
+    border-color:rgba(255,255,255,.2);
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.6);
+  }
+
+  /* preview area with embedded thumbnail look (CSS-only mock) */
+  .preview{
+    height:220px;
+    position:relative;
+    overflow:hidden;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+
+  /* ========= v01 terminal ========= */
+  .pv1{
+    background:#0a0a0a;
+    padding:16px;
+    font-family:"JetBrains Mono",monospace;
+    color:#e8e8e8;
+  }
+  .pv1 .tk{
+    font-size:8px;color:#888;
+    border-bottom:1px solid #1f1f1f;padding-bottom:6px;margin-bottom:10px;
+    letter-spacing:.04em;
+  }
+  .pv1 .tk b{color:#ffb300}
+  .pv1 .row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .pv1 .blk{
+    background:#111;padding:8px;border-left:2px solid transparent;
+  }
+  .pv1 .blk:hover{border-left-color:#ffb300}
+  .pv1 .bh{font-size:7px;color:#ffb300;letter-spacing:.1em;margin-bottom:5px}
+  .pv1 .bt{font-size:9px;font-weight:700;line-height:1.2;margin-bottom:4px;color:#fff}
+  .pv1 .bs{font-size:7px;color:#888;line-height:1.4}
+  .pv1 .bm{font-size:7px;color:#00ff88;margin-top:5px}
+
+  /* ========= v02 linear ========= */
+  .pv2{
+    background:#fafafa;padding:18px;color:#0a0a0a;
+    font-family:"Inter",sans-serif;
+  }
+  .pv2 .chips{display:flex;gap:4px;margin-bottom:10px}
+  .pv2 .chip{
+    font-size:8px;padding:3px 8px;border-radius:999px;
+    background:#fff;border:1px solid #e4e4e7;color:#525252;
+  }
+  .pv2 .chip.on{background:#0a0a0a;color:#fff;border-color:#0a0a0a}
+  .pv2 .card2{
+    background:#fff;border:1px solid #e4e4e7;border-radius:8px;
+    padding:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);
+  }
+  .pv2 .ch{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .pv2 .lg{width:14px;height:14px;border-radius:4px;background:#4f46e5}
+  .pv2 .src{font-size:8px;color:#525252;font-weight:500}
+  .pv2 .tm{margin-left:auto;font-size:7px;color:#a3a3a3}
+  .pv2 .t2{font-family:"Fraunces",serif;font-size:12px;font-weight:600;line-height:1.2;margin-bottom:4px}
+  .pv2 .s2{font-size:8px;color:#525252;line-height:1.5}
+  .pv2 .mini{
+    margin-top:6px;display:inline-flex;gap:6px;align-items:center;
+    background:#f4f4f5;padding:3px 7px;border-radius:6px;font-size:7px;
+  }
+  .pv2 .mini .up{color:#059669;font-weight:600}
+
+  /* ========= v03 editorial ========= */
+  .pv3{
+    background:#f5f1ea;padding:18px;color:#1a1a1a;
+    font-family:"Lora",serif;
+    background-image:radial-gradient(ellipse at top,rgba(176,142,60,.06),transparent 60%);
+  }
+  .pv3 .mh{
+    text-align:center;font-family:"Fraunces",serif;font-weight:900;
+    font-size:14px;color:#1a1a1a;border-bottom:1px solid #c8c0ad;
+    padding-bottom:8px;margin-bottom:10px;letter-spacing:-.02em;
+  }
+  .pv3 .mh em{font-style:italic;color:#c1272d;font-weight:400;font-size:9px;vertical-align:.4em}
+  .pv3 .ft{
+    font-family:"Fraunces",serif;font-size:14px;font-weight:800;
+    line-height:1.05;color:#1a1a1a;margin-bottom:4px;
+  }
+  .pv3 .dk{font-family:"Lora",serif;font-style:italic;font-size:8px;color:#5e5a52;line-height:1.4;margin-bottom:6px}
+  .pv3 .bd{font-size:7px;color:#3a3a36;line-height:1.5;column-count:1}
+  .pv3 .bd::first-letter{
+    font-family:"Fraunces",serif;font-size:22px;font-weight:800;
+    color:#c1272d;float:left;line-height:.85;padding-right:4px;
+  }
+
+  /* ========= v04 zen ========= */
+  .pv4{
+    background:#f4ede0;padding:22px;color:#2b2b2b;
+    font-family:"Noto Serif SC",serif;
+    text-align:center;
+  }
+  .pv4 .lg{
+    font-family:"Noto Serif SC",serif;font-weight:900;
+    font-size:24px;color:#2b2b2b;line-height:1;
+    display:inline-block;padding:0 14px;position:relative;
+  }
+  .pv4 .lg::before,.pv4 .lg::after{
+    content:"";position:absolute;top:50%;width:18px;height:1px;background:#2b2b2b;transform:translateY(-50%);
+  }
+  .pv4 .lg::before{right:100%}
+  .pv4 .lg::after{left:100%}
+  .pv4 .en{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:8px;color:#8b8378;letter-spacing:.3em;margin-top:5px;margin-bottom:14px}
+  .pv4 .seal{
+    width:28px;height:28px;background:#b23b3b;margin:0 auto 8px;position:relative;
+  }
+  .pv4 .seal::after{
+    content:"";position:absolute;inset:2px;border:1px solid rgba(244,237,224,.45);
+  }
+  .pv4 .seal span{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:#f4ede0;font-family:"Noto Serif SC",serif;font-weight:700;font-size:12px;
+  }
+  .pv4 .t4{font-family:"Noto Serif SC",serif;font-weight:600;font-size:11px;line-height:1.4;margin-bottom:4px}
+  .pv4 .s4{font-family:"Noto Serif SC",serif;font-weight:300;font-size:7px;line-height:1.7;color:#3f3a36}
+
+  /* ========= info area ========= */
+  .info{padding:22px 24px 24px}
+  .info-h{
+    display:flex;align-items:center;gap:10px;margin-bottom:8px;
+  }
+  .num{
+    font-family:"JetBrains Mono",monospace;font-size:11px;
+    color:#71717a;font-weight:500;
+  }
+  .name{
+    font-family:"Fraunces",serif;
+    font-size:24px;font-weight:700;
+    letter-spacing:-.018em;
+  }
+  .tag{
+    margin-left:auto;
+    font-family:"JetBrains Mono",monospace;
+    font-size:10px;
+    padding:4px 10px;border-radius:6px;
+    letter-spacing:.04em;
+  }
+  .tag.amber{background:rgba(255,179,0,.12);color:#fbbf24}
+  .tag.indigo{background:rgba(79,70,229,.18);color:#a5b4fc}
+  .tag.red{background:rgba(225,29,72,.15);color:#fda4af}
+  .tag.tea{background:rgba(180,138,80,.18);color:#d6b48b}
+
+  .desc{font-size:13.5px;color:#a1a1aa;line-height:1.6;margin-bottom:14px}
+  .desc b{color:#e8e8ea;font-weight:500}
+
+  .stats{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;
+    font-family:"JetBrains Mono",monospace;font-size:11px;
+    padding:12px 0;border-top:1px solid rgba(255,255,255,.06);
+  }
+  .stats div{color:#71717a}
+  .stats b{color:#e8e8ea;font-weight:500;margin-left:6px}
+  .stats .fit{color:#86efac}
+  .stats .unfit{color:#fda4af}
+
+  .open{
+    display:inline-flex;align-items:center;gap:8px;
+    margin-top:16px;
+    padding:10px 18px;
+    background:#fff;color:#0a0a0a;
+    border-radius:10px;
+    font-weight:600;font-size:13px;
+    transition:.18s;
+  }
+  .open:hover{background:#fbbf24;transform:translateX(2px)}
+  .open::after{content:"→";font-weight:700}
+
+  footer{
+    margin-top:60px;padding-top:32px;
+    border-top:1px solid rgba(255,255,255,.08);
+    display:flex;justify-content:space-between;
+    font-family:"JetBrains Mono",monospace;font-size:11px;
+    color:#52525b;letter-spacing:.04em;
+  }
+  footer a{color:#a1a1aa}
+  footer a:hover{color:#fbbf24}
+
+  @media (max-width:900px){
+    h1{font-size:40px}
+    .grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="eyebrow">AI For Insight · 四版原型 · 同骨架换皮</div>
+    <h1>挑一种 <em>气质</em>。<br/>内容和数据完全相同。</h1>
+    <p class="sub">同一个产品需求——展示用户订阅的多源洞察 + 6 档时间筛选——用四种截然不同的视觉语言实现。所有版本共享 10 条模拟洞察数据（覆盖 2h~5000h），便于横向对比。点任一卡片打开完整原型。</p>
+    <div class="meta-row">
+      <span>骨架 <b>多源卡片 · 6 档时间</b></span>
+      <span>数据 <b>10 条共享</b></span>
+      <span>版本 <b>v1 · 浏览器打开即可</b></span>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- 01 -->
+    <a class="card" href="01-terminal-dark.html">
+      <div class="preview pv1">
+        <div class="tk"><b>FEED</b> ▸ BLOOMBERG FED ↑78% <span style="color:#00ff88">+12pp</span>  ▸ 36KR 豆包 1.6亿</div>
+        <div class="row">
+          <div class="blk">
+            <div class="bh">[B] BLOOMBERG · 2H</div>
+            <div class="bt">Fed Seen Cutting Rates</div>
+            <div class="bs">鲍威尔放鸽信号 9月降息概率升至...</div>
+            <div class="bm">9月概率 78% ▲+12pp</div>
+          </div>
+          <div class="blk">
+            <div class="bh">[36] 36KR · 5H</div>
+            <div class="bt">豆包 MAU 破1.6亿</div>
+            <div class="bs">国内AI应用第一 远超Kimi...</div>
+            <div class="bm">MAU 1.6亿 ▲+23%</div>
+          </div>
+        </div>
+      </div>
+      <div class="info">
+        <div class="info-h">
+          <span class="num">01</span>
+          <span class="name">Terminal Dark</span>
+          <span class="tag amber">BLOOMBERG 式</span>
+        </div>
+        <p class="desc">黑底琥珀色 + 等宽字体 + ticker 滚动条 + sparkline 数据条。<b>三栏布局</b>：左侧时间筛选 vertical tab、中央双列卡片、右侧 AI 观察哨（趋势热度+置信度排行）。信息密度极高，每一寸像素都在传递信号。</p>
+        <div class="stats">
+          <div>字体 <b>JetBrains Mono · IBM Plex Sans</b></div>
+          <div>基调 <b>密集 / 数据驱动</b></div>
+          <div>动效 <b>ticker · stagger 入场</b></div>
+          <div>适合 <span class="fit">投资人 / 分析师</span></div>
+          <div>不适合 <span class="unfit">阅读优先 / 轻度用户</span></div>
+          <div>记忆点 <b>terminal 红绿涨跌</b></div>
+        </div>
+        <span class="open">打开 Terminal Dark</span>
+      </div>
+    </a>
+
+    <!-- 02 -->
+    <a class="card" href="02-linear-clean.html">
+      <div class="preview pv2">
+        <div class="chips">
+          <span class="chip">当天</span>
+          <span class="chip">3 天</span>
+          <span class="chip on">一周</span>
+          <span class="chip">一月</span>
+        </div>
+        <div class="card2">
+          <div class="ch">
+            <span class="lg"></span>
+            <span class="src">Bloomberg</span>
+            <span class="tm">2h ago</span>
+          </div>
+          <div class="t2">Fed Seen Cutting Rates</div>
+          <div class="s2">鲍威尔暗示9月可能降息，CME利率期货...</div>
+          <div class="mini"><span>9月概率</span><b>78%</b><span class="up">+12pp</span></div>
+        </div>
+      </div>
+      <div class="info">
+        <div class="info-h">
+          <span class="num">02</span>
+          <span class="name">Linear Clean</span>
+          <span class="tag indigo">LINEAR / VERCEL 式</span>
+        </div>
+        <p class="desc">柔白底 + 靛蓝点缀 + 圆角 12px + subtle elevation。顶部时间 chips 横向排，<b>Hero 区是带渐变背景的今日 AI 摘要 banner</b>，下方单列卡片充分留白。每张卡片有 hover 上移+阴影加深的微反馈。</p>
+        <div class="stats">
+          <div>字体 <b>Bricolage Grotesque · Manrope</b></div>
+          <div>基调 <b>克制 / 现代 / SaaS</b></div>
+          <div>动效 <b>fade-up · hover translateY</b></div>
+          <div>适合 <span class="fit">通用知识工作者 / SaaS</span></div>
+          <div>不适合 <span class="unfit">专业交易员 / 文学受众</span></div>
+          <div>记忆点 <b>渐变 Hero · 浮动 FAB</b></div>
+        </div>
+        <span class="open">打开 Linear Clean</span>
+      </div>
+    </a>
+
+    <!-- 03 -->
+    <a class="card" href="03-editorial-serif.html">
+      <div class="preview pv3">
+        <div class="mh"><em>The</em> Insight Quarterly</div>
+        <div class="ft">Fed Seen Cutting Rates</div>
+        <div class="dk">鲍威尔在杰克逊霍尔的讲话被市场解读为9月降息的明确信号——这是2024年以来最鸽派的一次。</div>
+        <div class="bd">美联储主席鲍威尔在杰克逊霍尔全球央行年会上的讲话，被市场解读为9月降息的明确信号。</div>
+      </div>
+      <div class="info">
+        <div class="info-h">
+          <span class="num">03</span>
+          <span class="name">Editorial Serif</span>
+          <span class="tag red">经济学人 / 季刊式</span>
+        </div>
+        <p class="desc">米白 + 墨黑 + 朱红，<b>Playfair Display 衬线大字</b>，首字下沉，双栏排版。报头有刊名/卷号/期号/日期，时间档作为顶部下划线 tab。头条单独占一栏大版面，其余文章双栏铺开。每条洞察像一篇短文。</p>
+        <div class="stats">
+          <div>字体 <b>Playfair Display · Lora</b></div>
+          <div>基调 <b>典雅 / 深度 / 慢读</b></div>
+          <div>动效 <b>极简 fade · 双线分隔</b></div>
+          <div>适合 <span class="fit">研究者 / 决策者</span></div>
+          <div>不适合 <span class="unfit">追求速度 / 实时性</span></div>
+          <div>记忆点 <b>报头 · 双栏 · drop cap</b></div>
+        </div>
+        <span class="open">打开 Editorial Serif</span>
+      </div>
+    </a>
+
+    <!-- 04 -->
+    <a class="card" href="04-zen-minimal.html">
+      <div class="preview pv4">
+        <div class="lg">知</div>
+        <div class="en">zhi · insight</div>
+        <div class="seal"><span>彭</span></div>
+        <div class="t4">鲍威尔放鸽，九月降息几成定局</div>
+        <div class="s4">美联储主席鲍威尔于杰克逊霍尔放言<br/>通胀正稳步归位 劳工市场已见凉意</div>
+      </div>
+      <div class="info">
+        <div class="info-h">
+          <span class="num">04</span>
+          <span class="name">Zen Minimal</span>
+          <span class="tag tea">东方留白 · 禅意</span>
+        </div>
+        <p class="desc">宣纸米 + 墨灰 + 朱砂，<b>思源宋体 + Cormorant Garamond</b>，大量留白。源 logo 化为朱砂方印，洞察标题用宋体大字，正文用半文言转译。时间档为极简段控件。每条洞察像一卷手抄笔记。</p>
+        <div class="stats">
+          <div>字体 <b>Noto Serif SC · Cormorant</b></div>
+          <div>基调 <b>克制 / 留白 / 古典</b></div>
+          <div>动效 <b>极慢 fade · 印章 hover</b></div>
+          <div>适合 <span class="fit">想逃离噪音的人</span></div>
+          <div>不适合 <span class="unfit">效率优先 / 数据驱动</span></div>
+          <div>记忆点 <b>朱砂印 · 半文言</b></div>
+        </div>
+        <span class="open">打开 Zen Minimal</span>
+      </div>
+    </a>
+
+  </div>
+
+  <footer>
+    <span>4 版 · 同数据 · 同骨架 · 仅视觉语言不同</span>
+    <span>挑完后告诉我 <a href="#">→</a> 我会基于你选的版本继续打磨</span>
+  </footer>
+
+</div>
+</body>
+</html>

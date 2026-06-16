@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>知 · 04 / Zen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4ede0;
+    --paper-deep:#ede4d0;
+    --paper-edge:#e3d8be;
+    --ink:#2b2b2b;
+    --ink-soft:#3f3a36;
+    --ink-mid:#6a635a;
+    --ink-faint:#9d9486;
+    --tea:#8b8378;
+    --red:#b23b3b;
+    --red-deep:#8a2929;
+    --red-soft:#d9a8a8;
+    --serif-cn:"Noto Serif SC",serif;
+    --sans-cn:"Noto Sans SC",sans-serif;
+    --serif-en:"Cormorant Garamond",serif;
+    --brush:"Ma Shan Zheng",cursive;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--serif-cn);
+    font-size:16px;
+    line-height:1.85;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    /* paper grain */
+    background-image:
+      radial-gradient(ellipse 1200px 600px at 50% -200px, rgba(178,59,59,.04), transparent 70%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence baseFrequency='.7' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.48 0 0 0 0 0.36 0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  ::selection{background:var(--red);color:var(--paper)}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer}
+
+  /* ============== HEADER ============== */
+  header.head{
+    text-align:center;
+    padding:64px 24px 0;
+    position:relative;
+  }
+  .logo-cn{
+    font-family:var(--serif-cn);
+    font-weight:900;
+    font-size:84px;
+    color:var(--ink);
+    line-height:1;
+    letter-spacing:0;
+    position:relative;
+    display:inline-block;
+    padding:0 28px;
+  }
+  .logo-cn::before,.logo-cn::after{
+    content:"";position:absolute;top:50%;
+    width:64px;height:1px;background:var(--ink);
+    transform:translateY(-50%);
+  }
+  .logo-cn::before{right:100%}
+  .logo-cn::after{left:100%}
+  .logo-en{
+    font-family:var(--serif-en);
+    font-style:italic;
+    font-size:18px;
+    color:var(--ink-mid);
+    letter-spacing:.4em;
+    text-transform:lowercase;
+    margin-top:14px;
+  }
+  .logo-en::before,.logo-en::after{
+    content:"·";margin:0 14px;color:var(--red);
+  }
+
+  /* ============== TIME PILLS ============== */
+  .time-wrap{
+    text-align:center;
+    padding:48px 24px 24px;
+  }
+  .time-pills{
+    display:inline-flex;align-items:center;gap:0;
+    padding:6px;
+    background:var(--paper-deep);
+    border:1px solid var(--paper-edge);
+  }
+  .pill{
+    appearance:none;background:transparent;border:0;
+    padding:10px 22px;
+    font-family:var(--serif-cn);
+    font-size:14px;
+    color:var(--ink-mid);
+    font-weight:400;
+    letter-spacing:.08em;
+    transition:.2s;
+    position:relative;
+  }
+  .pill:hover{color:var(--ink)}
+  .pill.on{
+    background:var(--ink);
+    color:var(--paper);
+    font-weight:500;
+  }
+  .pill .n{
+    font-family:var(--serif-en);
+    font-style:italic;
+    font-size:11px;
+    color:var(--ink-faint);
+    margin-left:5px;
+  }
+  .pill.on .n{color:var(--red-soft)}
+
+  /* ============== EPIGRAPH ============== */
+  .epigraph{
+    max-width:680px;
+    margin:64px auto 24px;
+    padding:0 32px;
+    text-align:center;
+    animation:fadein .8s ease both;
+  }
+  @keyframes fadein{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .epi-mark{
+    font-family:var(--brush);
+    color:var(--red);
+    font-size:36px;
+    line-height:1;
+    margin-bottom:18px;
+    opacity:.85;
+  }
+  .epi-text{
+    font-family:var(--serif-cn);
+    font-weight:300;
+    font-size:24px;
+    line-height:1.7;
+    color:var(--ink-soft);
+    letter-spacing:.04em;
+  }
+  .epi-text em{
+    font-style:normal;
+    color:var(--red-deep);
+    font-weight:500;
+    border-bottom:1px solid var(--red-soft);
+    padding-bottom:2px;
+  }
+  .epi-attr{
+    margin-top:24px;
+    font-family:var(--serif-en);
+    font-style:italic;
+    color:var(--tea);
+    font-size:13px;
+    letter-spacing:.16em;
+  }
+  .epi-attr::before{content:"— ";color:var(--red)}
+
+  .ink-rule{
+    width:1px;height:48px;background:var(--ink);
+    margin:48px auto 0;
+  }
+
+  /* ============== SCROLLS ============== */
+  .scrolls{
+    max-width:760px;
+    margin:0 auto;
+    padding:48px 32px 80px;
+  }
+  .scroll{
+    padding:56px 0;
+    border-bottom:1px solid var(--paper-edge);
+    animation:fadein .6s ease both;
+    position:relative;
+    cursor:pointer;
+    transition:.25s;
+  }
+  .scroll:last-child{border-bottom:0}
+  .scroll:hover .s-title{color:var(--red-deep)}
+  .scroll:hover .seal{transform:rotate(-2deg) scale(1.04)}
+
+  .scroll-head{
+    display:flex;align-items:flex-start;gap:24px;
+    margin-bottom:24px;
+  }
+
+  /* SEAL */
+  .seal{
+    width:52px;height:52px;
+    background:var(--red);
+    position:relative;
+    flex-shrink:0;
+    transition:.3s cubic-bezier(.2,.7,.3,1);
+    box-shadow:
+      inset 0 0 0 2px var(--red),
+      0 1px 2px rgba(138,41,41,.2);
+  }
+  .seal::before{
+    content:"";position:absolute;inset:3px;
+    border:1.5px solid rgba(244,237,224,.45);
+  }
+  .seal::after{
+    /* irregular corner wear */
+    content:"";position:absolute;inset:0;
+    background-image:
+      radial-gradient(circle 2px at 10% 10%, var(--paper) 100%, transparent),
+      radial-gradient(circle 1.5px at 92% 18%, var(--paper) 100%, transparent),
+      radial-gradient(circle 1px at 5% 88%, var(--paper) 100%, transparent);
+    opacity:.4;
+  }
+  .seal span{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif-cn);font-weight:700;
+    color:var(--paper);font-size:22px;
+    z-index:2;
+  }
+
+  .scroll-meta{
+    flex:1;
+    padding-top:4px;
+  }
+  .s-source{
+    font-family:var(--serif-cn);
+    font-weight:500;
+    font-size:14px;
+    color:var(--ink);
+    margin-bottom:6px;
+    display:flex;align-items:baseline;gap:10px;
+  }
+  .s-source .src-en{
+    font-family:var(--serif-en);
+    font-style:italic;
+    color:var(--tea);
+    font-size:13px;
+    font-weight:400;
+  }
+  .s-source .verified{
+    color:var(--red);
+    font-size:11px;
+  }
+  .s-time{
+    font-family:var(--serif-en);
+    font-style:italic;
+    font-size:13px;
+    color:var(--tea);
+    letter-spacing:.04em;
+  }
+
+  .s-title{
+    font-family:var(--serif-cn);
+    font-weight:600;
+    font-size:30px;
+    line-height:1.4;
+    letter-spacing:.01em;
+    color:var(--ink);
+    margin-bottom:20px;
+    transition:.25s;
+  }
+  .s-title-en{
+    font-family:var(--serif-en);
+    font-style:italic;
+    font-weight:400;
+    font-size:18px;
+    color:var(--tea);
+    margin-top:8px;
+    letter-spacing:.01em;
+  }
+
+  .s-body{
+    font-family:var(--serif-cn);
+    font-weight:300;
+    font-size:16.5px;
+    line-height:2;
+    color:var(--ink-soft);
+    margin-bottom:28px;
+    letter-spacing:.02em;
+  }
+  .s-body::first-letter{
+    font-family:var(--serif-cn);
+    font-weight:600;
+    color:var(--red-deep);
+  }
+
+  .s-foot{
+    display:flex;align-items:center;gap:16px;
+    font-family:var(--serif-cn);
+    font-size:13px;
+    color:var(--tea);
+    padding-top:8px;
+  }
+  .s-topics{
+    font-family:var(--serif-en);
+    font-style:italic;
+    font-size:14px;
+    color:var(--ink-mid);
+  }
+  .s-topics::before{content:"〔 ";color:var(--red)}
+  .s-topics::after{content:" 〕";color:var(--red)}
+  .s-read{
+    margin-left:auto;
+    font-family:var(--serif-cn);
+    font-size:15px;
+    color:var(--red);
+    font-weight:500;
+    padding:4px 14px;
+    border:1px solid var(--red);
+    transition:.2s;
+    letter-spacing:.15em;
+  }
+  .s-read:hover{
+    background:var(--red);
+    color:var(--paper);
+  }
+
+  /* ============== EMPTY ============== */
+  .empty{
+    text-align:center;
+    padding:120px 30px;
+    color:var(--ink-faint);
+  }
+  .empty .seal-empty{
+    width:60px;height:60px;background:var(--paper-edge);
+    margin:0 auto 24px;position:relative;
+  }
+  .empty .seal-empty::after{
+    content:"空";position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif-cn);font-size:22px;font-weight:600;
+    color:var(--tea);
+  }
+  .empty p{font-family:var(--serif-cn);font-size:17px;font-weight:300;letter-spacing:.08em}
+
+  /* ============== FOOTER ============== */
+  footer.foot{
+    text-align:center;
+    padding:64px 24px 80px;
+    border-top:1px solid var(--paper-edge);
+    margin-top:40px;
+  }
+  .foot-cn{
+    font-family:var(--brush);
+    font-size:30px;
+    color:var(--red);
+    margin-bottom:12px;
+    letter-spacing:.2em;
+  }
+  .foot-en{
+    font-family:var(--serif-en);
+    font-style:italic;
+    color:var(--tea);
+    font-size:12px;
+    letter-spacing:.3em;
+  }
+  .foot-meta{
+    margin-top:24px;
+    font-family:var(--serif-cn);
+    font-size:11px;
+    color:var(--ink-faint);
+    letter-spacing:.2em;
+  }
+
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:var(--paper)}
+  ::-webkit-scrollbar-thumb{background:var(--paper-edge);border-radius:0}
+  ::-webkit-scrollbar-thumb:hover{background:var(--tea)}
+
+  @media (max-width:760px){
+    header.head{padding:40px 18px 0}
+    .logo-cn{font-size:60px;padding:0 14px}
+    .logo-cn::before,.logo-cn::after{width:36px}
+    .epi-text{font-size:18px}
+    .scrolls{padding:32px 22px 60px}
+    .s-title{font-size:22px}
+    .s-body{font-size:15px;line-height:1.9}
+    .pill{padding:8px 14px;font-size:13px}
+    .scroll-head{gap:16px}
+    .seal{width:44px;height:44px}
+    .seal span{font-size:18px}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="head">
+  <div class="logo-cn">知</div>
+  <div class="logo-en">zhi · insight</div>
+</header>
+
+<!-- TIME PILLS -->
+<div class="time-wrap">
+  <div class="time-pills" id="pills">
+    <button class="pill" data-range="24">当 天<span class="n">3</span></button>
+    <button class="pill" data-range="72">三 日<span class="n">5</span></button>
+    <button class="pill on" data-range="168">一 周<span class="n">6</span></button>
+    <button class="pill" data-range="720">一 月<span class="n">8</span></button>
+    <button class="pill" data-range="4320">半 载<span class="n">9</span></button>
+    <button class="pill" data-range="99999">全 部<span class="n">10</span></button>
+  </div>
+</div>
+
+<!-- EPIGRAPH -->
+<section class="epigraph">
+  <div class="epi-mark">慢</div>
+  <p class="epi-text">
+    本期共为你略备 <em id="epiCount">六</em> 则，<br/>
+    皆经 AI 反复校阅，去除噪音，<br/>
+    留其筋骨。
+  </p>
+  <div class="epi-attr">编辑部  ·  丙午年  · 仲夏</div>
+  <div class="ink-rule"></div>
+</section>
+
+<!-- SCROLLS -->
+<main class="scrolls" id="scrolls"></main>
+
+<!-- FOOTER -->
+<footer class="foot">
+  <div class="foot-cn">知 · 止</div>
+  <div class="foot-en">knowing when to stop</div>
+  <div class="foot-meta">VOL. MMXXVI · NO. 06 · 16 JUN</div>
+</footer>
+
+<script>
+const INSIGHTS = [
+  { id:1, source_cn:"彭博", source_en:"Bloomberg", abbr:"彭", title_cn:"鲍威尔放鸽，九月降息几成定局", title_en:"Powell Dovish — September Cut Nearly Certain", body:"美联储主席鲍威尔于杰克逊霍尔放言，通胀正稳步归位，劳工市场已见凉意。市场闻之，九月降息之概率立升至七成八，较一周前升十二个百分点。此乃二〇二四年以来，最为鸽派之一次讲话。", hours:2, topics_cn:"宏观 · 货币", importance:5, confidence:0.92, metric:"九成七八" },
+  { id:2, source_cn:"三十六氪", source_en:"36Kr", abbr:"氪", title_cn:"豆包月活破亿六，AI 应用王者易主", title_en:"Doubao MAU Breaks 160M, AI App Throne Changes Hands", body:"据 QuestMobile 之数据，字节旗下豆包大模型，八月月活达一亿六千万，环比增两成三。国内 AI 原生应用之中，独占鳌头，远胜次席 Kimi 之四千五百万。多模态之能与激进之定价，乃其登顶之关键。", hours:5, topics_cn:"AI · 互联网", importance:4, confidence:0.88, metric:"一亿六千万" },
+  { id:3, source_cn:"科技 Crunch", source_en:"TechCrunch", abbr:"科", title_cn:"Sora 二代问世，六十秒带声", title_en:"Sora 2 — 60 Seconds, With Sound", body:"OpenAI 发布 Sora 重大更新，原生支持六十秒带音频之视频生成。画面稳定性大进，物之持久与物理之一致，几近真实。已向 Pro 用户开放，企业版下月推出。视频生成，自此进入「带声」之时代。", hours:12, topics_cn:"AI · 产品", importance:5, confidence:0.85, metric:"六十秒" },
+  { id:4, source_cn:"预印本 arXiv", source_en:"arXiv", abbr:"α", title_cn:"DeepMind 论推理之扩展律，二千亿 token 未饱和", title_en:"DeepMind on Reasoning Scaling — 200B Tokens, No Saturation", body:"DeepMind 新论文系统验证：推理模型于二千亿 token 训练量下，仍呈幂律增长，未见饱和。思维链之深度，与模型规模呈线性之关系。此即意味着，推理能力之天花板，远未到顶，scaling 仍可续。", hours:36, topics_cn:"AI · 论文", importance:4, confidence:0.95, metric:"二千亿" },
+  { id:5, source_cn:"路透社", source_en:"Reuters", abbr:"路", title_cn:"Vision Pro 二代定于明秋，定价减半", title_en:"Vision Pro 2 — Next Autumn, Half the Price", body:"路透社独家消息：苹果第二代 Vision Pro 预计二〇二五年第四季发布，定价约一千五百美元，重量减四成。供应链消息显示，量产已于郑州富士康启动，芯片升级至 M5。苹果正为 MR 头显寻大众市场。", hours:50, topics_cn:"硬件 · 消费", importance:4, confidence:0.78, metric:"一千五百" },
+  { id:6, source_cn:"经济学人", source_en:"The Economist", abbr:"经", title_cn:"中国悄然转向，制造出海重写增长方程", title_en:"China's Quiet Pivot — Manufacturing Re-writes Growth", body:"经济学人封面文章：中国正悄然由地产与基建之驱动，转向制造与出海之驱动。新能源汽车、锂电池、光伏此「新三样」，占出口比重已达百分之十五，乃二〇一八年之三倍。结构性之转型，已不可逆。", hours:100, topics_cn:"宏观 · 产业", importance:5, confidence:0.90, metric:"百分之十五" },
+  { id:7, source_cn:"自然", source_en:"Nature", abbr:"自", title_cn:"谷歌 Willow 芯片首证错误指数抑制", title_en:"Google's Willow — Exponential Error Suppression, First Demo", body:"谷歌量子 AI 团队 Nature 论文：Willow 一百零五量子比特芯片，首次实验演示指数级错误抑制。纠错之后，逻辑量子比特之错误率，随规模增加而下降。此乃关键里程碑，量子纠错之路，由此打通。", hours:150, topics_cn:"科技 · 量子", importance:5, confidence:0.97, metric:"指数下降" },
+  { id:8, source_cn:"智东西", source_en:"Zhidx", abbr:"智", title_cn:"小鹏 P7+ 首周破三万，端到端成关键", title_en:"XPeng P7+ — 30K Orders Week One", body:"小鹏 P7+ 上市一周，锁单突破三万辆，搭载全新「全天候」端到端智驾系统，全国无图城市 NGP 覆盖三百逾城，起售价十八万六千八。无高精地图、全国可开，正成为新能源车之核心叙事。", hours:400, topics_cn:"汽车 · AI", importance:3, confidence:0.82, metric:"三 万" },
+  { id:9, source_cn:"连线", source_en:"Wired", abbr:"连", title_cn:"加密货币易装重生，名曰 RWA", title_en:"Crypto Rises Again — Under the Name RWA", body:"Wired 深度报道：真实世界资产（RWA）代币化，正成为加密货币之二点零。贝莱德、富兰克林邓普顿等传统巨头入场，链上美债规模突破五十亿美元，机构化之进程，明显加速。换件西装，再战江湖。", hours:1000, topics_cn:"金融 · 加密", importance:3, confidence:0.75, metric:"五十亿" },
+  { id:10, source_cn:"策略志", source_en:"Stratechery", abbr:"策", title_cn:"聚合理论再审视，AI 即新分发", title_en:"Aggregation Theory Revisited — AI as New Distribution", body:"Ben Thompson 长文重新审视聚合理论：AI 正在重塑分发之逻辑。由搜索转对话，用户不再「找内容」，而是「等答案」。平台之权力，由聚合器转向模型层。老聚合器，正面临结构性之挑战。", hours:5000, topics_cn:"战略 · AI", importance:4, confidence:0.80, metric:"廿八分钟" }
+];
+
+const CN_NUM = ["零","一","二","三","四","五","六","七","八","九","十"];
+
+let curRange = 168;
+
+const scrolls = document.getElementById("scrolls");
+const epiCount = document.getElementById("epiCount");
+
+function cnTime(h){
+  if(h<1) return "方才";
+  if(h<3) return "一时辰前";
+  if(h<12) return "半日前";
+  if(h<24) return "今日之内";
+  if(h<48) return "昨日";
+  if(h<96) return "数日前";
+  if(h<240) return "旬日前";
+  if(h<720) return "半月之前";
+  if(h<2160) return "月余之前";
+  return "数月之前";
+}
+
+function toCnNum(n){
+  if(n<=10) return CN_NUM[n];
+  if(n<20) return "十"+(n%10?CN_NUM[n%10]:"");
+  return n.toString();
+}
+
+function render(){
+  const list = INSIGHTS.filter(x=>x.hours<=curRange);
+  epiCount.textContent = toCnNum(list.length);
+
+  if(!list.length){
+    scrolls.innerHTML = `
+      <div class="empty">
+        <div class="seal-empty"></div>
+        <p>本期此窗之内 · 暂无内容</p>
+      </div>`;
+    return;
+  }
+
+  scrolls.innerHTML = list.map((x,i)=>`
+    <article class="scroll" style="animation-delay:${i*90}ms">
+      <div class="scroll-head">
+        <div class="seal"><span>${x.abbr}</span></div>
+        <div class="scroll-meta">
+          <div class="s-source">
+            ${x.source_cn}
+            <span class="src-en">${x.source_en}</span>
+            ${x.confidence>=0.95?'<span class="verified">✓ 已校</span>':''}
+          </div>
+          <div class="s-time">${cnTime(x.hours)}  ·  置信度 ${(x.confidence*100).toFixed(0)}%</div>
+        </div>
+      </div>
+      <h3 class="s-title">
+        ${x.title_cn}
+        <div class="s-title-en">${x.title_en}</div>
+      </h3>
+      <p class="s-body">${x.body}</p>
+      <div class="s-foot">
+        <span class="s-topics">${x.topics_cn}</span>
+        <a class="s-read" href="#">阅</a>
+      </div>
+    </article>
+  `).join("");
+}
+
+document.getElementById("pills").addEventListener("click",e=>{
+  const b=e.target.closest(".pill");if(!b)return;
+  document.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  curRange = +b.dataset.range;
+  render();
+  window.scrollTo({top:0,behavior:"smooth"});
+});
+
+render();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEBULA · AI 洞察星图</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #06060f;
+    --bg-1: #0c0b1d;
+    --bg-2: #14122b;
+    --ink: #e9e7ff;
+    --ink-dim: #8a87b8;
+    --ink-faint: #4a4870;
+    --line: rgba(180,170,255,0.10);
+    --line-strong: rgba(180,170,255,0.22);
+    --violet: #8b5cf6;
+    --cyan: #22d3ee;
+    --magenta: #f472b6;
+    --amber: #fbbf24;
+    --lime: #a3e635;
+  }
+  html, body { background: var(--bg-0); color: var(--ink); font-family: 'Bricolage Grotesque', sans-serif; }
+  .font-display { font-family: 'Bricolage Grotesque', sans-serif; }
+  .font-mono { font-family: 'IBM Plex Mono', monospace; }
+  .font-serif { font-family: 'Fraunces', serif; }
+
+  /* 星空背景 */
+  .starfield {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(1200px 700px at 80% -10%, rgba(139,92,246,0.22), transparent 60%),
+      radial-gradient(900px 600px at -10% 20%, rgba(34,211,238,0.16), transparent 60%),
+      radial-gradient(700px 500px at 60% 110%, rgba(244,114,182,0.14), transparent 60%),
+      linear-gradient(180deg, #06060f 0%, #0a0918 60%, #06060f 100%);
+  }
+  .grain {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.06; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/></svg>");
+  }
+  .stars::before, .stars::after {
+    content:""; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 70% 60%, #c7d2fe, transparent),
+      radial-gradient(1px 1px at 40% 80%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 85% 15%, #fef9c3, transparent),
+      radial-gradient(1px 1px at 10% 70%, #fff, transparent),
+      radial-gradient(1px 1px at 55% 25%, #ddd6fe, transparent),
+      radial-gradient(1px 1px at 92% 85%, #fff, transparent),
+      radial-gradient(1px 1px at 33% 12%, #a5f3fc, transparent);
+    background-size: 100% 100%;
+    animation: twinkle 6s ease-in-out infinite alternate;
+  }
+  .stars::after { animation-delay: -3s; opacity: 0.6; }
+  @keyframes twinkle { from { opacity: 0.35 } to { opacity: 0.85 } }
+
+  .glass {
+    background: linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+    border: 1px solid var(--line);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .glass-strong {
+    background: linear-gradient(160deg, rgba(20,18,43,0.85), rgba(12,11,29,0.7));
+    border: 1px solid var(--line-strong);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .glow-violet { box-shadow: 0 0 0 1px rgba(139,92,246,0.4), 0 0 30px -5px rgba(139,92,246,0.55), inset 0 0 30px -15px rgba(139,92,246,0.4); }
+  .glow-cyan { box-shadow: 0 0 0 1px rgba(34,211,238,0.35), 0 0 28px -8px rgba(34,211,238,0.5); }
+  .text-glow { text-shadow: 0 0 24px rgba(139,92,246,0.55); }
+
+  .chip-active {
+    background: linear-gradient(120deg, rgba(139,92,246,0.9), rgba(244,114,182,0.85));
+    color: #0a0918;
+    box-shadow: 0 0 24px -4px rgba(244,114,182,0.65), inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+
+  /* 入场动画 */
+  .reveal { opacity: 0; transform: translateY(18px); animation: rise 0.7s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0) } }
+
+  .card-hover { transition: transform .35s cubic-bezier(.2,.7,.2,1), border-color .35s, box-shadow .35s; }
+  .card-hover:hover { transform: translateY(-4px); border-color: rgba(180,170,255,0.35); box-shadow: 0 18px 50px -20px rgba(139,92,246,0.4); }
+
+  .pulse-dot { position: relative; }
+  .pulse-dot::after {
+    content:""; position:absolute; inset:-4px; border-radius:50%;
+    background: currentColor; opacity: .5; animation: pulse 2s ease-out infinite;
+  }
+  @keyframes pulse { 0% { transform: scale(.6); opacity:.6 } 100% { transform: scale(2.4); opacity:0 } }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,0.5); }
+
+  .orbit-ring {
+    position: absolute; border: 1px dashed rgba(180,170,255,0.18); border-radius: 50%;
+    animation: spin 40s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg) } }
+
+  .num-counter { font-variant-numeric: tabular-nums; }
+
+  .marquee-track { animation: marquee 40s linear infinite; }
+  @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+
+  .divider-glow {
+    height: 1px; background: linear-gradient(90deg, transparent, rgba(139,92,246,0.5), transparent);
+  }
+  .heat-bar { background: linear-gradient(90deg, #22d3ee, #8b5cf6 50%, #f472b6); }
+
+  [v-cloak] { display: none; }
+</style>
+</head>
+<body class="relative overflow-x-hidden">
+<div class="starfield"></div>
+<div class="stars"></div>
+<div class="grain"></div>
+
+<div id="app" v-cloak class="relative z-10">
+
+  <!-- 顶部状态条 -->
+  <div class="border-b border-white/5 overflow-hidden">
+    <div class="flex whitespace-nowrap text-[11px] font-mono text-[var(--ink-dim)] py-1.5">
+      <div class="flex marquee-track">
+        <span v-for="n in 2" :key="n" class="flex items-center">
+          <span class="mx-6">⟢ NEBULA INSIGHT FEED</span>
+          <span class="mx-6 text-[var(--cyan)]">● LIVE</span>
+          <span class="mx-6">{{ stats.total }} SIGNALS INDEXED</span>
+          <span class="mx-6 text-[var(--magenta)]">{{ stats.today }} FRESH TODAY</span>
+          <span class="mx-6">SECTOR: AI / BIO / QUANT / CLIMATE</span>
+          <span class="mx-6 text-[var(--amber)]">SIGNAL DENSITY {{ stats.density }}/h</span>
+          <span class="mx-6">⟣ ORBIT SYNCHRONIZED</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导航 -->
+  <header class="px-6 md:px-12 py-5 flex items-center justify-between reveal" style="animation-delay:.05s">
+    <div class="flex items-center gap-3">
+      <div class="relative w-9 h-9 grid place-items-center">
+        <div class="orbit-ring inset-0"></div>
+        <div class="w-3 h-3 rounded-full bg-gradient-to-br from-violet-400 to-pink-400 glow-violet"></div>
+      </div>
+      <div>
+        <div class="font-display font-extrabold text-lg tracking-tight leading-none">NEBULA</div>
+        <div class="font-mono text-[10px] text-[var(--ink-faint)] tracking-[0.3em] mt-0.5">INSIGHT · v4.2</div>
+      </div>
+    </div>
+    <nav class="hidden md:flex items-center gap-7 text-sm text-[var(--ink-dim)]">
+      <a class="text-[var(--ink)] relative">星图<span class="absolute -bottom-1.5 left-0 right-0 h-px bg-gradient-to-r from-violet-400 to-pink-400"></span></a>
+      <a class="hover:text-[var(--ink)] transition">订阅源</a>
+      <a class="hover:text-[var(--ink)] transition">知识库</a>
+      <a class="hover:text-[var(--ink)] transition">报告</a>
+    </nav>
+    <div class="flex items-center gap-3">
+      <button class="glass rounded-full px-3 py-1.5 text-xs font-mono flex items-center gap-2 text-[var(--ink-dim)]">
+        <span class="text-[var(--amber)]">⌘</span> 搜索信号
+      </button>
+      <div class="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 via-violet-500 to-pink-500 p-px">
+        <div class="w-full h-full rounded-full bg-[var(--bg-1)] grid place-items-center font-mono text-xs">WL</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="px-6 md:px-12 pt-6 pb-10 relative">
+    <div class="absolute top-0 right-6 md:right-12 w-[420px] h-[420px] pointer-events-none opacity-70 hidden lg:block">
+      <div class="orbit-ring inset-0"></div>
+      <div class="orbit-ring inset-12" style="animation-duration:25s; animation-direction:reverse"></div>
+      <div class="orbit-ring inset-24" style="animation-duration:18s"></div>
+      <div class="absolute inset-0 grid place-items-center">
+        <div class="w-28 h-28 rounded-full" style="background:radial-gradient(circle at 35% 35%, #fef9c3, #f472b6 40%, #8b5cf6 75%, transparent); filter:blur(.5px); box-shadow:0 0 80px -10px rgba(244,114,182,0.7)"></div>
+      </div>
+      <div class="absolute inset-12"><div class="absolute -top-1 left-1/2 w-2.5 h-2.5 rounded-full bg-cyan-300 glow-cyan"></div></div>
+      <div class="absolute inset-0"><div class="absolute top-1/2 -right-1 w-2 h-2 rounded-full bg-pink-300" style="box-shadow:0 0 16px #f472b6"></div></div>
+    </div>
+
+    <div class="reveal max-w-3xl" style="animation-delay:.15s">
+      <div class="inline-flex items-center gap-2 glass rounded-full pl-1.5 pr-3 py-1 text-[11px] font-mono text-[var(--ink-dim)] mb-6">
+        <span class="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 grid place-items-center text-[10px]">✦</span>
+        <span class="pulse-dot text-[var(--lime)]">●</span>
+        <span>{{ stats.today }} 条新洞察 · {{ currentTime }}</span>
+      </div>
+      <h1 class="font-display font-extrabold leading-[0.95] tracking-tight text-[clamp(2.6rem,6vw,5rem)]">
+        你的<span class="font-serif italic font-light bg-gradient-to-r from-violet-300 via-pink-300 to-amber-200 bg-clip-text text-transparent">洞察星图</span><br>
+        正在<span class="text-glow">点亮</span>。
+      </h1>
+      <p class="mt-6 text-[var(--ink-dim)] text-base md:text-lg max-w-xl leading-relaxed">
+        来自 12 个订阅源的 AI 信号已被聚类、去重、按重要度排序。
+        选择时间窗口，凝视只属于你的那片宇宙。
+      </p>
+    </div>
+  </section>
+
+  <!-- 时间筛选 + 概览 -->
+  <section class="px-6 md:px-12 reveal" style="animation-delay:.25s">
+    <div class="glass-strong rounded-3xl p-5 md:p-6">
+      <div class="flex flex-col lg:flex-row lg:items-center gap-5 justify-between">
+        <div class="flex items-center gap-3">
+          <span class="font-mono text-[11px] tracking-[0.25em] text-[var(--ink-faint)]">TIME WINDOW</span>
+          <div class="flex flex-wrap gap-2">
+            <button v-for="r in ranges" :key="r.key" @click="range = r.key"
+              class="px-3.5 py-1.5 rounded-full text-xs font-medium transition border"
+              :class="range === r.key
+                ? 'chip-active border-transparent'
+                : 'border-white/10 text-[var(--ink-dim)] hover:text-[var(--ink)] hover:border-white/25'">
+              {{ r.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-mono text-[11px] tracking-[0.25em] text-[var(--ink-faint)] mr-1">SECTOR</span>
+          <button v-for="c in categories" :key="c.key" @click="toggleCategory(c.key)"
+            class="px-3 py-1.5 rounded-full text-xs font-mono transition border flex items-center gap-1.5"
+            :class="activeCats.includes(c.key)
+              ? 'border-transparent text-[var(--bg-0)] font-semibold'
+              : 'border-white/10 text-[var(--ink-dim)] hover:text-[var(--ink)]'"
+            :style="activeCats.includes(c.key) ? { background: c.color } : {}">
+            <span class="w-1.5 h-1.5 rounded-full" :style="{ background: c.color }"></span>
+            {{ c.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 概览数字 -->
+      <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-px bg-white/5 rounded-2xl overflow-hidden">
+        <div class="bg-[var(--bg-1)]/60 p-4">
+          <div class="font-mono text-[10px] tracking-[0.2em] text-[var(--ink-faint)]">SIGNALS</div>
+          <div class="font-display font-extrabold text-3xl mt-1 num-counter">{{ filtered.length }}</div>
+          <div class="font-mono text-[10px] text-[var(--cyan)] mt-0.5">↗ 当前窗口</div>
+        </div>
+        <div class="bg-[var(--bg-1)]/60 p-4">
+          <div class="font-mono text-[10px] tracking-[0.2em] text-[var(--ink-faint)]">AVG HEAT</div>
+          <div class="font-display font-extrabold text-3xl mt-1 num-counter">{{ avgHeat }}<span class="text-base text-[var(--ink-dim)]">/100</span></div>
+          <div class="font-mono text-[10px] text-[var(--magenta)] mt-0.5">↗ 信号热度</div>
+        </div>
+        <div class="bg-[var(--bg-1)]/60 p-4">
+          <div class="font-mono text-[10px] tracking-[0.2em] text-[var(--ink-faint)]">SOURCES</div>
+          <div class="font-display font-extrabold text-3xl mt-1 num-counter">{{ sourceCount }}</div>
+          <div class="font-mono text-[10px] text-[var(--violet)] mt-0.5">↗ 活跃订阅</div>
+        </div>
+        <div class="bg-[var(--bg-1)]/60 p-4">
+          <div class="font-mono text-[10px] tracking-[0.2em] text-[var(--ink-faint)]">CRITICAL</div>
+          <div class="font-display font-extrabold text-3xl mt-1 num-counter text-[var(--amber)]">{{ criticalCount }}</div>
+          <div class="font-mono text-[10px] text-[var(--amber)] mt-0.5">↗ 高优先级</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 主体布局 -->
+  <section class="px-6 md:px-12 py-10 grid lg:grid-cols-[1fr_320px] gap-8">
+
+    <!-- 左：洞察流 -->
+    <div>
+      <div class="flex items-end justify-between mb-5">
+        <div>
+          <h2 class="font-display font-extrabold text-2xl">信号流</h2>
+          <p class="font-mono text-xs text-[var(--ink-faint)] mt-1">{{ currentRangeLabel }} · 按热度降序</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-mono text-[var(--ink-dim)]">
+          <button class="px-2 py-1 rounded border border-white/10 text-[var(--ink)]">热度</button>
+          <button class="px-2 py-1 rounded border border-white/5 hover:border-white/20 transition">时间</button>
+          <button class="px-2 py-1 rounded border border-white/5 hover:border-white/20 transition">来源</button>
+        </div>
+      </div>
+
+      <transition-group name="list" tag="div" class="space-y-4">
+        <article v-for="(item, idx) in filtered" :key="item.id"
+          class="glass card-hover rounded-2xl p-5 md:p-6 reveal"
+          :style="{ animationDelay: (0.05 * idx + 0.3) + 's' }">
+
+          <div class="flex items-center gap-2 flex-wrap mb-3">
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold text-[var(--bg-0)]"
+              :style="{ background: catColor(item.category) }">{{ catLabel(item.category) }}</span>
+            <span class="font-mono text-[11px] text-[var(--ink-faint)]">{{ item.source }}</span>
+            <span class="text-[var(--ink-faint)]">·</span>
+            <span class="font-mono text-[11px] text-[var(--ink-faint)]">{{ relTime(item.t) }}</span>
+            <span v-if="item.critical" class="ml-auto flex items-center gap-1 text-[10px] font-mono text-[var(--amber)]">
+              <span class="pulse-dot text-[var(--amber)]">●</span> CRITICAL
+            </span>
+          </div>
+
+          <h3 class="font-display font-bold text-xl md:text-[1.4rem] leading-snug tracking-tight">
+            {{ item.title }}
+          </h3>
+          <p class="mt-2 text-[var(--ink-dim)] text-sm md:text-[15px] leading-relaxed">{{ item.summary }}</p>
+
+          <!-- 热度条 -->
+          <div class="mt-4 flex items-center gap-3">
+            <span class="font-mono text-[10px] text-[var(--ink-faint)] w-12">HEAT</span>
+            <div class="flex-1 h-1 rounded-full bg-white/5 overflow-hidden">
+              <div class="h-full heat-bar rounded-full transition-all duration-700" :style="{ width: item.heat + '%' }"></div>
+            </div>
+            <span class="font-mono text-xs num-counter" :class="item.heat > 80 ? 'text-[var(--magenta)]' : 'text-[var(--ink-dim)]'">{{ item.heat }}</span>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-white/5 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span v-for="tag in item.tags" :key="tag"
+                class="text-[11px] font-mono px-2 py-0.5 rounded-full border border-white/10 text-[var(--ink-dim)]">#{{ tag }}</span>
+            </div>
+            <div class="flex items-center gap-3 text-[var(--ink-faint)]">
+              <button class="hover:text-[var(--cyan)] transition text-xs flex items-center gap-1">↗ 展开</button>
+              <button class="hover:text-[var(--magenta)] transition text-xs">收藏</button>
+              <button class="hover:text-[var(--violet)] transition text-xs">分享</button>
+            </div>
+          </div>
+        </article>
+      </transition-group>
+
+      <div v-if="filtered.length === 0" class="glass rounded-2xl p-12 text-center">
+        <div class="font-display text-2xl mb-2">这片星空暂时静默</div>
+        <div class="font-mono text-xs text-[var(--ink-faint)]">尝试扩大时间窗口或切换领域</div>
+      </div>
+    </div>
+
+    <!-- 右：侧栏 -->
+    <aside class="space-y-5">
+      <!-- 今日高亮 -->
+      <div class="glass-strong rounded-2xl p-5 reveal" style="animation-delay:.4s">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-[var(--amber)]">★</span>
+          <h3 class="font-display font-bold text-sm tracking-wide">今日必读</h3>
+        </div>
+        <div class="space-y-3">
+          <div v-for="top in topPicks" :key="top.id" class="group cursor-pointer">
+            <div class="flex items-start gap-3">
+              <span class="font-mono text-xs text-[var(--violet)] mt-0.5">{{ top.rank }}</span>
+              <div>
+                <div class="text-sm leading-snug group-hover:text-[var(--ink)] text-[var(--ink-dim)] transition">{{ top.title }}</div>
+                <div class="font-mono text-[10px] text-[var(--ink-faint)] mt-1">{{ top.source }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 订阅源活跃度 -->
+      <div class="glass-strong rounded-2xl p-5 reveal" style="animation-delay:.5s">
+        <h3 class="font-display font-bold text-sm tracking-wide mb-4">订阅源 · 贡献分布</h3>
+        <div class="space-y-3">
+          <div v-for="src in sourceStats" :key="src.name">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-[var(--ink-dim)]">{{ src.name }}</span>
+              <span class="font-mono text-[var(--ink-faint)]">{{ src.count }}</span>
+            </div>
+            <div class="h-1 rounded-full bg-white/5 overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-700"
+                :style="{ width: (src.count / maxSource * 100) + '%', background: src.color }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI 助手卡 -->
+      <div class="rounded-2xl p-5 relative overflow-hidden reveal glow-violet"
+        style="animation-delay:.6s; background:linear-gradient(150deg, rgba(139,92,246,0.18), rgba(244,114,182,0.08))">
+        <div class="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br from-violet-400 to-pink-400 opacity-40 blur-2xl"></div>
+        <div class="relative">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-pink-400 grid place-items-center text-xs">✦</span>
+            <span class="font-mono text-[10px] tracking-[0.2em] text-[var(--ink-dim)]">NEBULA AI</span>
+          </div>
+          <p class="font-serif italic text-[15px] leading-relaxed">
+            "本周量子计算与生物交叉领域出现 3 次共振，建议合并阅读。"
+          </p>
+          <button class="mt-4 text-xs font-mono text-[var(--ink)] flex items-center gap-1 hover:gap-2 transition-all">
+            查看完整简报 <span>→</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- footer -->
+  <footer class="px-6 md:px-12 py-10 border-t border-white/5 mt-10">
+    <div class="divider-glow mb-8"></div>
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-[var(--ink-faint)]">
+      <div>NEBULA INSIGHT · 你的私人信号宇宙 · © 2026</div>
+      <div class="flex items-center gap-5">
+        <span>由 {{ stats.total.toLocaleString() }} 颗信号点亮</span>
+        <span class="flex items-center gap-1.5"><span class="pulse-dot text-[var(--lime)]">●</span> ORBIT STABLE</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<style>
+.list-enter-active, .list-leave-active { transition: all .4s cubic-bezier(.2,.7,.2,1); }
+.list-enter-from { opacity: 0; transform: translateY(20px) scale(.98); }
+.list-leave-to { opacity: 0; transform: translateX(20px) scale(.98); position: absolute; }
+</style>
+
+<script>
+const { createApp, ref, computed, onMounted } = Vue;
+
+createApp({
+  setup() {
+    const ranges = [
+      { key: 'today', label: '当天', days: 0 },
+      { key: '3d',    label: '3 天内', days: 3 },
+      { key: '1w',    label: '一周', days: 7 },
+      { key: '1m',    label: '一个月', days: 30 },
+      { key: '6m',    label: '半年', days: 182 },
+      { key: 'all',   label: '全部', days: 9999 },
+    ];
+    const categories = [
+      { key: 'ai',      label: 'AI',     color: '#8b5cf6' },
+      { key: 'bio',     label: 'BIO',    color: '#a3e635' },
+      { key: 'quant',   label: 'QUANT',  color: '#22d3ee' },
+      { key: 'climate', label: 'CLIMATE',color: '#fbbf24' },
+      { key: 'soc',     label: 'SOC',    color: '#f472b6' },
+    ];
+
+    const range = ref('1w');
+    const activeCats = ref(['ai','bio','quant','climate','soc']);
+    const toggleCategory = (k) => {
+      if (activeCats.value.includes(k)) {
+        if (activeCats.value.length > 1) activeCats.value = activeCats.value.filter(c => c !== k);
+      } else activeCats.value.push(k);
+    };
+
+    const now = Date.now();
+    const H = 3600 * 1000;
+    const D = 24 * H;
+    const raw = [
+      { id:1, t: now - 2*H,  category:'ai',     source:'Anthropic Blog',    title:'Claude 5 Opus 在长程推理基准上反超 GPT-6', summary:'在 ARC-AGI v3 与 SWE-Bench Multi-Repo 两项基准上取得 SOTA，核心改进在于层次化思维链剪枝与工具调用的并行化调度。', heat:94, critical:true,  tags:['LLM','推理','SOTA'] },
+      { id:2, t: now - 5*H,  category:'quant',  source:'QuantInsider',      title:'IBM 1121 量子比特 Heron 处理器良率突破 99.7%', summary:'采用全新 tunable coupler 架构，门保真度提升至 99.94%，纠错开销降低 4 倍，首次在容错阈值下跑通 100 层 Bernstein-Vazirani。', heat:88, critical:false, tags:['量子','硬件'] },
+      { id:3, t: now - 9*H,  category:'bio',    source:'Nature Briefing',   title:'AlphaFold 4 预测蛋白-小分子复合体精度达实验级', summary:'在 PoseBuster 基准上 RMSD<2Å 比例达 78%，已开源给非商业研究，或将重塑药物发现流程。', heat:91, critical:true,  tags:['蛋白质','药物','开源'] },
+      { id:4, t: now - 26*H, category:'ai',     source:'Hugging Face Daily',title:'开源 MoE 模型 DeepSeek-Max-671B 上架，激活参数仅 37B', summary:'推理速度对标闭源旗舰，每百万 token 成本 $0.07，社区微调生态 24 小时内涌现 200+ 变体。', heat:86, critical:false, tags:['MoE','开源','推理'] },
+      { id:5, t: now - 30*H, category:'climate',source:'Carbon Pulse',      title:'全球碳监测卫星网络完成组网，数据延迟降至 15 分钟', summary:'MethaneSAT + GOSAT-GW 联合，可定位单个油气设施的甲烷泄漏，监管精度进入"逐点"时代。', heat:79, critical:false, tags:['气候','遥感'] },
+      { id:6, t: now - 50*H, category:'quant',  source:'Quanta Magazine',   title:'光量子纠错码 surface-light 首次实现逻辑比特增益', summary:'中国科大团队在超导-光子混合平台上证明逻辑错误率随码距单调下降，距离通用光量子计算再进一步。', heat:82, critical:false, tags:['光量子','纠错'] },
+      { id:7, t: now - 3*D,  category:'soc',    source:'Stratechery',       title:'Agent 经济崛起：B2B API 调用量同比增长 740%', summary:'函数调用类 token 已占主要云厂 31% 出账，垂直 Agent 中间件赛道融资额超过传统 SaaS 同期。', heat:75, critical:false, tags:['Agent','市场'] },
+      { id:8, t: now - 4*D,  category:'ai',     source:'MIT Tech Review',   title:'世界模型 WorldLab-2 在物理仿真长程一致性上突破', summary:'72 小时长视频生成中物体永久性保持率 92%，被视为具身智能训练数据合成的新基线。', heat:84, critical:false, tags:['世界模型','具身'] },
+      { id:9, t: now - 6*D,  category:'bio',    source:'Science Daily',     title:'通用 CRISPR-Cas14 输送载体通过 I 期临床', summary:'脂质纳米颗粒靶向肝外组织，单次注射编辑效率 47%，无明显脱靶，囊性纤维化患者肺功能改善 23%。', heat:80, critical:false, tags:['基因编辑','临床'] },
+      { id:10,t: now - 9*D,  category:'climate',source:'IEA Report',        title:'储能 LCOE 跌破 $0.05/kWh，光储平价提前 4 年', summary:'钠离子电池量产使 4 小时储能成本下降 38%，多个新兴市场取消新建煤电规划。', heat:77, critical:false, tags:['储能','钠离子'] },
+      { id:11,t: now - 14*D, category:'ai',     source:'arXiv Daily',       title:'推理时 Scaling Law 2.0：思考 token 收益拐点出现在 10^5', summary:'超过 10 万思考 token 后收益递减，但 Self-Consistency 投票可将其推迟到 10^6，代价是 8 倍算力。', heat:72, critical:false, tags:['Scaling','推理'] },
+      { id:12,t: now - 20*D, category:'quant',  source:'IEEE Spectrum',     title:'量子-经典混合算法 VQE 在工业催化剂设计中实用化', summary:'某化工巨头用 127 量子比特设备筛选出 3 种新型固氮催化剂，实验验证效率提升 1.8 倍。', heat:70, critical:false, tags:['VQE','工业'] },
+      { id:13,t: now - 40*D, category:'soc',    source:'The Information',   title:'AI 监管沙盒落地：欧盟首批 12 家企业获准商用', summary:'高风险系统在受控环境下可豁免部分条款，前提是实时透明度报告与第三方红队访问。', heat:68, critical:false, tags:['监管','合规'] },
+      { id:14,t: now - 75*D, category:'bio',    source:'Cell Press',        title:'AI 设计酶催化新反应，自然界不存在的碳-磷键生成', summary:'RFdiffusion + 蒙特卡洛搜索设计的酶 kcat 达 280/s，为生物法制备有机磷农药开辟路径。', heat:74, critical:false, tags:['酶工程','设计'] },
+      { id:15,t: now - 120*D,category:'ai',     source:'DeepMind Blog',    title:'AlphaProof 在 IMO 2025 几何题中达成满分', summary:'结合形式化语言 Lean 与神经搜索，6 题中 5 题纯自动求解，距离"数学家级 AI"再近一步。', heat:81, critical:false, tags:['定理证明','Lean'] },
+      { id:16,t: now - 150*D,category:'climate',source:'Bloomberg NEF',     title:'绿氢成本曲线意外陡降，中东项目报 $1.6/kg', summary:'电解槽产能过剩叠加风光电价下行，多个项目提前达成 2030 目标成本，工业脱碳窗口打开。', heat:69, critical:false, tags:['氢能','脱碳'] },
+    ];
+
+    const currentRangeLabel = computed(() => ranges.find(r => r.key === range.value)?.label);
+    const cutoff = computed(() => {
+      const r = ranges.find(r => r.key === range.value);
+      if (r.key === 'today') { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }
+      if (r.key === 'all') return 0;
+      return now - r.days * D;
+    });
+    const filtered = computed(() =>
+      raw.filter(i => i.t >= cutoff.value && activeCats.value.includes(i.category))
+         .sort((a,b) => b.heat - a.heat));
+
+    const stats = {
+      total: 12847,
+      today: 14,
+      density: 23,
+    };
+    const avgHeat = computed(() => filtered.value.length ? Math.round(filtered.value.reduce((s,i)=>s+i.heat,0)/filtered.value.length) : 0);
+    const sourceCount = computed(() => new Set(filtered.value.map(i=>i.source)).size);
+    const criticalCount = computed(() => filtered.value.filter(i=>i.critical).length);
+
+    const catColor = k => categories.find(c=>c.key===k)?.color || '#888';
+    const catLabel = k => categories.find(c=>c.key===k)?.label || k;
+
+    const relTime = (t) => {
+      const diff = now - t;
+      if (diff < H) return Math.floor(diff/60000) + ' 分钟前';
+      if (diff < D) return Math.floor(diff/H) + ' 小时前';
+      if (diff < 7*D) return Math.floor(diff/D) + ' 天前';
+      return Math.floor(diff/D) + ' 天前';
+    };
+
+    const topPicks = computed(() =>
+      [...raw].filter(i => i.t >= now - D).sort((a,b)=>b.heat-a.heat).slice(0,4)
+        .map((i,idx) => ({ id:i.id, rank:'0'+(idx+1), title:i.title, source:i.source })));
+
+    const sourceStats = computed(() => {
+      const map = {};
+      filtered.value.forEach(i => { map[i.source] = (map[i.source]||0)+1; });
+      const palette = ['#8b5cf6','#22d3ee','#f472b6','#a3e635','#fbbf24','#60a5fa','#f87171'];
+      return Object.entries(map).map(([name,count],i)=>({name,count,color:palette[i%palette.length]}))
+        .sort((a,b)=>b.count-a.count).slice(0,6);
+    });
+    const maxSource = computed(() => Math.max(1, ...sourceStats.value.map(s=>s.count)));
+
+    const currentTime = ref('');
+    const tick = () => currentTime.value = new Date().toLocaleString('zh-CN', { hour:'2-digit', minute:'2-digit', month:'short', day:'numeric' });
+    onMounted(() => { tick(); setInterval(tick, 30000); });
+
+    return { ranges, categories, range, activeCats, toggleCategory, filtered, stats, avgHeat, sourceCount, criticalCount, catColor, catLabel, relTime, topPicks, sourceStats, maxSource, currentRangeLabel, currentTime };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
