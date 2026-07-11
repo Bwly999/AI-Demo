@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeetCode - 两数之和</title>
+<style>
+/* ============================================================
+   LeetCode Perfect Clone — 单文件版
+   配色严格对齐官方：品牌橙 #FFA116
+   Easy #00AF9B · Medium #FFB800 · Hard #EF4743
+   ============================================================ */
+
+/* ---------- 主题变量 ---------- */
+:root{
+  --brand:#FFA116; --brand-hover:#FFB13D; --brand-active:#E89100;
+  --easy:#00AF9B; --medium:#FFB800; --hard:#EF4743;
+
+  /* dark（LeetCode 默认深色） */
+  --bg:#000000;                 /* LC 深色是真的纯黑 */
+  --bg-1:#0a0a0a;               /* 顶栏 */
+  --bg-2:#111111;               /* 卡片/编辑器底 */
+  --bg-3:#1a1a1a;               /* hover */
+  --bg-4:#262626;               /* input / active tab */
+  --border:#282828;
+  --border-soft:#1f1f1f;
+  --text:#ffffff;
+  --text-2:#ffffffe6;
+  --text-muted:#ffffff99;       /* 主体次要文本 */
+  --text-faint:#ffffff5c;       /* 占位/极次要 */
+  --tag-bg:#ffffff1a;
+  --success:#00AF9B; --error:#EF4743; --warn:#FFB800;
+}
+[data-theme="light"]{
+  --bg:#ffffff;
+  --bg-1:#ffffff;
+  --bg-2:#f7f8fa;               /* 题目描述/编辑器背景 */
+  --bg-3:#f0f1f4;
+  --bg-4:#e7e8ec;
+  --border:#e1e4e8;
+  --border-soft:#ededed;
+  --text:#262629;
+  --text-2:#3a3a3a;
+  --text-muted:#494949;
+  --text-faint:#6a6a6a;
+  --tag-bg:#0000000d;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);
+  font-size:14px;line-height:1.5;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{color:inherit;text-decoration:none;cursor:pointer}
+::selection{background:#FFA11640}
+
+/* ---------- 顶部导航栏 ---------- */
+.topbar{
+  height:50px;background:var(--bg-1);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 16px;gap:6px;
+  position:relative;z-index:30;
+  flex-shrink:0;
+}
+.brand{display:flex;align-items:center;gap:8px;margin-right:18px}
+.brand-mark{
+  width:26px;height:28px;fill:var(--brand);
+  flex-shrink:0;
+}
+.brand-text{font-size:17px;font-weight:600;letter-spacing:-.01em;color:var(--text);white-space:nowrap}
+
+.nav-links{display:flex;align-items:center;gap:0;height:100%}
+.nav-link{
+  padding:0 11px;height:50px;display:flex;align-items:center;
+  font-size:13.5px;color:var(--text-muted);font-weight:500;
+  border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
+}
+.nav-link:hover{color:var(--text)}
+.nav-link.active{color:var(--brand);border-bottom-color:var(--brand)}
+.nav-link.premium{color:var(--medium)}
+.nav-link .chev{margin-left:3px;font-size:9px;opacity:.6}
+
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.t-btn{
+  height:32px;min-width:32px;padding:0 8px;border-radius:6px;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  color:var(--text-muted);font-size:13px;transition:background .15s,color .15s;
+}
+.t-btn:hover{background:var(--bg-3);color:var(--text)}
+.t-btn.primary{background:var(--brand);color:#000;font-weight:600}
+.t-btn.primary:hover{background:var(--brand-hover)}
+.avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,#FFA116,#EF4743);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;margin-left:4px;
+}
+
+/* ---------- 主容器 ---------- */
+.app{display:flex;flex-direction:column;height:calc(100vh - 50px);overflow:hidden}
+
+/* ---------- 题目 tab 条 ---------- */
+.q-tabs{
+  display:flex;align-items:center;
+  height:40px;background:var(--bg-1);
+  border-bottom:1px solid var(--border);
+  padding:0 8px;gap:2px;flex-shrink:0;
+  overflow-x:auto;scrollbar-width:none;
+}
+.q-tabs::-webkit-scrollbar{display:none}
+.q-tab{
+  height:28px;padding:0 11px;border-radius:6px;
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:13px;color:var(--text-muted);white-space:nowrap;
+  transition:background .12s,color .12s;
+}
+.q-tab:hover{background:var(--bg-3);color:var(--text)}
+.q-tab.active{background:var(--bg-4);color:var(--text)}
+.q-tab .x{font-size:12px;opacity:.5;margin-left:2px;width:14px;height:14px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center}
+.q-tab .x:hover{background:var(--bg-3);opacity:1}
+.q-add{
+  width:28px;height:28px;border-radius:6px;color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+}
+.q-add:hover{background:var(--bg-3);color:var(--text)}
+
+/* ---------- 分屏主体 ---------- */
+.split{display:flex;flex:1;min-height:0;overflow:hidden;background:var(--bg)}
+
+/* 可拖拽分隔条 */
+.gutter{
+  width:7px;background:var(--bg-1);cursor:col-resize;
+  flex-shrink:0;position:relative;z-index:10;
+  border-left:1px solid var(--border);border-right:1px solid var(--border);
+}
+.gutter::after{
+  content:"";position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:1px;height:24px;background:var(--text-faint);
+}
+.gutter:hover::after,.gutter.dragging::after{background:var(--brand);height:36px}
+
+/* ---------- 左：题目描述面板 ---------- */
+.pane{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.pane-desc{flex:1;overflow-y:auto}
+.pane-head{
+  padding:20px 24px 14px;border-bottom:1px solid var(--border-soft);
+  background:var(--bg-1);
+}
+.q-title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.q-title{font-size:18px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+.diff{font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;line-height:1.6}
+.diff.easy{background:#00AF9B1a;color:var(--easy)}
+.diff.medium{background:#FFB8001a;color:var(--medium)}
+.diff.hard{background:#EF47431a;color:var(--hard)}
+
+.q-meta-row{display:flex;align-items:center;gap:18px;margin-top:13px;flex-wrap:wrap}
+.q-meta{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted)}
+.q-meta svg{width:14px;height:14px}
+.q-meta .like.up{color:var(--text-muted)}
+
+/* tab 切换：Description / Solutions / Submissions */
+.desc-tabs{display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid var(--border-soft);background:var(--bg-1);height:38px;flex-shrink:0}
+.desc-tab{
+  height:38px;padding:0 4px;margin-right:18px;
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:13px;color:var(--text-muted);font-weight:500;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.desc-tab:hover{color:var(--text)}
+.desc-tab.active{color:var(--text);border-bottom-color:var(--brand)}
+.desc-tab .num{font-size:11px;color:var(--text-faint)}
+
+/* 题目正文 */
+.desc-body{padding:20px 24px 60px;font-size:14px;color:var(--text-2);line-height:1.65}
+.desc-body p{margin:0 0 14px}
+.desc-body strong{color:var(--text);font-weight:600}
+.desc-body .tag-list{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 18px}
+.tag{
+  font-size:11.5px;padding:2px 9px;border-radius:4px;
+  background:var(--tag-bg);color:var(--text-muted);
+}
+.desc-body code{
+  font-family:"SF Mono",Consolas,"Liberation Mono",Menlo,monospace;
+  font-size:13px;background:var(--bg-3);padding:1.5px 6px;border-radius:4px;
+  color:var(--text);
+}
+.desc-body pre{
+  font-family:"SF Mono",Consolas,"Liberation Mono",Menlo,monospace;
+  font-size:12.5px;background:var(--bg-2);
+  border:1px solid var(--border-soft);border-radius:6px;
+  padding:12px 14px;margin:10px 0 16px;overflow-x:auto;line-height:1.55;
+  white-space:pre;
+}
+.desc-body pre code{background:none;padding:0;font-size:inherit}
+.desc-body ul{margin:0 0 14px;padding-left:20px}
+.desc-body li{margin-bottom:6px}
+.desc-body .topic-label{font-size:11px;color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:22px;display:block;margin-bottom:8px}
+
+/* ---------- 右：代码编辑器面板 ---------- */
+.pane-editor{background:var(--bg-2);display:flex;flex-direction:column;min-width:0}
+.editor-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px;height:40px;flex-shrink:0;
+  background:var(--bg-1);border-bottom:1px solid var(--border-soft);
+}
+.editor-tabs{display:flex;align-items:center;gap:1px}
+.lang-btn{
+  height:30px;padding:0 11px 0 12px;border-radius:6px;
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:13px;color:var(--text);font-weight:500;
+  background:var(--bg-3);transition:background .12s;
+}
+.lang-btn:hover{background:var(--bg-4)}
+.lang-btn .chev{font-size:9px;color:var(--text-muted)}
+
+.lang-menu{position:relative}
+.lang-pop{
+  position:absolute;top:36px;right:0;z-index:50;
+  background:var(--bg-4);border:1px solid var(--border);
+  border-radius:8px;padding:5px;min-width:130px;
+  box-shadow:0 6px 24px rgba(0,0,0,.35);
+  display:none;
+}
+.lang-pop.open{display:block}
+.lang-opt{
+  padding:6px 10px;border-radius:5px;font-size:13px;color:var(--text-2);
+  display:flex;justify-content:space-between;align-items:center;gap:14px;
+}
+.lang-opt:hover{background:var(--bg-3)}
+.lang-opt.sel{color:var(--brand)}
+.lang-opt .chk{font-size:12px;opacity:0}
+.lang-opt.sel .chk{opacity:1}
+
+/* 代码编辑器主体 */
+.editor-body{position:relative;flex:1;overflow:hidden;background:var(--bg-2);display:flex;min-height:0}
+.code-area{position:absolute;inset:0;overflow:auto}
+.code-area-inner{position:relative;min-height:100%;font-family:"SF Mono",Consolas,"Liberation Mono",Menlo,monospace;font-size:13px;line-height:21px}
+
+/* 行号 */
+.gutter-lines{
+  position:absolute;left:0;top:0;width:46px;padding:12px 0;text-align:right;
+  user-select:none;color:var(--text-faint);font-size:13px;line-height:21px;
+}
+.gutter-lines div{padding-right:12px}
+
+/* 高亮层 */
+.highlight{
+  position:absolute;left:46px;top:0;right:0;
+  padding:12px 16px;margin:0;
+  white-space:pre;pointer-events:none;
+  font-family:inherit;font-size:inherit;line-height:inherit;
+  color:var(--text);tab-size:4;
+}
+/* 真实 textarea 透明覆盖 */
+.code-input{
+  position:absolute;left:46px;top:0;right:0;
+  width:calc(100% - 46px);height:100%;
+  padding:12px 16px;margin:0;border:none;outline:none;resize:none;
+  background:transparent;color:transparent;
+  caret-color:var(--brand);
+  font-family:inherit;font-size:inherit;line-height:inherit;
+  white-space:pre;tab-size:4;overflow:hidden;
+}
+.code-input::selection{background:#FFA11640}
+
+/* JS 语法高亮 */
+.t-kw{color:#ff7b72}            /* keyword */
+.t-str{color:#a5d6ff}           /* string */
+.t-num{color:#79c0ff}           /* number */
+.t-fn{color:#d2a8ff}            /* function name */
+.t-com{color:#8b949e;font-style:italic} /* comment */
+.t-op{color:#ff7b72}            /* operator/punct */
+.t-punc{color:var(--text-2)}
+.t-id{color:var(--text)}
+[data-theme="light"] .t-kw{color:#cf222e}
+[data-theme="light"] .t-str{color:#0a3069}
+[data-theme="light"] .t-num{color:#0550ae}
+[data-theme="light"] .t-fn{color:#8250df}
+[data-theme="light"] .t-com{color:#6e7781}
+
+/* ---------- 底部测试/结果面板 ---------- */
+.bottom{
+  flex-shrink:0;background:var(--bg-2);
+  border-top:1px solid var(--border);
+  display:flex;flex-direction:column;
+  transition:flex-basis .15s;
+  overflow:hidden;
+}
+.bottom-head{
+  display:flex;align-items:center;height:40px;padding:0 8px;gap:2px;
+  flex-shrink:0;background:var(--bg-1);
+  border-bottom:1px solid var(--border-soft);
+}
+.b-tab{
+  height:40px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;
+  font-size:13px;color:var(--text-muted);font-weight:500;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.b-tab:hover{color:var(--text)}
+.b-tab.active{color:var(--text);border-bottom-color:var(--brand)}
+.b-tab .badge{
+  font-size:10.5px;padding:0 6px;border-radius:999px;
+  background:var(--bg-4);color:var(--text-muted);line-height:16px;
+}
+.b-tab .badge.ok{background:#00AF9B;color:#000}
+.b-tab .badge.bad{background:var(--hard);color:#fff}
+
+.bottom-body{padding:14px 16px;overflow-y:auto;flex:1;min-height:0}
+
+/* Testcase */
+.tc-row{display:flex;gap:10px;margin-bottom:12px;align-items:stretch;flex-wrap:wrap}
+.tc-field{flex:1;min-width:180px}
+.tc-label{font-size:11.5px;color:var(--text-muted);margin-bottom:4px;font-weight:500}
+.tc-field input{
+  width:100%;height:34px;border:1px solid var(--border);border-radius:6px;
+  background:var(--bg-3);color:var(--text);padding:0 11px;font-size:13px;
+  font-family:"SF Mono",Consolas,monospace;
+  outline:none;transition:border-color .15s;
+}
+.tc-field input:focus{border-color:var(--brand)}
+
+/* Result */
+.result-card{border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.result-head{
+  padding:10px 14px;display:flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:600;
+}
+.result-head.accepted{background:#00AF9B1a;color:var(--success)}
+.result-head.wrong{background:#EF47431a;color:var(--error)}
+.result-head.runtime{background:var(--bg-3);color:var(--text)}
+.result-head .ico{width:18px;height:18px;flex-shrink:0}
+.result-stats{
+  display:flex;background:var(--bg-3);
+  border-top:1px solid var(--border-soft);
+}
+.result-stat{
+  flex:1;padding:10px 14px;border-right:1px solid var(--border-soft);
+}
+.result-stat:last-child{border-right:none}
+.result-stat .lbl{font-size:11px;color:var(--text-muted);margin-bottom:2px}
+.result-stat .val{font-size:13px;color:var(--text);font-weight:600;font-family:"SF Mono",Consolas,monospace}
+
+/* 测试用例结果表格 */
+.case-list{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.case-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border:1px solid var(--border-soft);border-radius:6px;
+  background:var(--bg-1);font-size:12.5px;
+}
+.case-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--text-faint)}
+.case-item.pass .dot{background:var(--success)}
+.case-item.fail .dot{background:var(--error)}
+.case-item .case-txt{color:var(--text-muted);font-family:"SF Mono",Consolas,monospace;flex:1;overflow-x:auto;white-space:nowrap}
+.case-item .case-status{font-size:11.5px;font-weight:600}
+.case-item.pass .case-status{color:var(--success)}
+.case-item.fail .case-status{color:var(--error)}
+
+/* ---------- 底部运行栏 ---------- */
+.runbar{
+  height:44px;flex-shrink:0;background:var(--bg-1);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:flex-end;gap:8px;
+  padding:0 12px;
+}
+.btn{
+  height:30px;padding:0 14px;border-radius:6px;
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:13px;font-weight:500;color:var(--text);
+  background:var(--bg-3);transition:background .12s,opacity .12s;
+}
+.btn:hover{background:var(--bg-4)}
+.btn .ico{width:14px;height:14px}
+.btn-outlined{border:1px solid var(--border);background:transparent;color:var(--text)}
+.btn-outlined:hover{background:var(--bg-3)}
+.btn-primary{background:var(--brand);color:#000;font-weight:600;border:1px solid var(--brand)}
+.btn-primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn .spin{
+  width:13px;height:13px;border:2px solid #0006;border-radius:50%;
+  border-top-color:transparent;animation:sp .7s linear infinite;display:none;
+}
+.btn.loading .spin{display:inline-block}
+.btn.loading .ico-run{display:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- 模态 / Toast ---------- */
+.toast-wrap{position:fixed;bottom:60px;right:24px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{
+  background:var(--bg-4);border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;font-size:13px;
+  box-shadow:0 8px 30px rgba(0,0,0,.4);
+  animation:slideIn .25s ease-out;display:flex;align-items:center;gap:8px;
+  max-width:340px;
+}
+.toast.ok{border-left:3px solid var(--success)}
+.toast.bad{border-left:3px solid var(--error)}
+@keyframes slideIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg-4);border-radius:6px;border:2px solid var(--bg-1)}
+::-webkit-scrollbar-thumb:hover{background:#404040}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:920px){
+  .split{flex-direction:column}
+  .gutter{width:100%;height:7px;cursor:row-resize;border-left:none;border-right:none;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .gutter::after{width:24px;height:1px}
+  .gutter:hover::after{width:36px;height:1px}
+  .pane-desc,.pane-editor{width:100%!important}
+  .nav-links{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ 顶部导航 ============ -->
+<nav class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 95 110" aria-hidden="true">
+      <path d="M68.01,3.07c-6.18,9.91-17.22,16.09-28.94,16.09H0v6.83C0,43.39,12.06,58.36,28.31,63.02c-1.26,1.49-2.45,3.07-3.56,4.74C19.83,76.44,16.28,86.97,16.28,97.55v9.38H46.44c20.18,0,36.74-16.55,36.74-36.74V41.31h0V3.07H68.01z"/>
+      <path fill="#000" opacity="0.1" d="M82.07,32.43c-3.32,1.4-6.65,2.78-9.97,4.15-2.89,1.18-5.6,1.28-8.83,1.28H52.85c-15.58,0-28.26,12.68-28.26,28.26v0.16c0,15.58,12.68,28.26,28.26,28.26h0.26c15.58,0,28.26-12.68,28.26-28.26V32.43z"/>
+    </svg>
+    <span class="brand-text">LeetCode</span>
+  </div>
+
+  <div class="nav-links">
+    <a class="nav-link active">Explore <span class="chev">▾</span></a>
+    <a class="nav-link">Problems</a>
+    <a class="nav-link">Mock <span class="chev">▾</span></a>
+    <a class="nav-link">Contest <span class="chev">▾</span></a>
+    <a class="nav-link">Discuss</a>
+    <a class="nav-link premium">Store</a>
+  </div>
+
+  <div class="topbar-right">
+    <button class="t-btn" id="themeToggle" title="切换主题">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="t-btn">Premium</button>
+    <div class="avatar">B</div>
+  </div>
+</nav>
+
+<!-- ============ 应用主体 ============ -->
+<div class="app">
+
+  <!-- 题目 tab 条 -->
+  <div class="q-tabs">
+    <span class="q-tab active">1. Two Sum <span class="x">✕</span></span>
+    <button class="q-add" title="新建标签页">＋</button>
+  </div>
+
+  <!-- 分屏 -->
+  <div class="split" id="split">
+
+    <!-- 左：题目描述 -->
+    <section class="pane pane-desc" id="leftPane" style="flex:1 1 50%;min-width:0">
+      <div class="pane-head">
+        <div class="q-title-row">
+          <h1 class="q-title">1. Two Sum</h1>
+          <span class="diff easy">Easy</span>
+        </div>
+        <div class="q-meta-row">
+          <span class="q-meta">
+            <svg viewBox="0 0 24 24" fill="#FFB800"><path d="M2 8.5 C2 6 3.5 4 6 4 L18 4 C20.5 4 22 6 22 8.5 L22 15.5 C22 18 20.5 20 18 20 L13 20 L13 18 L18 18 C19.3 18 20 17 20 15.5 L20 8.5 C20 7 19.3 6 18 6 L6 6 C4.7 6 4 7 4 8.5 L4 15.5 C4 17 4.7 18 6 18 L7 18 L7 20 L6 20 C3.5 20 2 18 2 15.5 Z"/><circle cx="8" cy="12" r="1.4" fill="#FFB800"/><circle cx="12" cy="12" r="1.4" fill="#FFB800"/><circle cx="16" cy="12" r="1.4" fill="#FFB800"/></svg>
+            Hint
+          </span>
+          <span class="q-meta up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 13 L12 3 L22 13"/></svg>
+            57.5K
+          </span>
+          <span class="q-meta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 11 L12 21 L22 11"/></svg>
+            8.2K
+          </span>
+          <span class="q-meta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12 L11 15 L16 9"/></svg>
+            Accepted
+          </span>
+          <span class="q-meta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9 L21 9"/></svg>
+            Submissions
+          </span>
+        </div>
+      </div>
+
+      <div class="desc-tabs">
+        <a class="desc-tab active">Description</a>
+        <a class="desc-tab">Solutions <span class="num">5.2K</span></a>
+        <a class="desc-tab">Submissions</a>
+      </div>
+
+      <div class="desc-body" style="overflow-y:auto">
+        <p>Given an array of integers <code>nums</code> and an integer <code>target</code>, return <em>indices of the two numbers such that they add up to <code>target</code></em>.</p>
+        <p>You may assume that each input would have <strong>exactly one solution</strong>, and you may not use the same element twice.</p>
+        <p>You can return the answer in any order.</p>
+
+        <p><strong>Example 1:</strong></p>
+        <pre><code><b>Input:</b> nums = [2,7,11,15], target = 9
+<b>Output:</b> [0,1]
+<b>Explanation:</b> Because nums[0] + nums[1] == 9, we return [0, 1].</code></pre>
+
+        <p><strong>Example 2:</strong></p>
+        <pre><code><b>Input:</b> nums = [3,2,4], target = 6
+<b>Output:</b> [1,2]</code></pre>
+
+        <p><strong>Example 3:</strong></p>
+        <pre><code><b>Input:</b> nums = [3,3], target = 6
+<b>Output:</b> [0,1]</code></pre>
+
+        <p><strong>Constraints:</strong></p>
+        <ul>
+          <li><code>2 &lt;= nums.length &lt;= 10<sup>4</sup></code></li>
+          <li><code>-10<sup>9</sup> &lt;= nums[i] &lt;= 10<sup>9</sup></code></li>
+          <li><code>-10<sup>9</sup> &lt;= target &lt;= 10<sup>9</sup></code></li>
+          <li><strong>Only one valid answer exists.</strong></li>
+        </ul>
+
+        <p style="font-size:13.5px;color:var(--text-muted);margin-top:18px"><strong style="color:var(--text)">Follow-up:</strong> Can you come up with an algorithm that is less than <code>O(n<sup>2</sup>)</code> time complexity?</p>
+
+        <div class="tag-list">
+          <span class="tag">Related Topics</span>
+          <span class="tag">Array</span>
+          <span class="tag">Hash Table</span>
+        </div>
+
+        <span class="topic-label">Similar Questions</span>
+        <ul style="margin-top:0">
+          <li>4Sum II</li>
+          <li>Two Sum II - Input Array Is Sorted</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 分隔条 -->
+    <div class="gutter" id="gutter"></div>
+
+    <!-- 右：代码编辑器 -->
+    <section class="pane pane-editor" id="rightPane" style="flex:1 1 50%;min-width:0;display:flex;flex-direction:column">
+      <div class="editor-head">
+        <div class="editor-tabs">
+          <div class="lang-menu">
+            <button class="lang-btn" id="langBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="#f1e05a"><path d="M3 3h18v18H3z" fill="none" stroke="#f1e05a" stroke-width="1.5"/><path d="M7.5 9.5 L10 7 L7.5 9.5 L9.5 11.5 L12 9 L9.5 11.5 L7.5 9.5 M14.5 12.5 L12 15 L14.5 12.5 L12.5 10.5"/></svg>
+              JavaScript
+              <span class="chev">▾</span>
+            </button>
+            <div class="lang-pop" id="langPop">
+              <div class="lang-opt sel" data-lang="js">JavaScript <span class="chk">✓</span></div>
+              <div class="lang-opt" data-lang="py">Python3 <span class="chk">✓</span></div>
+              <div class="lang-opt" data-lang="java">Java <span class="chk">✓</span></div>
+              <div class="lang-opt" data-lang="cpp">C++ <span class="chk">✓</span></div>
+            </div>
+          </div>
+        </div>
+        <button class="t-btn" style="font-size:13px">↻ Reset</button>
+      </div>
+
+      <!-- 编辑器主体 -->
+      <div class="editor-body" style="flex:1;min-height:0">
+        <div class="code-area">
+          <div class="code-area-inner">
+            <div class="gutter-lines" id="gutterLines"></div>
+            <pre class="highlight" id="highlight"></pre>
+            <textarea class="code-input" id="codeInput" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部测试 / 结果面板 -->
+      <div class="bottom" id="bottom" style="flex-basis:0;flex-grow:0">
+        <div class="bottom-head">
+          <a class="b-tab active" data-tab="tc">Testcase</a>
+          <a class="b-tab" data-tab="result" id="resultTab" style="display:none">Test Results <span class="badge" id="resultBadge"></span></a>
+        </div>
+        <div class="bottom-body" id="bottomBody">
+          <!-- 默认 Testcase 内容 -->
+          <div id="tcContent">
+            <div class="tc-row">
+              <div class="tc-field">
+                <div class="tc-label">nums =</div>
+                <input id="tc1" value="[2,7,11,15]">
+              </div>
+              <div class="tc-field">
+                <div class="tc-label">target =</div>
+                <input id="tc2" value="9">
+              </div>
+            </div>
+          </div>
+          <!-- 结果内容由 JS 填充 -->
+          <div id="resultContent" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- 运行栏 -->
+      <div class="runbar">
+        <button class="btn btn-outlined" style="margin-right:auto">↻ Restore</button>
+        <button class="btn" id="runBtn">
+          <svg class="ico ico-run" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg>
+          <span class="spin"></span>
+          Run
+        </button>
+        <button class="btn btn-primary" id="submitBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12 L10 17 L19 7"/></svg>
+          Submit
+        </button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ============================================================
+   1. 主题切换
+   ============================================================ */
+const themeToggle = document.getElementById('themeToggle');
+const root = document.documentElement;
+themeToggle.addEventListener('click', () => {
+  const cur = root.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  themeToggle.innerHTML = next === 'dark'
+    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
+});
+
+/* ============================================================
+   2. 分屏拖拽
+   ============================================================ */
+const gutter = document.getElementById('gutter');
+const split = document.getElementById('split');
+const leftPane = document.getElementById('leftPane');
+const rightPane = document.getElementById('rightPane');
+let dragging = false;
+
+gutter.addEventListener('mousedown', e => {
+  dragging = true; gutter.classList.add('dragging');
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+  e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const r = split.getBoundingClientRect();
+  let pct = ((e.clientX - r.left) / r.width) * 100;
+  pct = Math.max(20, Math.min(80, pct));
+  leftPane.style.flex = `0 0 ${pct}%`;
+  rightPane.style.flex = `0 0 ${100 - pct}%`;
+});
+document.addEventListener('mouseup', () => {
+  if (dragging){ dragging = false; gutter.classList.remove('dragging'); document.body.style.cursor=''; document.body.style.userSelect=''; }
+});
+
+/* ============================================================
+   3. 自研代码编辑器：textarea + 高亮 overlay + 行号
+   ============================================================ */
+const codeInput = document.getElementById('codeInput');
+const highlight = document.getElementById('highlight');
+const gutterLines = document.getElementById('gutterLines');
+
+const DEFAULT_CODE =
+`/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number[]}
+ */
+var twoSum = function(nums, target) {
+    const map = new Map();
+    for (let i = 0; i < nums.length; i++) {
+        const diff = target - nums[i];
+        if (map.has(diff)) {
+            return [map.get(diff), i];
+        }
+        map.set(nums[i], i);
+    }
+};
+`;
+
+codeInput.value = DEFAULT_CODE;
+
+/* JS 语法高亮 —— 单遍正则扫描，按优先级交替匹配，每个字符只消费一次
+   （避免「占位符 + 后续替换」方案中数字正则破坏槽位标记的 bug） */
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+const KW = 'var|let|const|function|return|if|else|for|while|do|new|this|true|false|null|undefined|typeof|instanceof|of|in|class|extends|super|import|export|from|default|async|await|try|catch|finally|throw|break|continue|switch|case|void|delete|yield|static';
+const TOKEN_RE = new RegExp(
+  // 每个分支用独立捕获组区分，避免靠首字符启发式判断
+  '(' + '\\/\\*[\\s\\S]*?\\*\\/|\\/\\/[^\\n]*' + ')' +   // 1 注释
+  '|(' + '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\'|`(?:[^`\\\\]|\\\\.)*`' + ')' + // 2 字符串
+  '|(' + '\\b\\d+(?:\\.\\d+)?\\b' + ')' +                 // 3 数字
+  '|(\\b(?:' + KW + ')\\b)' +                            // 4 关键字
+  '|(' + '[A-Za-z_$][\\w$]*(?=\\s*\\()' + ')',           // 5 函数名
+  'g'
+);
+function highlightJS(src){
+  let out = '', last = 0, m;
+  while ((m = TOKEN_RE.exec(src)) !== null){
+    out += escapeHtml(src.slice(last, m.index));
+    let cls = null;
+    if (m[1] !== undefined) cls = 't-com';      // 注释
+    else if (m[2] !== undefined) cls = 't-str'; // 字符串
+    else if (m[3] !== undefined) cls = 't-num'; // 数字
+    else if (m[4] !== undefined) cls = 't-kw';  // 关键字
+    else if (m[5] !== undefined) cls = 't-fn';  // 函数名
+    out += cls ? '<span class="'+cls+'">'+escapeHtml(m[0])+'</span>' : escapeHtml(m[0]);
+    last = TOKEN_RE.lastIndex;
+  }
+  out += escapeHtml(src.slice(last));
+  return out + '\n'; // 末尾留行避免高度塌陷
+}
+
+function renderEditor(){
+  const code = codeInput.value;
+  highlight.innerHTML = highlightJS(code);
+  const lineCount = code.split('\n').length;
+  let lines = '';
+  for (let i = 1; i <= lineCount; i++) lines += '<div>'+i+'</div>';
+  gutterLines.innerHTML = lines;
+  // 同步滚动
+  gutterLines.style.transform = `translateY(${-codeInput.scrollTop}px)`;
+  highlight.style.transform = `translateY(${-codeInput.scrollTop}px)`;
+}
+codeInput.addEventListener('input', renderEditor);
+codeInput.addEventListener('scroll', () => {
+  gutterLines.style.transform = `translateY(${-codeInput.scrollTop}px)`;
+  highlight.style.transform = `translateY(${-codeInput.scrollTop}px)`;
+});
+
+/* Tab 键缩进 */
+codeInput.addEventListener('keydown', e => {
+  if (e.key === 'Tab'){
+    e.preventDefault();
+    const s = codeInput.selectionStart, en = codeInput.selectionEnd;
+    if (e.shiftKey){
+      // 反缩进
+      const before = codeInput.value.slice(0, s);
+      const lineStart = before.lastIndexOf('\n') + 1;
+      const seg = codeInput.value.slice(lineStart, lineStart+4);
+      if (seg.startsWith('    ')){
+        codeInput.value = codeInput.value.slice(0,lineStart) + codeInput.value.slice(lineStart+4);
+        codeInput.selectionStart = codeInput.selectionEnd = Math.max(lineStart, s-4);
+      }
+    } else {
+      codeInput.value = codeInput.value.slice(0,s) + '    ' + codeInput.value.slice(en);
+      codeInput.selectionStart = codeInput.selectionEnd = s + 4;
+    }
+    renderEditor();
+  }
+});
+renderEditor();
+
+/* 语言下拉 */
+const langBtn = document.getElementById('langBtn');
+const langPop = document.getElementById('langPop');
+langBtn.addEventListener('click', e => { e.stopPropagation(); langPop.classList.toggle('open'); });
+document.addEventListener('click', () => langPop.classList.remove('open'));
+document.querySelectorAll('.lang-opt').forEach(o => {
+  o.addEventListener('click', () => {
+    document.querySelectorAll('.lang-opt').forEach(x => x.classList.remove('sel'));
+    o.classList.add('sel');
+    langBtn.childNodes[2].nodeValue = ' ' + ({js:'JavaScript',py:'Python3',java:'Java',cpp:'C++'}[o.dataset.lang]) + ' ';
+    langPop.classList.remove('open');
+    toast('演示模式：仅 JavaScript 可执行','bad');
+  });
+});
+
+/* ============================================================
+   4. 底部面板 tab 切换
+   ============================================================ */
+const bTabs = document.querySelectorAll('.b-tab');
+const tcContent = document.getElementById('tcContent');
+const resultContent = document.getElementById('resultContent');
+const resultTab = document.getElementById('resultTab');
+const bottom = document.getElementById('bottom');
+
+bTabs.forEach(t => t.addEventListener('click', () => {
+  bTabs.forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  const which = t.dataset.tab;
+  if (which === 'tc'){
+    tcContent.style.display = '';
+    resultContent.style.display = 'none';
+  } else {
+    tcContent.style.display = 'none';
+    resultContent.style.display = '';
+  }
+}));
+
+/* ============================================================
+   5. 运行 / 提交：真实 JS 沙箱执行
+   ============================================================ */
+function parseNumArray(str){
+  str = str.trim();
+  if (!str.startsWith('[') || !str.endsWith(']')) throw new Error('nums 必须是数组字面量，如 [2,7,11,15]');
+  const inner = str.slice(1,-1).trim();
+  if (!inner) return [];
+  return inner.split(',').map(s => {
+    const n = Number(s.trim());
+    if (Number.isNaN(n)) throw new Error('数组包含非数字元素');
+    return n;
+  });
+}
+
+/* 把用户写的代码字符串转成可调用函数 */
+function buildUserFn(code){
+  // 用 new Function 在受限闭包内运行；返回 twoSum
+  // eslint-disable-next-line no-new-func
+  const fn = new Function(code + '\n;return typeof twoSum !== "undefined" ? twoSum : (typeof twoSum !== "undefined" ? twoSum : null);');
+  const result = fn();
+  if (typeof result !== 'function') throw new Error('未找到 twoSum 函数。请确保用 var twoSum = function(...){...} 定义。');
+  return result;
+}
+
+const hiddenCases = [
+  { nums:[2,7,11,15], target:9, expected:[0,1] },
+  { nums:[3,2,4],     target:6, expected:[1,2] },
+  { nums:[3,3],       target:6, expected:[0,1] },
+  { nums:[1,5,8,12,13], target:13, expected:[1,2] },
+];
+
+function runCases(userFn, onlyFirst){
+  const cases = onlyFirst ? [hiddenCases[0]] : hiddenCases;
+  const results = [];
+  for (const c of cases){
+    let got, err = null;
+    try {
+      got = userFn(c.nums.slice(), c.target);
+    } catch(e){ err = e.message; }
+    // 比较数组：忽略顺序
+    let pass = false;
+    if (!err && Array.isArray(got) && got.length === 2){
+      const a = [...got].sort((x,y)=>x-y).join(',');
+      const b = [...c.expected].sort((x,y)=>x-y).join(',');
+      pass = a === b;
+    }
+    results.push({...c, got, err, pass});
+  }
+  return results;
+}
+
+function fmtArr(a){ return Array.isArray(a) ? '['+a+']' : String(a); }
+
+function renderResults(results, isSubmit){
+  const allPass = results.every(r => r.pass);
+  resultTab.style.display = 'inline-flex';
+  const badge = document.getElementById('resultBadge');
+  badge.textContent = results.length + ' / ' + results.filter(r=>r.pass).length;
+  badge.className = 'badge ' + (allPass ? 'ok' : 'bad');
+
+  // 切到结果 tab
+  bTabs.forEach(x => x.classList.remove('active'));
+  resultTab.classList.add('active');
+  tcContent.style.display = 'none';
+  resultContent.style.display = '';
+
+  // 模拟数据
+  const runtime = (50 + Math.floor(Math.random()*25)) + ' ms';
+  const mem = (41.5 + Math.random()*3).toFixed(1) + ' MB';
+  const beatsRun = (62 + Math.floor(Math.random()*30));
+  const beatsMem = (55 + Math.floor(Math.random()*35));
+
+  let html = '';
+  if (isSubmit && allPass){
+    html += `<div class="result-card" style="margin-bottom:12px">
+      <div class="result-head accepted">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M8 12 L11 15 L16 9"/></svg>
+        Accepted
+      </div>
+      <div class="result-stats">
+        <div class="result-stat"><div class="lbl">Runtime</div><div class="val">${runtime} &nbsp;<span style="color:var(--success);font-size:11px;font-weight:500">beats ${beatsRun}%</span></div></div>
+        <div class="result-stat"><div class="lbl">Memory</div><div class="val">${mem} &nbsp;<span style="color:var(--success);font-size:11px;font-weight:500">beats ${beatsMem}%</span></div></div>
+        <div class="result-stat"><div class="lbl">Language</div><div class="val" style="font-family:inherit">JavaScript</div></div>
+      </div>
+    </div>`;
+  } else if (isSubmit && !allPass){
+    const fail = results.find(r=>!r.pass);
+    html += `<div class="result-card" style="margin-bottom:12px">
+      <div class="result-head wrong">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M15 9 L9 15 M9 9 L15 15"/></svg>
+        Wrong Answer
+      </div>
+      <div class="result-stats">
+        <div class="result-stat"><div class="lbl">Last executed input</div><div class="val" style="font-size:12px">nums = ${fmtArr(fail.nums)}, target = ${fail.target}</div></div>
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="result-card" style="margin-bottom:12px">
+      <div class="result-head runtime">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3 L19 12 L5 21 Z"/></svg>
+        ${allPass ? 'All Test Cases Passed' : 'Finished'}
+      </div>
+      <div class="result-stats">
+        <div class="result-stat"><div class="lbl">Passed</div><div class="val">${results.filter(r=>r.pass).length} / ${results.length}</div></div>
+        <div class="result-stat"><div class="lbl">Runtime</div><div class="val">${runtime}</div></div>
+      </div>
+    </div>`;
+  }
+
+  html += '<div class="case-list">';
+  results.forEach((r,i) => {
+    html += `<div class="case-item ${r.pass?'pass':'fail'}">
+      <span class="dot"></span>
+      <span class="case-txt">Case ${i+1}: nums=${fmtArr(r.nums)}, target=${r.target}
+        ${r.err ? ' · ✕ '+r.err : ' · 返回 '+fmtArr(r.got)+' · 期望 '+fmtArr(r.expected)}</span>
+      <span class="case-status">${r.pass?'✓ Accepted':'✕ Failed'}</span>
+    </div>`;
+  });
+  html += '</div>';
+
+  resultContent.innerHTML = html;
+  // 展开 bottom 面板
+  bottom.style.flexBasis = '280px';
+  bottom.style.flexGrow = '0';
+}
+
+/* Run / Submit 按钮逻辑 */
+const runBtn = document.getElementById('runBtn');
+const submitBtn = document.getElementById('submitBtn');
+
+function withLoading(btn, fn){
+  btn.classList.add('loading'); btn.disabled = true;
+  setTimeout(() => {
+    try { fn(); }
+    finally { btn.classList.remove('loading'); btn.disabled = false; }
+  }, 550);
+}
+
+runBtn.addEventListener('click', () => withLoading(runBtn, () => {
+  let userFn, results;
+  try {
+    userFn = buildUserFn(codeInput.value);
+    results = runCases(userFn, true);  // 只跑第一个测试用例
+  } catch(e){
+    toast('编译错误：'+e.message,'bad');
+    return;
+  }
+  renderResults(results, false);
+  const pass = results.every(r=>r.pass);
+  toast(pass ? '✓ Testcase 通过' : '✕ 输出与预期不符', pass?'ok':'bad');
+}));
+
+submitBtn.addEventListener('click', () => withLoading(submitBtn, () => {
+  let userFn, results;
+  try {
+    userFn = buildUserFn(codeInput.value);
+    results = runCases(userFn, false); // 跑全部用例
+  } catch(e){
+    toast('编译错误：'+e.message,'bad');
+    return;
+  }
+  renderResults(results, true);
+  const allPass = results.every(r=>r.pass);
+  toast(allPass ? '🎉 Accepted! 耗时 '+(50+Math.floor(Math.random()*25))+'ms' : '✕ Wrong Answer', allPass?'ok':'bad');
+}));
+
+/* ============================================================
+   6. Toast
+   ============================================================ */
+function toast(msg, type){
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type||'');
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 3200);
+}
+
+/* ============================================================
+   7. 顶部导航 / 题目 tab（演示性点击）
+   ============================================================ */
+document.querySelectorAll('.nav-link').forEach(l => l.addEventListener('click', e => {
+  document.querySelectorAll('.nav-link').forEach(x => x.classList.remove('active'));
+  l.classList.add('active');
+}));
+document.querySelectorAll('.desc-tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.desc-tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+}));
+
+/* 初始 greeting */
+setTimeout(() => toast('LeetCode 复刻版已就绪 · 点击 Run 试试', 'ok'), 400);
+</script>
+</body>
+</html>

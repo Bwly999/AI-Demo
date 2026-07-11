@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文明 VI · 单页复刻版</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-user-select:none; user-select:none; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0d0b09;
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#f0e6d2; }
+  canvas { display:block; cursor:grab; }
+  canvas.dragging { cursor:grabbing; }
+
+  /* ---------- 顶栏 ---------- */
+  #topbar { position:fixed; top:0; left:0; right:0; height:52px; z-index:50;
+    background:linear-gradient(180deg,#2a2419,#1a1610); border-bottom:2px solid #8b6f3a;
+    display:flex; align-items:center; padding:0 16px; gap:18px;
+    box-shadow:0 3px 12px rgba(0,0,0,.6); }
+  .logo { font-weight:900; font-size:20px; letter-spacing:2px; color:#d4af37;
+    text-shadow:0 0 8px rgba(212,175,55,.4); padding-right:12px; border-right:1px solid #5a4a2e; }
+  .logo small { font-size:11px; color:#9a8a60; font-weight:400; letter-spacing:0; display:block; margin-top:-2px;}
+  .stat { display:flex; align-items:center; gap:6px; font-size:15px; font-weight:700; }
+  .stat .ico { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:bold; }
+  .ico.sci{ background:#2d7fb8;} .ico.gold{ background:#d4af37; color:#3a2c10;}
+  .ico.cul{ background:#9b4bc8;} .ico.faith{ background:#e8e0d0; color:#333;}
+  .ico.hap{ background:#e8763a;} .ico.tour{ background:#3aa8c8;}
+  .stat .v { color:#fff; } .stat .d { font-size:11px; color:#7fae3a; margin-left:1px;}
+  .stat .d.neg{ color:#d4763a; }
+  #turnbox { margin-left:auto; display:flex; align-items:center; gap:10px;}
+  #eraLabel { font-size:12px; color:#9a8a60; }
+  #turnLabel { font-size:14px; font-weight:700; color:#d4af37; }
+  #nextTurnBtn { background:linear-gradient(180deg,#d4af37,#a8862a); color:#1a1610; border:2px solid #f0d870;
+    font-weight:900; padding:8px 22px; font-size:15px; cursor:pointer; border-radius:4px;
+    box-shadow:0 2px 6px rgba(0,0,0,.5); letter-spacing:1px; }
+  #nextTurnBtn:hover { background:linear-gradient(180deg,#e8c547,#be972f); transform:translateY(-1px); }
+  #nextTurnBtn:active { transform:translateY(0); }
+  .topbtn { background:#2a2419; border:1px solid #6a5a3a; color:#d4af37; padding:6px 12px; cursor:pointer;
+    border-radius:3px; font-size:13px; font-weight:700; }
+  .topbtn:hover { background:#3a3422; border-color:#8b6f3a; }
+
+  /* ---------- 单位面板 ---------- */
+  #unitpanel { position:fixed; left:16px; bottom:16px; width:230px; z-index:40;
+    background:linear-gradient(180deg,rgba(30,26,16,.96),rgba(20,18,12,.96));
+    border:2px solid #8b6f3a; border-radius:6px; padding:12px; display:none;
+    box-shadow:0 4px 16px rgba(0,0,0,.6); }
+  #unitpanel.show { display:block; }
+  .up-head { display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .up-ico { width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:20px; color:#fff; font-weight:900; border:2px solid rgba(255,255,255,.4); flex-shrink:0;}
+  .up-name { font-size:15px; font-weight:800; }
+  .up-sub { font-size:11px; color:#9a8a60; }
+  .hpbar { height:6px; background:#3a1414; border-radius:3px; margin:4px 0; overflow:hidden;}
+  .hpbar > div { height:100%; background:linear-gradient(90deg,#6fbf3a,#3a8a2a); transition:width .3s;}
+  .up-stats { display:flex; gap:10px; font-size:12px; color:#c9b890; margin-bottom:8px; flex-wrap:wrap;}
+  .up-stats span b{ color:#fff; }
+  .up-actions { display:flex; flex-wrap:wrap; gap:5px;}
+  .act { background:#2a2419; border:1px solid #6a5a3a; color:#e8d8a0; padding:6px 8px; cursor:pointer;
+    border-radius:3px; font-size:12px; font-weight:700; flex:1; min-width:62px; text-align:center;}
+  .act:hover { background:#4a3a1e; border-color:#d4af37; color:#fff;}
+  .act.dis { opacity:.4; cursor:not-allowed; }
+  .act.key{ background:#6a4a1e; border-color:#d4af37; color:#fff; }
+
+  /* ---------- 图格提示 ---------- */
+  #tooltip { position:fixed; z-index:60; background:rgba(20,18,12,.97); border:1px solid #8b6f3a;
+    padding:8px 10px; border-radius:4px; font-size:12px; pointer-events:none; display:none; max-width:240px;
+    box-shadow:0 2px 8px rgba(0,0,0,.6); line-height:1.5;}
+  #tooltip b { color:#d4af37; }
+
+  /* ---------- 小地图 ---------- */
+  #minimap { position:fixed; right:16px; bottom:16px; z-index:40; border:2px solid #8b6f3a; border-radius:4px;
+    background:#0a0805; box-shadow:0 4px 12px rgba(0,0,0,.6); }
+  #mmCanvas { display:block; cursor:pointer; }
+
+  /* ---------- 右侧动作条 ---------- */
+  #log { position:fixed; right:16px; top:64px; width:230px; max-height:38vh; overflow-y:auto; z-index:40;
+    background:rgba(20,18,12,.85); border:1px solid #5a4a2e; border-radius:4px; padding:6px 8px; font-size:11px;
+    color:#b8a878; line-height:1.6; backdrop-filter:blur(2px);}
+  #log::-webkit-scrollbar{ width:6px; } #log::-webkit-scrollbar-thumb{ background:#5a4a2e; }
+  #log .lt{ color:#d4af37; font-weight:700; }
+  #log .lw{ color:#d4763a; } #log .lg{ color:#7fae3a;}
+  #log div { border-bottom:1px dotted #2a2419; padding:2px 0;}
+
+  /* ---------- 通用模态 ---------- */
+  .modal { position:fixed; inset:0; z-index:100; background:rgba(5,4,3,.82); display:none;
+    align-items:center; justify-content:center; backdrop-filter:blur(3px); }
+  .modal.show{ display:flex; }
+  .modal-box { background:linear-gradient(180deg,#2a2419,#15120c); border:3px solid #8b6f3a; border-radius:8px;
+    box-shadow:0 10px 50px rgba(0,0,0,.8); max-width:92vw; max-height:88vh; overflow:hidden; display:flex; flex-direction:column;}
+  .modal-head { background:linear-gradient(180deg,#3a3020,#231d12); padding:14px 20px; border-bottom:2px solid #8b6f3a;
+    display:flex; align-items:center; gap:14px; }
+  .modal-head h2 { color:#d4af37; font-size:22px; letter-spacing:2px; flex:1;}
+  .modal-close { background:#5a3a1a; color:#fff; border:2px solid #8b6f3a; width:34px; height:34px; cursor:pointer;
+    border-radius:4px; font-size:18px; font-weight:900;}
+  .modal-close:hover{ background:#7a4a2a;}
+  .modal-body { padding:18px 22px; overflow-y:auto;}
+
+  /* 城市界面 */
+  #cityBox { width:560px; }
+  .city-yields { display:flex; gap:14px; margin-bottom:12px; flex-wrap:wrap; }
+  .cyield { background:#1a1610; border:1px solid #5a4a2e; padding:8px 12px; border-radius:4px; text-align:center; min-width:64px;}
+  .cyield .yv{ font-size:20px; font-weight:900; color:#fff;}
+  .cyield .yl{ font-size:10px; color:#9a8a60;}
+  .cyield.food .yv{color:#7fae3a;} .cyield.prod .yv{color:#d4af37;} .cyield.sci .yv{color:#4a9ad4;}
+  .cyield.gold .yv{color:#e8c547;} .cyield.cul .yv{color:#b87adb;} .cyield.pop .yv{color:#fff;}
+  .build-hdr{ font-size:13px; color:#9a8a60; margin:10px 0 6px; display:flex; justify-content:space-between;}
+  .build-progress{ height:10px; background:#1a1610; border:1px solid #5a4a2e; border-radius:5px; overflow:hidden; margin-bottom:8px;}
+  .build-progress > div{ height:100%; background:linear-gradient(90deg,#a8862a,#d4af37); transition:width .3s;}
+  .build-list{ display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:280px; overflow-y:auto; padding-right:4px;}
+  .build-list::-webkit-scrollbar{ width:6px;} .build-list::-webkit-scrollbar-thumb{ background:#5a4a2e;}
+  .bitem{ background:#1a1610; border:1px solid #5a4a2e; padding:8px 10px; border-radius:4px; cursor:pointer; display:flex; gap:8px; align-items:center;}
+  .bitem:hover{ background:#2a2419; border-color:#d4af37;}
+  .bitem.sel{ border-color:#d4af37; background:#3a2e1a;}
+  .bitem .bi{ font-size:22px;} .bitem .bn{ font-weight:700; font-size:13px;}
+  .bitem .bc{ font-size:11px; color:#9a8a60;}
+
+  /* 科技树界面 */
+  #techBox{ width:880px;}
+  #techBody{ max-height:72vh;}
+  .tech-tabs{ display:flex; gap:4px; margin-bottom:10px;}
+  .tech-tab{ background:#1a1610; border:1px solid #5a4a2e; color:#9a8a60; padding:7px 16px; cursor:pointer; border-radius:4px; font-weight:700; font-size:13px;}
+  .tech-tab.active{ background:#3a2e1a; border-color:#d4af37; color:#d4af37;}
+  .era-row{ margin-bottom:14px;}
+  .era-name{ color:#d4af37; font-size:13px; font-weight:800; letter-spacing:2px; margin-bottom:6px; border-bottom:1px solid #5a4a2e; padding-bottom:3px;}
+  .tech-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:6px;}
+  .tech{ background:#1a1610; border:1px solid #5a4a2e; padding:8px 10px; border-radius:4px; cursor:pointer; font-size:12px;}
+  .tech:hover{ border-color:#8b6f3a;}
+  .tech.done{ background:#1e2a16; border-color:#5a8a3a; opacity:.7;}
+  .tech.avail{ border-color:#d4af37;}
+  .tech.locked{ opacity:.4; cursor:not-allowed;}
+  .tech.researching{ background:#2a2419; border:2px solid #4a9ad4; box-shadow:0 0 8px rgba(74,154,212,.4);}
+  .tech .tn{ font-weight:700; color:#fff; margin-bottom:2px;}
+  .tech .tc{ color:#9a8a60; font-size:11px;}
+  .tech .tdesc{ color:#7fae3a; font-size:10px; margin-top:2px;}
+
+  /* 开始/结束界面 */
+  #startBox, #endBox{ width:520px;}
+  .start-civs{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0;}
+  .civ-opt{ background:#1a1610; border:2px solid #5a4a2e; padding:10px; border-radius:5px; cursor:pointer;}
+  .civ-opt:hover{ border-color:#8b6f3a;}
+  .civ-opt.sel{ border-color:#d4af37; background:#2a2419;}
+  .civ-opt .cflag{ width:30px;height:30px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:8px;border:2px solid rgba(255,255,255,.3);}
+  .civ-opt .cnm{ font-weight:800; font-size:14px; vertical-align:middle;}
+  .civ-opt .cl{ font-size:11px; color:#9a8a60; margin-top:3px;}
+  .diff-row{ margin:10px 0; font-size:13px;}
+  .diff-row select{ background:#1a1610; color:#f0e6d2; border:1px solid #5a4a2e; padding:5px; border-radius:3px;}
+  .start-btn{ width:100%; background:linear-gradient(180deg,#d4af37,#a8862a); color:#1a1610; border:2px solid #f0d870;
+    font-weight:900; padding:12px; font-size:17px; cursor:pointer; border-radius:4px; margin-top:8px; letter-spacing:3px;}
+  .start-btn:hover{ background:linear-gradient(180deg,#e8c547,#be972f);}
+  .help-box{ background:#1a1610; border:1px solid #5a4a2e; padding:10px; border-radius:4px; font-size:12px; color:#b8a878; line-height:1.7; margin-top:10px;}
+  .help-box b{ color:#d4af37;}
+  .end-result{ font-size:42px; text-align:center; font-weight:900; letter-spacing:6px; padding:20px;}
+  .end-win{ color:#d4af37; text-shadow:0 0 20px rgba(212,175,55,.5);}
+  .end-lose{ color:#d4763a;}
+
+  /* 通知吐司 */
+  #toast{ position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:200;
+    background:linear-gradient(180deg,#3a3020,#231d12); border:2px solid #d4af37; color:#f0e6d2;
+    padding:12px 26px; border-radius:5px; font-size:15px; font-weight:700; display:none;
+    box-shadow:0 4px 20px rgba(0,0,0,.6); animation:toastIn .3s;}
+  @keyframes toastIn{ from{ opacity:0; transform:translate(-50%,-12px);} to{opacity:1;} }
+  .spinner{ display:inline-block; width:12px; height:12px; border:2px solid #5a4a2e; border-top-color:#d4af37;
+    border-radius:50%; animation:spin 1s linear infinite; margin-right:6px; vertical-align:middle;}
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+</style>
+</head>
+<body>
+<canvas id="map"></canvas>
+
+<!-- 顶栏 -->
+<div id="topbar">
+  <div class="logo">文明 VI<small>单页复刻版</small></div>
+  <div class="stat"><div class="ico sci">科</div><span class="v" id="sSci">0</span><span class="d" id="sSciD"></span></div>
+  <div class="stat"><div class="ico gold">金</div><span class="v" id="sGold">0</span><span class="d" id="sGoldD"></span></div>
+  <div class="stat"><div class="ico cul">文</div><span class="v" id="sCul">0</span><span class="d" id="sCulD"></span></div>
+  <div class="stat"><div class="ico faith">信</div><span class="v" id="sFaith">0</span></div>
+  <div class="stat"><div class="ico hap">乐</div><span class="v" id="sHap">0</span></div>
+  <button class="topbtn" id="techBtn">科技</button>
+  <button class="topbtn" id="civicBtn">市政</button>
+  <div id="turnbox">
+    <span id="eraLabel">远古时代</span>
+    <span id="turnLabel">回合 1</span>
+    <button id="nextTurnBtn">下一回合 ▶</button>
+  </div>
+</div>
+
+<!-- 单位面板 -->
+<div id="unitpanel">
+  <div class="up-head">
+    <div class="up-ico" id="upIco">兵</div>
+    <div><div class="up-name" id="upName">勇士</div><div class="up-sub" id="upSub">移动 2 · 战力 20</div></div>
+  </div>
+  <div class="hpbar"><div id="upHp" style="width:100%"></div></div>
+  <div class="up-stats" id="upStats"></div>
+  <div class="up-actions" id="upActions"></div>
+</div>
+
+<div id="tooltip"></div>
+
+<!-- 日志 -->
+<div id="log"><div class="lt">— 文明史诗 · 开始 —</div></div>
+
+<!-- 小地图 -->
+<div id="minimap"><canvas id="mmCanvas" width="180" height="120"></canvas></div>
+
+<div id="toast"></div>
+
+<!-- 城市界面 -->
+<div class="modal" id="cityModal"><div class="modal-box" id="cityBox">
+  <div class="modal-head"><h2 id="cityTitle">城市</h2><button class="modal-close" onclick="closeModal('cityModal')">×</button></div>
+  <div class="modal-body" id="cityBody"></div>
+</div></div>
+
+<!-- 科技界面 -->
+<div class="modal" id="techModal"><div class="modal-box" id="techBox">
+  <div class="modal-head"><h2>科研 · 市政树</h2><button class="modal-close" onclick="closeModal('techModal')">×</button></div>
+  <div class="modal-body" id="techBody"></div>
+</div></div>
+
+<!-- 开始界面 -->
+<div class="modal show" id="startModal"><div class="modal-box" id="startBox">
+  <div class="modal-head"><h2>建立你的文明</h2></div>
+  <div class="modal-body">
+    <p style="font-size:13px;color:#b8a878;line-height:1.7">从远古蛮荒到信息时代，引领你的子民征服世界、飞向星辰。<br>选择文明与难度，开启一段史诗。</p>
+    <h3 style="color:#d4af37;margin:14px 0 6px;font-size:15px">选择文明</h3>
+    <div class="start-civs" id="civOptions"></div>
+    <div class="diff-row">难度：<select id="diffSel">
+      <option value="2">开拓者（简单）</option>
+      <option value="1" selected>酋长（普通）</option>
+      <option value="0">王子（困难，AI加成）</option>
+    </select></div>
+    <div class="diff-row">地图大小：<select id="sizeSel">
+      <option value="0" selected>小型</option>
+      <option value="1">中型</option>
+      <option value="2">大型</option>
+    </select></div>
+    <div class="help-box">
+      <b>操作：</b>左键选择单位/城市 · 右键移动/攻击 · 拖动平移 · 滚轮缩放<br>
+      <b>目标：</b>占领所有敌方首都（统治胜利）或研究到「纳米技术」（科技胜利）
+    </div>
+    <button class="start-btn" id="startBtn">▶ 开 始 游 戏</button>
+  </div>
+</div></div>
+
+<!-- 结束界面 -->
+<div class="modal" id="endModal"><div class="modal-box" id="endBox">
+  <div class="modal-body" id="endBody"></div>
+</div></div>
+
+<script>
+/* =====================================================================
+   文明 VI 单页复刻版
+   核心系统：六边形地图 / 地形生成 / 单位战斗 / 城市经营 / 科技树 / AI
+   ===================================================================== */
+
+// -------------------- 全局配置 --------------------
+const SQ3 = Math.sqrt(3);
+let HEX = 38;                  // 六边形半径(像素)
+const DIRS = [[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]]; // 扁顶六邻居
+
+// 地形定义
+const T = {
+  OCEAN:    {n:'海洋', c:'#27517f', food:0,prod:0,gold:0, water:true, move:0},
+  COAST:    {n:'海岸', c:'#3f7fb0', food:1,prod:0,gold:1, water:true, move:0},
+  GRASSLAND:{n:'草原', c:'#6fa83f', food:2,prod:0,gold:0, move:1},
+  PLAINS:   {n:'平原', c:'#bfa84e', food:1,prod:1,gold:0, move:1},
+  DESERT:   {n:'沙漠', c:'#e0c878', food:0,prod:0,gold:0, move:1},
+  TUNDRA:   {n:'冻土', c:'#9fb09a', food:1,prod:0,gold:0, move:1},
+  SNOW:     {n:'雪地', c:'#dde6ec', food:0,prod:0,gold:0, move:1},
+  MOUNTAIN: {n:'山脉', c:'#8a8378', food:0,prod:0,gold:0, move:0, block:true},
+};
+// 地貌特征
+const FEAT = {
+  FOREST:    {n:'森林', c:'#3d7a34', food:1,prod:1, move:2, def:3},
+  RAINFOREST:{n:'雨林', c:'#2a8a3a', food:1,prod:0, move:2, def:3},
+  MARSH:     {n:'沼泽', c:'#5a7a4a', food:1,prod:0, move:3, def:0},
+  HILLS:     {n:'丘陵', c:'', food:0,prod:1, move:2, def:3},
+  OASIS:     {n:'绿洲', c:'', food:3,prod:0,gold:0, move:1, def:0},
+};
+// 资源
+const RES = {
+  WHEAT:{n:'小麦',t:'food',bonus:{food:1},tech:null},
+  RICE :{n:'稻米',t:'food',bonus:{food:1},tech:null},
+  CATTLE:{n:'牛',t:'food',bonus:{food:1,prod:1},tech:'animalHusbandry'},
+  FISH :{n:'鱼',t:'food',bonus:{food:1},tech:'sailing'},
+  HORSES:{n:'马',t:'strat',bonus:{prod:1,gold:1},tech:'animalHusbandry'},
+  IRON :{n:'铁',t:'strat',bonus:{prod:2},tech:'bronzeWorking'},
+  NITER:{n:'硝石',t:'strat',bonus:{prod:2},tech:'gunpowder'},
+  GOLD_R:{n:'金矿',t:'lux',bonus:{gold:3},tech:'mining'},
+  GEMS :{n:'宝石',t:'lux',bonus:{gold:2,culture:1},tech:'mining'},
+  MARBLE:{n:'大理石',t:'lux',bonus:{prod:1,culture:1},tech:'mining'},
+};
+// 改良设施
+const IMPROVE = {
+  FARM:    {n:'农田', req:'none',   yield:{food:1}, on:['GRASSLAND','PLAINS']},
+  MINE:    {n:'矿山', req:'mining', yield:{prod:2}, on:['HILLS','DESERT','GRASSLAND','PLAINS','TUNDRA','SNOW']},
+  PASTURE: {n:'牧场', req:'animalHusbandry', yield:{prod:1,food:1}, res:'HORSES'},
+  PLANTATION:{n:'种植园', req:'mining', yield:{gold:1,food:1}, on:['GRASSLAND','PLAINS','DESERT']},
+  QUARRY:  {n:'采石场', req:'mining', yield:{prod:1}, res:['MARBLE','GEMS']},
+  FISHING:{n:'渔船', req:'sailing', yield:{food:1}, res:'FISH'},
+};
+
+// 单位定义
+const UNITS = {
+  settler:   {n:'开拓者', ic:'民', cat:'civ', cs:0, mp:2, cost:80, tech:'none', act:'found', desc:'建立新城市'},
+  builder:   {n:'建造者', ic:'工', cat:'civ', cs:0, mp:2, cost:50, tech:'none', act:'build', charges:3, desc:'建造改良设施(3次)'},
+  warrior:   {n:'勇士',   ic:'勇', cat:'melee', cs:20, mp:2, cost:40, tech:'none', melee:true, desc:'基础近战'},
+  scout:     {n:'侦察兵', ic:'侦', cat:'melee', cs:10, mp:3, cost:30, tech:'none', melee:true, desc:'高机动侦察'},
+  slinger:   {n:'投石兵', ic:'投', cat:'range', cs:15, rs:25, mp:2, cost:35, tech:'none', range:true, desc:'远程攻击'},
+  archer:    {n:'弓箭手', ic:'弓', cat:'range', cs:25, rs:30, mp:2, cost:60, tech:'archery', range:true, desc:'远程压制'},
+  spearman:  {n:'矛兵',   ic:'矛', cat:'melee', cs:25, mp:2, cost:60, tech:'bronzeWorking', melee:true, antiCav:true, desc:'反骑兵'},
+  horseman:  {n:'骑手',   ic:'骑', cat:'cav',   cs:28, mp:4, cost:80, tech:'horsebackRiding', melee:true, cav:true, desc:'高机动骑兵'},
+  swordsman: {n:'剑士',   ic:'剑', cat:'melee', cs:35, mp:2, cost:90, tech:'ironWorking', melee:true, desc:'强力近战'},
+  catapult:  {n:'投石车', ic:'炮', cat:'siege', cs:25, rs:35, mp:2, cost:100, tech:'machinery', range:true, desc:'攻城远程'},
+  crossbowman:{n:'弩手',  ic:'弩', cat:'range', cs:35, rs:40, mp:2, cost:120, tech:'machinery', range:true, desc:'进阶远程'},
+  knight:    {n:'骑士',   ic:'圣', cat:'cav',   cs:38, mp:4, cost:140, tech:'stirrups', melee:true, cav:true, desc:'中世纪骑兵'},
+  pikeman:   {n:'长矛兵', ic:'戟', cat:'melee', cs:35, mp:2, cost:110, tech:'militaryTactics', melee:true, antiCav:true, desc:'反骑兵'},
+  musketman: {n:'火枪手', ic:'枪', cat:'melee', cs:55, mp:2, cost:180, tech:'gunpowder', melee:true, desc:'火药步兵'},
+  rifleman:  {n:'来福枪兵',ic:'步',cat:'melee', cs:65, mp:2, cost:240, tech:'rifling', melee:true, desc:'近代步兵'},
+};
+
+// 建筑定义
+const BUILDINGS = {
+  monument:  {n:'纪念碑', ic:'🏛', cost:60, yield:{culture:2}, desc:'+2文化'},
+  granary:   {n:'粮仓',   ic:'🌾', cost:80, yield:{food:1,housing:1}, desc:'+1粮 +1住房'},
+  library:   {n:'图书馆', ic:'📚', cost:80, yield:{sci:2}, tech:'writing', desc:'+2科技'},
+  market:    {n:'市场',   ic:'💰', cost:100, yield:{gold:3}, tech:'currency', desc:'+3金'},
+  barracks:  {n:'兵营',   ic:'⚔', cost:70, yield:{prod:1}, tech:'bronzeWorking', desc:'+1产能, 训练经验'},
+  walls:     {n:'城墙',   ic:'🛡', cost:80, yield:{def:10,hp:200}, tech:'masonry', desc:'城市防御+城墙HP', def:true},
+  workshop:  {n:'工坊',   ic:'🔨', cost:120, yield:{prod:3}, tech:'apprenticeship', desc:'+3产能'},
+  temple:    {n:'神庙',   ic:'⛪', cost:120, yield:{faith:2}, tech:'astrology', desc:'+2信仰'},
+  university:{n:'大学',   ic:'🎓', cost:150, yield:{sci:4}, tech:'education', desc:'+4科技'},
+  bank:      {n:'银行',   ic:'🏦', cost:200, yield:{gold:5}, tech:'banking', desc:'+5金'},
+  aqueduct:  {n:'引水渠', ic:'⛲', cost:120, yield:{housing:2}, tech:'engineering', desc:'+2住房'},
+  factory:   {n:'工厂',   ic:'🏭', cost:280, yield:{prod:4}, tech:'industrialization', desc:'+4产能'},
+};
+
+// 科技树 (cost=科研成本, req=前置, era=时代, e=解锁内容)
+const ERAS = ['远古时代','古典时代','中世纪','文艺复兴','工业时代','现代','原子能时代','信息时代'];
+const TECHS = {
+  // 远古
+  pottery:        {n:'制陶',   cost:25, req:[], era:0, e:'粮仓'},
+  mining:         {n:'采矿',   cost:25, req:[], era:0, e:'矿山/城墙/采石场'},
+  animalHusbandry:{n:'畜牧',   cost:25, req:[], era:0, e:'牧场,揭示马'},
+  sailing:        {n:'航海',   cost:50, req:[], era:0, e:'渔船'},
+  astrology:      {n:'占星术', cost:50, req:[], era:0, e:'神庙'},
+  writing:        {n:'文字',   cost:50, req:['pottery'], era:0, e:'图书馆'},
+  // 古典
+  bronzeWorking:  {n:'青铜器', cost:60, req:['mining'], era:1, e:'矛兵/兵营,揭示铁'},
+  masonry:        {n:'砌砖',   cost:60, req:['mining'], era:1, e:'城墙'},
+  wheel:          {n:'车轮',   cost:60, req:['animalHusbandry'], era:1, e:'水磨'},
+  archery:        {n:'箭术',   cost:60, req:['pottery'], era:1, e:'弓箭手'},
+  horsebackRiding:{n:'骑术',   cost:80, req:['wheel'], era:1, e:'骑手'},
+  ironWorking:    {n:'炼铁',   cost:80, req:['bronzeWorking'], era:1, e:'剑士'},
+  currency:       {n:'货币',   cost:80, req:['writing'], era:1, e:'市场'},
+  engineering:    {n:'工程',   cost:80, req:['writing'], era:1, e:'引水渠'},
+  // 中世纪
+  stirrups:       {n:'马镫',   cost:160, req:['horsebackRiding'], era:2, e:'骑士'},
+  machinery:      {n:'机械',   cost:160, req:['archery','ironWorking'], era:2, e:'弩手/投石车'},
+  education:      {n:'教育',   cost:160, req:['writing'], era:2, e:'大学'},
+  militaryTactics:{n:'战术',   cost:175, req:['bronzeWorking'], era:2, e:'长矛兵'},
+  apprenticeship: {n:'学徒制', cost:175, req:['mining'], era:2, e:'工坊'},
+  banking:        {n:'银行业', cost:175, req:['currency'], era:2, e:'银行'},
+  // 文艺复兴
+  gunpowder:      {n:'火药',   cost:240, req:['militaryTactics','machinery'], era:3, e:'火枪手,揭示硝石'},
+  printing:       {n:'印刷术', cost:240, req:['education'], era:3, e:'文化+2'},
+  astronomy:      {n:'天文学', cost:240, req:['astrology','education'], era:3, e:'文化+1'},
+  // 工业
+  industrialization:{n:'工业化',cost:420,req:['apprenticeship','banking'], era:4, e:'工厂'},
+  rifling:        {n:'膛线',   cost:480, req:['gunpowder'], era:4, e:'来福枪兵'},
+  // 现代
+  flight:         {n:'飞行',   cost:640, req:['printing'], era:5, e:'文化+1'},
+  replaceableParts:{n:'互换零件',cost:680,req:['rifling'], era:5, e:'产能+1'},
+  // 信息
+  rocketry:       {n:'火箭学', cost:880, req:['flight'], era:6, e:'开启太空竞赛'},
+  nanotechnology: {n:'纳米技术',cost:1040,req:['rocketry','replaceableParts'], era:7, e:'★ 科技胜利!'},
+};
+
+// 市政树(简化)
+const CIVICS = {
+  codeOfLaws: {n:'法典', cost:20, req:[], era:0, e:'开启政策'},
+  craftsmanship:{n:'工艺', cost:40, req:['codeOfLaws'], era:0, e:'+1产能于改进'},
+  foreignTrade:{n:'外贸', cost:60, req:['codeOfLaws'], era:1, e:'+1金于商路'},
+  militaryTradition:{n:'军事传统',cost:80,req:['craftsmanship'],era:1,e:'近战+2战力'},
+  stateWorkforce:{n:'国家劳力',cost:120,req:['foreignTrade'],era:2,e:'+1产能城市'},
+  defensiveTactics:{n:'防御战术',cost:160,req:['militaryTradition'],era:2,e:'驻防+5战力'},
+  feudalism:   {n:'封建主义',cost:220,req:['stateWorkforce','defensiveTactics'],era:2,e:'农田+1粮'},
+  mercantilism:{n:'重商主义',cost:340,req:['feudalism'],era:3,e:'市场+2金'},
+  enlightenment:{n:'启蒙思想',cost:420,req:['mercantilism'],era:3,e:'大学+1科技'},
+  nationalism: {n:'民族主义',cost:520,req:['enlightenment'],era:4,e:'所有单位+5战力'},
+};
+
+// 文明
+const CIVS_DEF = [
+  {id:0, name:'中华', leader:'秦始皇', color:'#3b6ea5', ability:'城市建设加速', bonus:'cityProd'},
+  {id:1, name:'罗马', leader:'图拉真', color:'#b5403b', ability:'军团扩张', bonus:'military'},
+  {id:2, name:'希腊', leader:'伯里克利', color:'#7d3b8e', ability:'文化兴盛', bonus:'culture'},
+  {id:3, name:'埃及', leader:'克娄巴特拉', color:'#d4a838', ability:'河流繁荣', bonus:'gold'},
+  {id:4, name:'苏美尔', leader:'吉尔伽美什', color:'#4a7c3b', ability:'战车冲锋', bonus:'warstart'},
+  {id:5, name:'日本', leader:'北条时宗', color:'#d44a4a', ability:'海岸兴盛', bonus:'coast'},
+];
+const BARB = {id:99, name:'蛮族', leader:'蛮族', color:'#6a6a6a', isBarb:true};
+
+// -------------------- 游戏状态 --------------------
+let G = null;  // 全局游戏对象
+const canvas = document.getElementById('map');
+const ctx = canvas.getContext('2d');
+const mmCanvas = document.getElementById('mmCanvas');
+const mmCtx = mmCanvas.getContext('2d');
+
+function newGame(playerCivId, aiCount, diff, sizeIdx){
+  const sizes = [
+    {w:16,h:11,civs:4},
+    {w:20,h:14,civs:5},
+    {w:26,h:18,civs:6},
+  ];
+  const sz = sizes[sizeIdx];
+  G = {
+    mapW: sz.w, mapH: sz.h,
+    tiles: {},          // "q,r" -> tile
+    civs: [],
+    units: [],          // 所有单位
+    cities: [],
+    turn: 1,
+    diff: diff,
+    playerCivId: playerCivId,
+    curCiv: 0,          // 当前回合文明索引
+    selected: null,     // 选中的单位
+    selectedCity: null,
+    cam: {x:0,y:0,zoom:1},
+    mouseHex: null,
+    dragging:false, dragStart:null, camStart:null, moved:false,
+    log: [],
+    over:false,
+    barbCamps: [],
+    civicBonuses: {},   // civ -> {key:bonus}
+  };
+  // 选文明：玩家1个 + AI若干
+  const pool = CIVS_DEF.filter(c=>c.id!==playerCivId);
+  shuffle(pool);
+  const chosen = [CIVS_DEF[playerCivId]];
+  for(let i=0;i<aiCount && i<pool.length;i++) chosen.push(pool[i]);
+  chosen.forEach((cd,i)=>{
+    G.civs.push({
+      ...cd, isAI: i!==0,
+      gold:0, sci:0, cul:0, faith:0,
+      researched:{}, researching:null, researchProg:0,
+      civicsResearched:{}, civicResearching:null, civicProg:0,
+      techBonuses:{combat:0,prod:0},
+      atWarWith:{}, met:new Set([i]),
+      capitalId:null,
+    });
+  });
+  generateMap();
+  placeStarts();
+  revealAroundPlayer();
+  centerCamera();
+  logEvent('文明史诗 · 开启！','lt');
+  logEvent(`${G.civs[0].leader} 领导 ${G.civs[0].name} 踏上历史舞台`,'');
+}
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} }
+
+// -------------------- 地图生成 --------------------
+function key(q,r){ return q+','+r; }
+function tile(q,r){ return G.tiles[key(q,r)]; }
+
+// 简易值噪声
+function makeNoise(seed){
+  const perm = [];
+  for(let i=0;i<512;i++) perm[i]=Math.floor(rand()*256);
+  function rand(){
+    seed = (seed*9301+49297)%233280; return seed/233280;
+  }
+  function hash(x,y){
+    let h = perm[(x*73856093 & 255)] ^ perm[(y*19349663 & 255)];
+    return (h & 255)/255;
+  }
+  function smooth(x,y){
+    const xi=Math.floor(x), yi=Math.floor(y);
+    const xf=x-xi, yf=y-yi;
+    const u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
+    const a=hash(xi,yi), b=hash(xi+1,yi), c=hash(xi,yi+1), d=hash(xi+1,yi+1);
+    return (a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v;
+  }
+  return function(x,y){
+    let t=0,amp=1,freq=1,max=0;
+    for(let o=0;o<4;o++){ t+=smooth(x*freq,y*freq)*amp; max+=amp; amp*=0.5; freq*=2; }
+    return t/max;
+  };
+}
+let RND = Math.random;
+function rand(){ return Math.random(); }
+
+function generateMap(){
+  const W=G.mapW, H=G.mapH;
+  const noiseE = makeNoise(Math.floor(rand()*10000));
+  const noiseM = makeNoise(Math.floor(rand()*10000)+777);
+  const scale = 0.18;
+  for(let r=0;r<H;r++){
+    for(let q=0;q<W;q++){
+      const lat = r/(H-1);              // 0=北极, 1=南极
+      const latDist = Math.abs(lat-0.5)*2; // 0=赤道, 1=极地
+      let e = noiseE((q+ (r%2)*0.5)*scale, r*scale);
+      let m = noiseM((q+ (r%2)*0.5)*scale+50, r*scale+50);
+      // 让中心抬高(泛大陆倾向)
+      const cx=W/2, cy=H/2;
+      const dc = Math.sqrt(((q-cx)/cx)**2 + ((r-cy)/cy)**2);
+      e = e*1.0 + (0.18 - dc*0.22);
+      let terrain, feature=null, resource=null, hill=false;
+      // 温度带
+      if(e < 0.32){ terrain='OCEAN'; }
+      else if(e < 0.40){ terrain='COAST'; }
+      else if(e > 0.78){ terrain='MOUNTAIN'; }
+      else {
+        if(latDist > 0.82){ terrain = e>0.7?'MOUNTAIN':'SNOW'; }
+        else if(latDist > 0.62){ terrain = e>0.7?'MOUNTAIN':'TUNDRA'; }
+        else if(latDist < 0.25 && m < 0.35){ terrain='DESERT'; }
+        else { terrain = m>0.55?'GRASSLAND':'PLAINS'; }
+        // 丘陵
+        if(terrain!=='MOUNTAIN' && e>0.62){ hill=true; }
+      }
+      // 地貌
+      if(terrain!=='OCEAN' && terrain!=='COAST' && terrain!=='MOUNTAIN'){
+        if(m>0.68 && latDist<0.4 && !hill){ feature = rand()<0.7?'RAINFOREST':'FOREST'; }
+        else if(m>0.6 && latDist<0.6){ feature = 'FOREST'; }
+        else if(terrain==='GRASSLAND' && m>0.45 && rand()<0.3){ feature='MARSH'; }
+        else if(terrain==='DESERT' && rand()<0.06){ feature='OASIS'; }
+      }
+      // 资源
+      if(!resource && terrain!=='OCEAN' && terrain!=='MOUNTAIN'){
+        const rr = rand();
+        if(rr < 0.10){
+          const candidates = [];
+          for(const [rk,rv] of Object.entries(RES)){
+            if(rv.t==='food' && (terrain==='GRASSLAND'||terrain==='PLAINS'||(terrain==='COAST'&&rv.n==='鱼'))) candidates.push(rk);
+            if(rv.t==='strat' && (hill || terrain==='HILLS')) {}
+            if(rv.t==='lux' && (hill || terrain==='DESERT'||terrain==='TUNDRA')) candidates.push(rk);
+          }
+          if(terrain==='COAST' && rr<0.05) resource='FISH';
+          else if(candidates.length) resource = candidates[Math.floor(rand()*candidates.length)];
+        }
+      }
+      G.tiles[key(q,r)] = {
+        q,r, terrain, feature, hill, resource, improvement:null,
+        owner:null, city:null,
+        visible:new Set(), explored:new Set(),
+        river:false,
+      };
+    }
+  }
+  // 简易河流：从山脉向低处流到海
+  for(let i=0;i<W*H*0.02;i++){
+    let cur = randomLandTile('MOUNTAIN');
+    if(!cur) continue;
+    const path=[cur];
+    for(let step=0;step<12;step++){
+      const nbs = neighbors(cur.q,cur.r).map(t=>tile(t.q,t.r)).filter(t=>t);
+      if(!nbs.length) break;
+      const lower = nbs.filter(t=>heightVal(t) < heightVal(cur));
+      const next = lower.length? lower[Math.floor(rand()*lower.length)] : nbs[Math.floor(rand()*nbs.length)];
+      if(next.terrain==='OCEAN'||next.terrain==='COAST') break;
+      if(next.terrain==='MOUNTAIN') break;
+      next.river = true;
+      cur = next;
+      if(path.includes(cur)) break;
+      path.push(cur);
+    }
+  }
+}
+function heightVal(t){
+  if(!t) return 0;
+  if(t.terrain==='OCEAN') return -1; if(t.terrain==='COAST') return 0;
+  let h = {GRASSLAND:0.5,PLAINS:0.5,DESERT:0.5,TUNDRA:0.5,SNOW:0.5,MOUNTAIN:1}[t.terrain]||0.5;
+  if(t.hill) h+=0.1; return h;
+}
+function randomLandTile(terr){
+  const arr=[];
+  for(const k in G.tiles){ const t=G.tiles[k]; if(terr?t.terrain===terr: t.terrain!=='OCEAN'&&t.terrain!=='COAST') arr.push(t); }
+  return arr.length? arr[Math.floor(rand()*arr.length)] : null;
+}
+function neighbors(q,r){ return DIRS.map(([dq,dr])=>({q:q+dq,r:r+dr})); }
+function nbsTiles(q,r){ return neighbors(q,r).map(p=>tile(p.q,p.r)).filter(t=>t); }
+function hexDist(a,b){ return (Math.abs(a.q-b.q)+Math.abs(a.q+a.r-b.q-b.r)+Math.abs(a.r-b.r))/2; }
+
+// -------------------- 开局放置 --------------------
+function placeStarts(){
+  const landTiles = [];
+  for(const k in G.tiles){ const t=G.tiles[k];
+    if(isPassable(t) && t.terrain!=='OCEAN' && t.terrain!=='COAST' && !t.hill) landTiles.push(t);
+  }
+  shuffle(landTiles);
+  const starts = [];
+  for(const t of landTiles){
+    if(starts.every(s=>hexDist(s,t) >= Math.max(4, Math.floor(G.mapW/3)))){
+      // 附近要有水/海岸 或 草原(保证不卡死)
+      starts.push(t);
+      if(starts.length >= G.civs.length) break;
+    }
+  }
+  while(starts.length < G.civs.length && landTiles.length){ starts.push(landTiles.pop()); }
+
+  G.civs.forEach((civ,i)=>{
+    const st = starts[i] || landTiles[i];
+    if(!st) return;
+    // 建首都
+    const city = foundCity(st, civ, '首都');
+    civ.capitalId = city.id;
+    if(!civ.isAI){
+      // 玩家初始单位
+      spawnUnit('settler', st, civ); // 额外开拓者
+      spawnUnit('warrior', st, civ);
+      spawnUnit('builder', st, civ);
+    } else {
+      spawnUnit('warrior', st, civ);
+      spawnUnit('builder', st, civ);
+    }
+  });
+  // 蛮族营地
+  for(let i=0;i<3+G.mapW/6;i++){
+    const t = randomLandTile();
+    if(t && !t.city && nbsTiles(t.q,t.r).every(n=>!n.owner) && nbsTiles(t.q,t.r).filter(n=>n.terrain!=='OCEAN'&&n.terrain!=='COAST').length>=4){
+      spawnBarbCamp(t);
+    }
+  }
+}
+
+// -------------------- 城市 --------------------
+let citySeq=0;
+function foundCity(t, civ, nameOverride){
+  const city = {
+    id: ++citySeq, q:t.q, r:t.r, civ:civ.id, civObj:civ,
+    name: nameOverride || genCityName(civ),
+    pop:1, food:0, prod:0, sci:0, gold:0, cul:0, faith:0,
+    foodBucket:0, prodBucket:0,
+    production:null, // {type:'unit'/'building', key}
+    buildings:{}, worked:[], housing:3,
+    hp:200, maxHp:200, hasWalls:false, wallHp:0,
+    defenseCS: 10, rangedCS:0,
+    isCapital: nameOverride==='首都',
+    needName:true,
+  };
+  t.city = city.id; t.owner = civ.id;
+  G.cities.push(city);
+  // 自动工作市中心(固定) + 周围
+  assignWorkedTile(city, t);
+  // 自动圈定周围3格内的非敌方地块为领土
+  for(const nb of allTilesInRange(t.q, t.r, 2)){
+    if(nb.owner === null || nb.owner === undefined) nb.owner = civ.id;
+  }
+  logEvent(`${civ.name} 建立了 ${city.name}`, civ.isAI?'':'lt');
+  return city;
+}
+const CITY_NAMES = {
+  0:['北京','上海','广州','西安','洛阳','开封','南京','杭州','成都','武汉'],
+  1:['罗马','庞贝','米兰','那不勒斯','佛罗伦萨','威尼斯','都灵','热那亚'],
+  2:['雅典','斯巴达','科林斯','底比斯','奥林匹亚','德尔斐','米利都'],
+  3:['开罗','亚历山大','吉萨','孟菲斯','底比斯','赫利奥波利斯','塞伊斯'],
+  4:['乌鲁克','乌尔','尼普尔','拉迦什','基什','埃利都'],
+  5:['京都','江户','大阪','奈良','镰仓','名古屋','仙台'],
+};
+function genCityName(civ){
+  const arr = CITY_NAMES[civ.id]||['新城'];
+  const used = G.cities.filter(c=>c.civ===civ.id).map(c=>c.name);
+  for(const n of arr){ if(!used.includes(n)) return n; }
+  return (arr[0]||(civ.name+'城')) + (used.length+1);
+}
+function assignWorkedTile(city,t){
+  if(!city.worked.includes(key(t.q,t.r))) city.worked.push(key(t.q,t.r));
+}
+function cityYields(city){
+  let food=0,prod=0,sci=0,gold=0,cul=0,faith=0;
+  // 市中心固定产出
+  food+=2; prod+=1; gold+=1;
+  // 工作格子(除市中心外最多pop个)
+  const ring = cityRing(city).filter(k=>k!==key(city.q,city.r));
+  // 自动选最优格子
+  const sorted = ring.map(k=>{
+    const t=G.tiles[k]; if(!t) return null;
+    if(t.city && G.cities.find(c=>c.id===t.city).civ!==city.civ) return null;
+    if(t.owner && t.owner!==city.civ) return null;
+    return {k, y: tileYield(t, city.civObj).food*1.0 + tileYield(t,city.civObj).prod*1.2 + tileYield(t,city.civObj).gold*0.8};
+  }).filter(x=>x).sort((a,b)=>b.y-a.y);
+  const workCount = city.pop; // pop个工作格
+  for(let i=0;i<Math.min(workCount, sorted.length);i++){
+    const t=G.tiles[sorted[i].k];
+    const y=tileYield(t, city.civObj);
+    food+=y.food; prod+=y.prod; sci+=y.sci; gold+=y.gold; cul+=y.culture; faith+=y.faith;
+  }
+  // 建筑
+  for(const b in city.buildings){
+    const bd = BUILDINGS[b]; if(!bd.yield) continue;
+    food += bd.yield.food||0; prod += bd.yield.prod||0; sci += bd.yield.sci||0;
+    gold += bd.yield.gold||0; cul += bd.yield.culture||0; faith += bd.yield.faith||0;
+    city.housing += bd.yield.housing||0;
+  }
+  // 文明能力
+  if(city.civObj.bonus==='gold' && isCoast(tile(city.q,city.r))) gold+=2;
+  if(city.civObj.bonus==='coast' && isCoast(tile(city.q,city.r))){ sci+=1;cul+=1; }
+  if(city.civObj.bonus==='cityProd') prod += 1;
+  // 国家级市政加成
+  if(G.civs[city.civ].techBonuses.culture && hasCivic(city.civ,'feudalism')) food += city.worked.length*0; // 简化
+  return {food:Math.round(food),prod:Math.round(prod),sci:Math.round(sci),gold:Math.round(gold),culture:Math.round(cul),faith:Math.round(faith)};
+}
+function isCoast(t){ return t && (tile(t.q,t.r) && nbsTiles(t.q,t.r).some(n=>n.terrain==='COAST'||n.terrain==='OCEAN')); }
+function cityRing(city){ // 半径3的所有格
+  const res=[];
+  for(let dq=-3;dq<=3;dq++) for(let dr=-3;dr<=3;dr++){
+    const ds=-dq-dr; if(Math.abs(ds)>3) continue;
+    const q=city.q+dq, r=city.r+dr; const t=tile(q,r);
+    if(t) res.push(key(q,r));
+  }
+  return res;
+}
+function tileYield(t, civ){
+  if(!t) return {food:0,prod:0,gold:0,sci:0,culture:0,faith:0};
+  let food=0,prod=0,gold=0,sci=0,culture=0,faith=0;
+  const td=T[t.terrain];
+  food+=td.food||0; prod+=td.prod||0; gold+=td.gold||0;
+  if(t.hill){ prod+=1; }
+  if(t.feature && FEAT[t.feature]){ const f=FEAT[t.feature]; food+=f.food||0; prod+=f.prod||0; gold+=f.gold||0; }
+  if(t.resource && RES[t.resource]){ const b=RES[t.resource].bonus; food+=b.food||0; prod+=b.prod||0; gold+=b.gold||0; }
+  if(t.improvement && IMPROVE[t.improvement]){ const y=IMPROVE[t.improvement].yield; food+=y.food||0; prod+=y.prod||0; gold+=y.gold||0; }
+  // 市政：工艺 +1产能
+  if(t.improvement && hasCivic(civ.id,'craftsmanship')) prod+=0;
+  // 市政：封建 +1粮农田
+  if(t.improvement==='FARM' && hasCivic(civ.id,'feudalism')) food+=1;
+  return {food,prod,gold,sci,culture,faith};
+}
+function hasCivic(civId,k){ return G.civs[civId].civicsResearched[k]; }
+
+// -------------------- 单位 --------------------
+let unitSeq=0;
+function spawnUnit(type, t, civ){
+  const u = {
+    id:++unitSeq, type, civ:civ.id, civObj:civ,
+    q:t.q, r:t.r, hp:100, mp:0, maxmp:UNITS[type].mp,
+    fortified:false, slept:false, used:false,
+    charges: UNITS[type].charges||0,
+    level:1, xp:0,
+  };
+  G.units.push(u);
+  return u;
+}
+function unitAt(q,r){
+  return G.units.find(u=>u.q===q&&u.r===r&&u.hp>0);
+}
+function combatStrength(u, defending=false){
+  const def = UNITS[u.type];
+  let cs = def.cs||0;
+  // 国家级
+  cs += u.civObj.techBonuses.combat||0;
+  if(hasCivic(u.civ,'militaryTradition') && (def.melee)) cs+=2;
+  if(hasCivic(u.civ,'nationalism')) cs+=5;
+  // 反骑兵对骑兵
+  // 防御地形
+  if(defending){
+    const t=tile(u.q,u.r);
+    if(t){
+      if(t.hill) cs+=3;
+      if(t.feature&&FEAT[t.feature]&&FEAT[t.feature].def) cs+=FEAT[t.feature].def;
+      if(hasCivic(u.civ,'defensiveTactics')&&u.fortified) cs+=5;
+    }
+    if(u.fortified) cs+=3;
+  }
+  // HP衰减
+  cs *= (0.5+0.5*(u.hp/100));
+  return Math.round(cs);
+}
+
+// 寻路 A*
+function pathCost(u, t){
+  if(!isPassableFor(u,t)) return Infinity;
+  if(unitAt(t.q,t.r) && unitAt(t.q,t.r).civ!==u.civ) return Infinity; // 敌方占据
+  let c = 1;
+  if(t.hill) c=2;
+  if(t.feature && FEAT[t.feature] && FEAT[t.feature].move) c=FEAT[t.feature].move;
+  if(t.river) c+=1;
+  return c;
+}
+function isPassable(t){ return t && T[t.terrain].move>0 && !T[t.terrain].block; }
+function isPassableFor(u,t){
+  if(!isPassable(t)) return false;
+  if(T[t.terrain].water && !UNITS[u.type].naval) {
+    // 陆地单位不能下水
+    return false;
+  }
+  return true;
+}
+function findPath(u, dest){
+  const start={q:u.q,r:u.r};
+  if(start.q===dest.q&&start.r===dest.r) return [];
+  const open=[[0,0,key(start.q,start.r)]];
+  const came={}, g={}; g[key(start.q,start.r)]=0;
+  while(open.length){
+    open.sort((a,b)=>a[0]-b[0]);
+    const [,_,ck] = open.shift();
+    const [cq,cr]=ck.split(',').map(Number);
+    if(cq===dest.q&&cr===dest.r){
+      const path=[]; let cur=ck;
+      while(came[cur]){ path.unshift(cur); cur=came[cur]; }
+      return path.map(k=>{const[q,r]=k.split(',').map(Number);return{q,r};});
+    }
+    for(const nb of neighbors(cq,cr)){
+      const nt=tile(nb.q,nb.r); if(!nt) continue;
+      const nk=key(nb.q,nb.r);
+      const cost = pathCost(u,nt);
+      if(cost===Infinity) continue;
+      const ng = g[ck]+cost;
+      if(g[nk]===undefined || ng<g[nk]){
+        g[nk]=ng; came[nk]=ck;
+        const h = hexDist(nb,dest);
+        open.push([ng+h, ng, nk]);
+      }
+    }
+    if(open.length>2000) break;
+  }
+  return null;
+}
+
+// 移动单位(沿路径, 消耗mp)
+function moveUnit(u, dest){
+  const path = findPath(u, dest);
+  if(!path || !path.length) return false;
+  let moved=false;
+  for(const step of path){
+    if(u.mp<=0) break;
+    const nt = tile(step.q,step.r);
+    // 检查是否相邻有敌方可攻击(自动停止? 不,让玩家自己控制)
+    if(!isPassableFor(u,nt)) break;
+    const occ = unitAt(step.q,step.r);
+    if(occ){ if(occ.civ===u.civ) break; else { attack(u,occ); return true; } } // 进入敌格->攻击
+    const cost = pathCost(u,nt);
+    if(u.mp < cost && moved) break;
+    // 移动
+    u.q=step.q; u.r=step.r; u.mp-=cost; if(u.mp<0)u.mp=0;
+    u.fortified=false; moved=true;
+    reveal(u);
+    // 沿途遇敌停止
+    if(u.mp<=0) break;
+  }
+  return moved;
+}
+// 直接相邻移动一步(右键)
+function stepMove(u, dest){
+  const nt = tile(dest.q,dest.r);
+  if(!nt) return false;
+  if(hexDist({q:u.q,r:u.r},dest)!==1) return moveUnit(u,dest);
+  const occ=unitAt(dest.q,dest.r);
+  if(occ){
+    if(occ.civ===u.civ) return false;
+    attack(u,occ); return true;
+  }
+  if(!isPassableFor(u,nt)) return false;
+  const cost=pathCost(u,nt);
+  if(u.mp<cost) { toast('行动力不足！'); return false; }
+  u.q=dest.q; u.r=dest.r; u.mp-=cost; u.fortified=false;
+  reveal(u);
+  // 自动捡到遗迹? 跳过
+  return true;
+}
+
+// 战斗
+function attack(att, def){
+  const aDef=UNITS[att.type], dDef=UNITS[def.type];
+  const aCS = aDef.range? (aDef.rs||aDef.cs) : combatStrength(att,false);
+  let dCS = combatStrength(def,true);
+  // 城市防御
+  if(def.city){
+    const city=G.cities.find(c=>c.id===def.city);
+    dCS = cityDefense(city);
+  }
+  const diff = aCS - dCS;
+  const rf = 0.85+rand()*0.3;
+  let dmgToDef = Math.round(30*Math.pow(2, diff/25)*rf);
+  dmgToDef = Math.max(1, Math.min(100,dmgToDef));
+  def.hp -= dmgToDef;
+  let dmgToAtt=0;
+  if(!aDef.range){ // 近战受反击
+    const rf2=0.85+rand()*0.3;
+    dmgToAtt = Math.round(30*Math.pow(2,-diff/25)*rf2);
+    dmgToAtt = Math.max(1,Math.min(100,dmgToAtt));
+    att.hp -= dmgToAtt;
+  }
+  att.mp=0; att.fortified=false;
+  logEvent(`${unitLabel(att)} 攻击 ${unitLabel(def)} 造成${dmgToDef}伤害`, att.civ===G.playerCivId?'lg':'');
+  if(def.hp<=0){
+    killUnit(def);
+    // 近战推进
+    if(!aDef.range && att.hp>0){
+      if(isPassableFor(att, tile(def.q,def.r))){ att.q=def.q; att.r=def.r; }
+    }
+  }
+  if(att.hp<=0) killUnit(att);
+  else { att.xp+=dmgToDef>30?3:1; checkLevel(att); }
+  if(def.hp>0 && !def.city){ def.xp+=dmgToAtt>30?3:1; checkLevel(def); }
+  afterAction();
+}
+function killUnit(u){
+  const i=G.units.indexOf(u); if(i>=0) G.units.splice(i,1);
+  if(u.civ===G.playerCivId && u===G.selected) G.selected=null;
+}
+function checkLevel(u){ if(u.xp>=10*(u.level)){ u.level++; u.hp=Math.min(100,u.hp+20); } }
+function unitLabel(u){ return `${G.civs[u.civ].name}的${UNITS[u.type].n}`; }
+
+function cityDefense(city){
+  let cs = 10 + city.pop*2;
+  // 文明级
+  cs += G.civs[city.civ].techBonuses.combat||0;
+  // 驻军最强近战/单位
+  const garrison = G.units.find(u=>u.q===city.q&&u.r===city.r&&u.civ===city.civ&&u.hp>0);
+  if(garrison) cs = Math.max(cs, combatStrength(garrison,true));
+  if(city.hasWalls) cs+=6;
+  return Math.round(cs);
+}
+
+// -------------------- 视野/迷雾 --------------------
+function sightRange(u){ return UNITS[u.type].cat==='cav'?3:(UNITS[u.type].n==='侦察兵'?3:2); }
+function reveal(u){
+  const range=sightRange(u);
+  for(const t of allTilesInRange(u.q,u.r,range)){
+    t.visible.add(u.civ); t.explored.add(u.civ);
+  }
+  // 自己文明总是看见自己格子
+}
+function allTilesInRange(q,r,range){
+  const arr=[];
+  for(let dq=-range;dq<=range;dq++)for(let dr=-range;dr<=range;dr++){
+    const ds=-dq-dr; if(Math.abs(ds)>range) continue;
+    const t=tile(q+dq,r+dr); if(t) arr.push(t);
+  }
+  return arr;
+}
+function revealAroundPlayer(){
+  const civ=G.civs[G.playerCivId];
+  G.units.filter(u=>u.civ===G.playerCivId).forEach(reveal);
+  G.cities.filter(c=>c.civ===G.playerCivId).forEach(c=>{
+    allTilesInRange(c.q,c.r,3).forEach(t=>{t.visible.add(G.playerCivId);t.explored.add(G.playerCivId);});
+  });
+}
+
+// -------------------- 蛮族 --------------------
+function spawnBarbCamp(t){
+  G.barbCamps.push({q:t.q,r:t.r, cooldown:2+Math.floor(rand()*3)});
+  t.barbCamp=true;
+}
+function barbTurn(){
+  for(const camp of [...G.barbCamps]){
+    camp.cooldown--;
+    if(camp.cooldown<=0){
+      // 生成勇士
+      const nearby = nbsTiles(camp.q,camp.r).filter(t=>isPassable(t)&&!unitAt(t.q,t.r));
+      if(nearby.length){
+        const t=nearby[Math.floor(rand()*nearby.length)];
+        const u=spawnUnit('warrior', t, BARB);
+        u.barbCamp = camp;
+      }
+      camp.cooldown = 4+Math.floor(rand()*3);
+    }
+  }
+  // 蛮族单位行动
+  const barbs = G.units.filter(u=>u.civ===99);
+  for(const u of barbs){
+    u.mp = u.maxmp;
+    // 找最近敌方单位/城市
+    let target=null, bd=99;
+    for(const e of G.units){ if(e.civ===99) continue;
+      const d=hexDist(u,e); if(d<bd){bd=d;target=e;}
+    }
+    for(const c of G.cities){ const d=hexDist(u,c); if(d<bd){bd=d;target=c;} }
+    if(target){
+      const dest={q:target.q,r:target.r};
+      if(hexDist(u,dest)===1){
+        if(target.id!==undefined){ // 城市
+          // 攻城: 蛮族勇士打城市
+          const dummy={type:'warrior',civ:99,civObj:BARB,q:u.q,r:u.r,hp:u.hp,mp:u.mp};
+          attackCity(u, target);
+        } else {
+          attack(u,target);
+        }
+      } else {
+        const path=findPath(u,dest);
+        if(path&&path.length){ const step=path[0];
+          const occ=unitAt(step.q,step.r);
+          if(!occ){ u.q=step.q;u.r=step.r;u.mp-=pathCost(u,tile(step.q,step.r)); }
+        }
+      }
+    }
+  }
+}
+function attackCity(u, city){
+  const aCS=UNITS[u.type].cs||10;
+  const dCS=cityDefense(city);
+  const diff=aCS-dCS;
+  const dmg=Math.max(1,Math.round(30*Math.pow(2,diff/25)*(0.85+rand()*0.3)));
+  if(city.wallHp>0){
+    city.wallHp=Math.max(0,city.wallHp-dmg);
+  } else {
+    city.hp=Math.max(0,city.hp-dmg);
+  }
+  u.mp=0;
+  if(city.hp<=0){
+    // 城市被蛮族摧毁? 简化:蛮族占领->转为蛮族城(放逐). 这里简单:摧毁
+    captureCity(city, G.civs[u.civ]);
+  }
+}
+
+// -------------------- AI 回合 --------------------
+function aiTurn(civ){
+  // 1. 研究:自动选科技
+  if(!civ.researching) autoPickResearch(civ, 'tech');
+  if(!civ.civicResearching) autoPickResearch(civ,'civic');
+  // 2. 城市:选生产
+  civ._cities = G.cities.filter(c=>c.civ===civ.id);
+  for(const city of civ._cities){
+    if(!city.production) aiPickProduction(civ,city);
+  }
+  // 3. 单位行动
+  const units = G.units.filter(u=>u.civ===civ.id);
+  for(const u of units){
+    if(u.hp<=0) continue;
+    u.mp=u.maxmp;
+    aiActUnit(civ,u);
+  }
+}
+function autoPickResearch(civ, kind){
+  const tree = kind==='tech'?TECHS:CIVICS;
+  const done = kind==='tech'?civ.researched:civ.civicsResearched;
+  // 优先科技胜利:玩家之外的AI也走科技
+  // 选最早可研究的
+  let best=null, bestCost=Infinity;
+  for(const k in tree){
+    if(done[k]) continue;
+    const req=tree[k].req;
+    if(req.every(r=>done[r])){
+      if(tree[k].cost<bestCost){ bestCost=tree[k].cost; best=k; }
+    }
+  }
+  if(kind==='tech') civ.researching=best; else civ.civicResearching=best;
+}
+function aiPickProduction(civ,city){
+  const pop=city.pop;
+  const myUnits = G.units.filter(u=>u.civ===civ.id);
+  const military = myUnits.filter(u=>UNITS[u.type].cat!=='civ');
+  const settlers = myUnits.filter(u=>u.type==='settler');
+  // 决策
+  const availUnits = Object.entries(UNITS).filter(([k,v])=> isTechReady(civ,v.tech)).map(([k])=>k);
+  const availBuildings = Object.entries(BUILDINGS).filter(([k,v])=> (!v.tech||isTechReady(civ,v.tech)) && !city.buildings[k]).map(([k])=>k);
+  // 威胁评估
+  const threat = milThreatTo(civ, city);
+  let pick=null;
+  if(threat>0 && military.length<4){
+    pick = chooseMilUnit(civ, availUnits);
+  } else if(settlers.length===0 && G.cities.filter(c=>c.civ===civ.id).length<5 && pop>=2){
+    pick = 'settler';
+  } else if(military.length<3){
+    pick = chooseMilUnit(civ, availUnits);
+  } else if(availBuildings.includes('monument') && pop>=2){
+    pick = 'monument';
+  } else if(!city.buildings.granary && pop>=3 && availBuildings.includes('granary')){
+    pick='granary';
+  } else if(availBuildings.includes('library')) pick='library';
+  else if(availBuildings.length) pick=availBuildings[0];
+  else pick = chooseMilUnit(civ, availUnits)||'warrior';
+  if(pick && availUnits.includes(pick)) city.production={type:'unit',key:pick};
+  else if(pick && availBuildings.includes(pick)) city.production={type:'building',key:pick};
+  else city.production={type:'unit',key:'warrior'};
+}
+function isTechReady(civ,tech){ return !tech || tech==='none' || civ.researched[tech]; }
+function chooseMilUnit(civ, avail){
+  const order=['swordsman','knight','musketman','rifleman','crossbowman','archer','spearman','horseman','warrior','slinger'];
+  for(const u of order){ if(avail.includes(u)) return u; }
+  return null;
+}
+function milThreatTo(civ, city){
+  return G.units.filter(u=>u.civ!==civ.id && UNITS[u.type].cs>0 && hexDist(u,city)<=4).length;
+}
+function aiActUnit(civ,u){
+  const def=UNITS[u.type];
+  if(def.cat==='civ'){
+    if(u.type==='settler'){
+      // 找好地方建城
+      const best=findCitySpot(civ, {q:u.q,r:u.r});
+      if(best && (best.q!==u.q||best.r!==u.r)){
+        if(hexDist(u,best)===1 && isPassable(tile(best.q,best.r))){
+          if(!unitAt(best.q,best.r)){ u.q=best.q;u.r=best.r;u.mp=0; foundCity(tile(u.q,u.r),civ); return; }
+        }
+        const path=findPath(u,best);
+        if(path&&path.length){ u.q=path[0].q;u.r=path[0].r;u.mp-=pathCost(u,tile(path[0].q,path[0].r)); }
+      } else { foundCity(tile(u.q,u.r),civ); u.mp=0; }
+      return;
+    }
+    if(u.type==='builder'){
+      // 找附近可改良
+      const spot=nbsTiles(u.q,u.r).concat([tile(u.q,u.r)]).find(t=>t && canImprove(t,civ));
+      if(spot===tile(u.q,u.r) && canImprove(tile(u.q,u.r),civ)){ doImprove(u,tile(u.q,u.r)); return; }
+      // 移动去找
+      for(const t of nbsTiles(u.q,u.r)){
+        if(canImprove(t,civ) && !unitAt(t.q,t.r) && isPassableFor(u,t)){
+          u.q=t.q;u.r=t.r;u.mp-=pathCost(u,t);
+          if(canImprove(t,civ)) doImprove(u,t);
+          return;
+        }
+      }
+      // 没事做就待命
+      return;
+    }
+  }
+  // 军事单位
+  // 找目标
+  let enemy=null, ed=99;
+  for(const e of G.units){
+    if(e.civ===civ.id||e.civ===99&&false) continue;
+    if(civ.id===99) {} 
+    // 默认所有非己方非同盟(简化:无同盟) 都是敌人
+    const allied = civ.id!==99 && e.civ!==99 && false;
+    if(e.civ===civ.id) continue;
+    const d=hexDist(u,e);
+    if(d<ed){ ed=d; enemy=e; }
+  }
+  // 也瞄城市
+  let ecity=null, cd=99;
+  for(const c of G.cities){ if(c.civ===civ.id) continue; const d=hexDist(u,c); if(d<cd){cd=d;ecity=c;} }
+  // 蛮族作为敌人
+  const barbs=G.units.filter(b=>b.civ===99);
+  if(barbs.length && civ.id!==99){
+    let nb=null,nd=99; for(const b of barbs){const d=hexDist(u,b); if(d<nd){nd=d;nb=b;}}
+    if(nd<ed){enemy=nb;ed=nd;}
+  }
+  // 攻击范围内则攻击
+  if(def.range){
+    const rg=2;
+    if(enemy && hexDist(u,enemy)<=rg){ attack(u,enemy); return; }
+  } else {
+    if(enemy && hexDist(u,enemy)===1){ attack(u,enemy); return; }
+  }
+  // 朝目标移动
+  let target=null;
+  if(enemy) target=enemy; else if(ecity) target=ecity;
+  if(target){
+    const dest={q:target.q,r:target.r};
+    if(hexDist(u,dest)>1 || (def.range&&hexDist(u,dest)>2)){
+      const path=findPath(u,dest);
+      if(path&&path.length){
+        for(const step of path){
+          if(u.mp<=0) break;
+          const occ=unitAt(step.q,step.r);
+          if(occ && occ.civ!==civ.id){ if(!def.range) attack(u,occ); break; }
+          if(occ) break;
+          const cost=pathCost(u,tile(step.q,step.r));
+          if(u.mp<cost) break;
+          u.q=step.q;u.r=step.r;u.mp-=cost;
+          // 到达攻击范围
+          if(def.range && hexDist(u,target)<=2 && target.id===undefined){ /*远程不打单位前先移近*/ }
+          if(hexDist(u,target)<=1 && target.id===undefined){ if(!def.range) attack(u,target); break; }
+          if(def.range && hexDist(u,target)<=2 && target.type){ attack(u,target); break; }
+        }
+      }
+    }
+  } else {
+    // 没敌人:探索/驻防
+    u.fortified=true;
+  }
+}
+
+function findCitySpot(civ, from){
+  let best=null, bestScore=-1;
+  for(const k in G.tiles){
+    const t=G.tiles[k];
+    if(!isPassable(t)||t.city||t.owner) continue;
+    // 离己方城市不太近
+    const near = G.cities.filter(c=>c.civ===civ.id).some(c=>hexDist(c,t)<4);
+    if(near) continue;
+    // 评分:周围产出
+    let score=0;
+    for(const nb of allTilesInRange(t.q,t.r,1)){
+      score += T[nb.terrain].food||0; score += T[nb.terrain].prod||0;
+      if(nb.hill) score+=1; if(nb.feature==='FOREST') score+=0.5;
+      if(nbsTiles(nb.q,nb.r).some(x=>x.terrain==='COAST')) score+=0.5;
+    }
+    score -= hexDist(from,t)*0.1;
+    if(score>bestScore){ bestScore=score; best=t; }
+  }
+  return best;
+}
+
+// -------------------- 回合结算 --------------------
+function endTurn(){
+  if(G.over) return;
+  if(G.curCiv!==G.playerCivId){ return; } // 只允许玩家点
+  G.curCiv = (G.curCiv+1)%G.civs.length;
+  processCivTurn(G.civs[G.curCiv]);
+  // 处理所有AI,直到回到玩家
+  while(G.curCiv!==G.playerCivId && !G.over){
+    const civ=G.civs[G.curCiv];
+    setTimeout(()=>{},0);
+    aiTurn(civ);
+    processCivTurnEnd(civ);
+    G.curCiv=(G.curCiv+1)%G.civs.length;
+    processCivTurn(G.civs[G.curCiv]);
+  }
+  // 蛮族
+  barbTurn();
+  // 回合数+1
+  G.turn++;
+  // 玩家回合开始
+  refreshPlayerUnits();
+  revealAroundPlayer();
+  updateAllUI();
+  checkWin();
+}
+// 文明回合处理(开始时刷新mp等)
+function processCivTurn(civ){
+  if(civ.id===99) return;
+  // 城市结算
+  for(const city of G.cities.filter(c=>c.civ===civ.id)){
+    settleCity(city, civ);
+  }
+  // 单位刷新mp(AI在aiTurn内刷新)
+  if(!civ.isAI){
+    G.units.filter(u=>u.civ===civ.id).forEach(u=>{ u.mp=u.maxmp; u.used=false; });
+  }
+  // 维护费
+  const unitCost = G.units.filter(u=>u.civ===civ.id && UNITS[u.type].cat!=='civ').length;
+  const maint = Math.max(0, unitCost-5); // 前5个免费
+  civ.gold -= maint;
+  if(civ.gold<0){ civ.gold=0; /* 简化:不破产惩罚 */ }
+}
+function processCivTurnEnd(civ){
+  // 视野刷新
+}
+function settleCity(city, civ){
+  const y=cityYields(city);
+  city.food=y.food; city.prod=y.prod; city.sci=y.sci; city.gold=y.gold; city.cul=y.culture; city.faith=y.faith;
+  // 产能累积
+  if(city.production){
+    city.prodBucket += y.prod;
+    const def = city.production.type==='unit'? UNITS[city.production.key] : BUILDINGS[city.production.key];
+    const cost = def.cost;
+    if(city.prodBucket>=cost){
+      city.prodBucket-=cost;
+      const pk=city.production.key;
+      if(city.production.type==='unit'){
+        spawnUnit(pk, findSpawnTile(city), civ);
+        logEvent(`${city.name} 完成了 ${UNITS[pk].n}`,'lg');
+      } else {
+        city.buildings[pk]=true;
+        if(pk==='walls'){ city.hasWalls=true; city.wallHp=200; }
+        logEvent(`${city.name} 建造了 ${BUILDINGS[pk].n}`,'lg');
+      }
+      city.production=null;
+      // AI自动选下一个
+      if(civ.isAI) aiPickProduction(civ,city);
+    }
+  }
+  // 食物增长
+  const surplus = y.food - (city.pop*2); // 每人口消耗2粮
+  city.foodBucket += surplus;
+  const need = Math.round(15 + 8*(city.pop-1) + Math.pow(city.pop-1,1.8));
+  if(city.foodBucket>=need && city.pop < city.housing+2 && city.pop<20){
+    city.pop++; city.foodBucket=0;
+    logEvent(`${city.name} 人口增长至 ${city.pop}`,'');
+  } else if(city.foodBucket<0){ city.foodBucket=0;
+    if(city.pop>1 && surplus<0){ /*饥荒,简化不丢人口*/ }
+  }
+  // 国家级科技/文化累积
+  civ.sci += y.sci;
+  civ.cul += y.culture;
+  civ.faith += y.faith;
+  civ.gold += y.gold;
+  // 科研进度
+  if(civ.researching){
+    const tech=TECHS[civ.researching];
+    civ.researchProg += y.sci;
+    if(civ.researchProg>=tech.cost){
+      civ.researchProg-=tech.cost;
+      civ.researched[civ.researching]=true;
+      const dn=civ.researching;
+      logEvent(`${civ.name} 研发了 ${TECHS[dn].n}！`, civ.id===G.playerCivId?'lt':'');
+      // 城市防御提升
+      if(dn==='gunpowder') civ.techBonuses.combat=(civ.techBonuses.combat||0)+2;
+      civ.researching=null; autoPickResearch(civ,'tech');
+    }
+  } else { civ.researchProg=0; autoPickResearch(civ,'tech'); }
+  // 市政
+  if(civ.civicResearching){
+    const cv=CIVICS[civ.civicResearching];
+    civ.civicProg += y.culture;
+    if(civ.civicProg>=cv.cost){
+      civ.civicProg=0;
+      civ.civicsResearched[civ.civicResearching]=true;
+      const dn=civ.civicResearching;
+      logEvent(`${civ.name} 采纳了 ${CIVICS[dn].n}`, civ.id===G.playerCivId?'lt':'');
+      applyCivicBonus(civ, dn);
+      civ.civicResearching=null; autoPickResearch(civ,'civic');
+    }
+  } else { autoPickResearch(civ,'civic'); }
+}
+function applyCivicBonus(civ,k){
+  if(k==='militaryTradition') civ.techBonuses.combat=(civ.techBonuses.combat||0)+2;
+  if(k==='nationalism') civ.techBonuses.combat=(civ.techBonuses.combat||0)+5;
+}
+function findSpawnTile(city){
+  for(const t of nbsTiles(city.q,city.r)){ if(isPassable(t)&&!unitAt(t.q,t.r)) return t; }
+  return tile(city.q,city.r);
+}
+function refreshPlayerUnits(){
+  G.units.filter(u=>u.civ===G.playerCivId).forEach(u=>{u.mp=u.maxmp;u.used=false;});
+}
+
+// -------------------- 胜负 --------------------
+function captureCity(city, byCiv){
+  const oldCiv=G.civs[city.civ];
+  // 移除owner
+  tile(city.q,city.r).owner=byCiv.id;
+  tile(city.q,city.r).city=city.id;
+  city.civ=byCiv.id; city.civObj=byCiv;
+  city.production=null; city.prodBucket=0;
+  city.hp=200; city.wallHp=0; city.hasWalls=false;
+  // 工作格重置
+  city.worked=[key(city.q,city.r)];
+  // 杀掉城内敌方单位
+  G.units.filter(u=>u.q===city.q&&u.r===city.r&&u.civ===oldCiv.id).forEach(u=>killUnit(u));
+  logEvent(`${byCiv.name} 占领了 ${city.name}（原属${oldCiv.name}）！`, byCiv.id===G.playerCivId?'lw':'lw');
+  if(oldCiv.capitalId===city.id){
+    logEvent(`${oldCiv.name} 的首都陷落！`,'lw');
+    // 首都占领 = 该文明出局(简化)
+    eliminateCiv(oldCiv, byCiv);
+  }
+}
+function eliminateCiv(civ, byCiv){
+  // 移除所有城市/单位,转为胜利者
+  G.cities.filter(c=>c.civ===civ.id).forEach(c=>{ c.civ=byCiv.id;c.civObj=byCiv; if(c.id!==byCiv.capitalId){} tile(c.q,c.r).owner=byCiv.id; });
+  G.units.filter(u=>u.civ===civ.id).forEach(u=>killUnit(u));
+  civ.eliminated=true;
+}
+function checkWin(){
+  if(G.over) return;
+  const alive = G.civs.filter(c=>!c.eliminated && c.id!==99);
+  // 统治:只剩玩家 或 玩家被灭
+  if(alive.length===1){
+    G.over=true; showEnd(alive[0].id===G.playerCivId); return;
+  }
+  if(G.civs[G.playerCivId].eliminated){
+    G.over=true; showEnd(false); return;
+  }
+  // 科技胜利
+  for(const c of alive){
+    if(c.researched['nanotechnology']){
+      G.over=true; showEnd(c.id===G.playerCivId); return;
+    }
+  }
+}
+
+// -------------------- 渲染 --------------------
+function hexToPixel(q,r){
+  return { x: HEX*1.5*q, y: HEX*SQ3*(r+q/2) };
+}
+function pixelToHex(x,y){
+  const q=(2/3*x)/HEX; const r=(-1/3*x + SQ3/3*y)/HEX;
+  return hexRound(q,r);
+}
+function hexRound(qf,rf){
+  const sf=-qf-rf; let q=Math.round(qf),r=Math.round(rf),s=Math.round(sf);
+  const dq=Math.abs(q-qf),dr=Math.abs(r-rf),ds=Math.abs(s-sf);
+  if(dq>dr&&dq>ds)q=-r-s; else if(dr>ds)r=-q-s;
+  return {q,r};
+}
+function hexCorners(cx,cy){
+  const pts=[];
+  for(let i=0;i<6;i++){ const a=Math.PI/3*i; pts.push([cx+HEX*Math.cos(a), cy+HEX*Math.sin(a)]); }
+  return pts;
+}
+function resize(){
+  canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+}
+window.addEventListener('resize',resize);
+
+function render(){
+  ctx.fillStyle='#0a0805'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.save();
+  ctx.translate(G.cam.x, G.cam.y);
+  ctx.scale(G.cam.zoom, G.cam.zoom);
+  const margin=HEX*2;
+  const minx=-G.cam.x/G.cam.zoom-margin, maxx=(canvas.width-G.cam.x)/G.cam.zoom+margin;
+  const miny=-G.cam.y/G.cam.zoom-margin, maxy=(canvas.height-G.cam.y)/G.cam.zoom+margin;
+  for(const k in G.tiles){
+    const t=G.tiles[k];
+    const {x,y}=hexToPixel(t.q,t.r);
+    if(x<minx||x>maxx||y<miny||y>maxy) continue;
+    const vis = isVisible(t);
+    const expl = isExplored(t);
+    if(!expl) continue; // 未探索不画
+    drawTile(t,x,y,vis);
+  }
+  // 河流
+  for(const k in G.tiles){ const t=G.tiles[k]; if(!isExplored(t)||!t.river) continue;
+    const {x,y}=hexToPixel(t.q,t.r);
+    drawRiver(t,x,y,isVisible(t));
+  }
+  // 城市旗帜
+  for(const city of G.cities){
+    if(!isExplored(tile(city.q,city.r))) continue;
+    const {x,y}=hexToPixel(city.q,city.r);
+    drawCity(city,x,y);
+  }
+  // 蛮族营
+  for(const camp of G.barbCamps){
+    if(!isExplored(tile(camp.q,camp.r))) continue;
+    const {x,y}=hexToPixel(camp.q,camp.r);
+    drawBarbCamp(x,y);
+  }
+  // 单位
+  for(const u of G.units){
+    const t=tile(u.q,u.r);
+    if(!isExplored(t)||!isVisible(t)) continue;
+    const {x,y}=hexToPixel(u.q,u.r);
+    drawUnit(u,x,y);
+  }
+  // 选中高亮/移动范围
+  if(G.selected){
+    drawSelection();
+  }
+  // hover
+  if(G.mouseHex){
+    const t=tile(G.mouseHex.q,G.mouseHex.r);
+    if(t && isExplored(t)){
+      const {x,y}=hexToPixel(G.mouseHex.q,G.mouseHex.r);
+      ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=2/G.cam.zoom;
+      drawHexPath(x,y); ctx.stroke();
+    }
+  }
+  ctx.restore();
+  drawMinimap();
+}
+function isVisible(t){ return t.visible.has(G.playerCivId); }
+function isExplored(t){ return t.explored.has(G.playerCivId); }
+
+function drawHexPath(x,y){
+  const pts=hexCorners(x,y);
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<6;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.closePath();
+}
+function shade(hex,p){ // p>0 亮 p<0 暗
+  const c=parseInt(hex.slice(1),16);
+  let r=(c>>16)&255, g=(c>>8)&255, b=c&255;
+  r=Math.max(0,Math.min(255,r+p*2.55|0)); g=Math.max(0,Math.min(255,g+p*2.55|0)); b=Math.max(0,Math.min(255,b+p*2.55|0));
+  return `rgb(${r},${g},${b})`;
+}
+function drawTile(t,x,y,vis){
+  const td=T[t.terrain];
+  let col=td.c;
+  // 丘陵叠加
+  if(t.hill && t.terrain!=='MOUNTAIN') col=shade(col,-12);
+  drawHexPath(x,y);
+  ctx.fillStyle=col; ctx.fill();
+  // 纹理细节
+  if(t.terrain==='MOUNTAIN'){
+    // 三角峰
+    ctx.fillStyle=shade(col,18);
+    ctx.beginPath();
+    ctx.moveTo(x-HEX*0.4,y+HEX*0.25);
+    ctx.lineTo(x-HEX*0.1,y-HEX*0.45);
+    ctx.lineTo(x+HEX*0.2,y+HEX*0.25);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.moveTo(x-HEX*0.15,y-HEX*0.3); ctx.lineTo(x-HEX*0.1,y-HEX*0.45); ctx.lineTo(x-HEX*0.02,y-HEX*0.28); ctx.closePath(); ctx.fill();
+  }
+  if(t.hill && t.terrain!=='MOUNTAIN'){
+    ctx.fillStyle=shade(col,-18);
+    ctx.beginPath(); ctx.arc(x-HEX*0.15,y+HEX*0.1,HEX*0.25,0,Math.PI,true); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+HEX*0.2,y+HEX*0.2,HEX*0.2,0,Math.PI,true); ctx.fill();
+  }
+  // 地貌
+  if(t.feature==='FOREST'){
+    drawTrees(x,y,3,'#2d6a26');
+  } else if(t.feature==='RAINFOREST'){
+    drawTrees(x,y,4,'#1f7a30');
+  } else if(t.feature==='MARSH'){
+    ctx.fillStyle='#3a5a3a';
+    for(let i=0;i<3;i++){ ctx.fillRect(x-HEX*0.3+i*HEX*0.25, y+HEX*0.1, HEX*0.15, HEX*0.05); }
+  } else if(t.feature==='OASIS'){
+    ctx.fillStyle='#3f9ad0'; ctx.beginPath(); ctx.arc(x,y,HEX*0.2,0,Math.PI*2); ctx.fill();
+  }
+  // 改良
+  if(t.improvement){
+    if(t.improvement==='FARM') drawFarm(x,y);
+    else if(t.improvement==='MINE') drawMine(x,y);
+    else if(t.improvement==='PASTURE') drawFence(x,y);
+    else { ctx.fillStyle='#8a6a3a'; ctx.fillRect(x-3,y-3,6,6); }
+  }
+  // 资源图标
+  if(t.resource){
+    const rn=RES[t.resource].n;
+    ctx.fillStyle = RES[t.resource].t==='strat'?'#e8c547':(RES[t.resource].t==='lux'?'#d44a8a':'#7fae3a');
+    ctx.beginPath(); ctx.arc(x+HEX*0.32,y-HEX*0.32,HEX*0.14,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font=`${HEX*0.3}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(rn[0], x+HEX*0.32, y-HEX*0.32);
+  }
+  // 边框
+  ctx.strokeStyle='rgba(0,0,0,.25)'; ctx.lineWidth=0.8/G.cam.zoom;
+  drawHexPath(x,y); ctx.stroke();
+  // 国界
+  if(t.owner!==null && t.owner!==undefined){
+    const cv=G.civs[t.owner];
+    if(cv && !cv.isBarb){
+      ctx.strokeStyle=cv.color; ctx.lineWidth=2.5/G.cam.zoom;
+      drawHexPath(x,y); ctx.stroke();
+    }
+  }
+  // 迷雾
+  if(!vis){
+    ctx.fillStyle='rgba(10,10,15,.55)'; drawHexPath(x,y); ctx.fill();
+  }
+}
+function drawTrees(x,y,n,col){
+  ctx.fillStyle=col;
+  const spots=[[-0.2,-0.1],[0.2,0.1],[0,-0.25],[0.15,-0.15],[-0.15,0.2]];
+  for(let i=0;i<n;i++){
+    const [sx,sy]=spots[i];
+    ctx.beginPath(); ctx.arc(x+HEX*sx, y+HEX*sy, HEX*0.12, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#5a3a2a'; ctx.fillRect(x+HEX*sx-1, y+HEX*sy+HEX*0.05, 2, HEX*0.1);
+    ctx.fillStyle=col;
+  }
+}
+function drawFarm(x,y){
+  ctx.strokeStyle='#c4a85e'; ctx.lineWidth=1.5/G.cam.zoom;
+  for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.moveTo(x+i*HEX*0.18, y-HEX*0.12); ctx.lineTo(x+i*HEX*0.18, y+HEX*0.12); ctx.stroke(); }
+  ctx.strokeStyle='#7fae3a';
+  for(let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(x-HEX*0.2, y-HEX*0.1+i*HEX*0.1); ctx.lineTo(x+HEX*0.2, y-HEX*0.1+i*HEX*0.1); ctx.stroke(); }
+}
+function drawMine(x,y){
+  ctx.fillStyle='#5a4a3a'; ctx.beginPath();
+  ctx.moveTo(x-HEX*0.25,y+HEX*0.15); ctx.lineTo(x,y-HEX*0.2); ctx.lineTo(x+HEX*0.25,y+HEX*0.15); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#222'; ctx.fillRect(x-HEX*0.06,y-HEX*0.05,HEX*0.12,HEX*0.2);
+}
+function drawFence(x,y){
+  ctx.strokeStyle='#8a6a3a'; ctx.lineWidth=1/G.cam.zoom;
+  ctx.strokeRect(x-HEX*0.2,y-HEX*0.15,HEX*0.4,HEX*0.3);
+}
+function drawRiver(t,x,y,vis){
+  ctx.strokeStyle= vis?'#4a90c8':'rgba(74,144,200,.4)';
+  ctx.lineWidth=2.5/G.cam.zoom;
+  ctx.beginPath();
+  // 简单画一条贯穿线
+  ctx.moveTo(x-HEX*0.5,y); ctx.lineTo(x+HEX*0.5,y+HEX*0.1);
+  ctx.stroke();
+}
+function drawCity(city,x,y){
+  const civ=G.civs[city.civ];
+  // 底座
+  ctx.fillStyle=civ.color;
+  ctx.beginPath(); ctx.arc(x,y-HEX*0.05,HEX*0.42,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=1.5/G.cam.zoom; ctx.stroke();
+  // 城堡图标
+  ctx.fillStyle='#fff';
+  ctx.font=`bold ${HEX*0.4}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('⌂', x, y-HEX*0.05);
+  // 旗帜: 人口
+  const fx=x+HEX*0.5, fy=y-HEX*0.5;
+  ctx.fillStyle='#1a1610';
+  ctx.fillRect(fx-12, fy-9, 24, 18);
+  ctx.fillStyle=civ.color; ctx.fillRect(fx-11,fy-8,22,16);
+  ctx.fillStyle='#fff'; ctx.font=`bold 11px sans-serif`; ctx.textAlign='center';
+  ctx.fillText(city.pop, fx, fy+1);
+  if(city.isCapital){
+    ctx.fillStyle='#d4af37'; ctx.font='10px sans-serif'; ctx.fillText('★', fx, fy-15);
+  }
+  // 生产中:小进度
+  if(city.production){
+    ctx.fillStyle='#222'; ctx.fillRect(fx-11, fy+10, 22, 4);
+    const def=city.production.type==='unit'?UNITS[city.production.key]:BUILDINGS[city.production.key];
+    const pct=Math.min(1,city.prodBucket/def.cost);
+    ctx.fillStyle='#d4af37'; ctx.fillRect(fx-11, fy+10, 22*pct, 4);
+  }
+  // 城市HP(受损时)
+  if(city.hp<city.maxHp){
+    ctx.fillStyle='#3a1414'; ctx.fillRect(x-HEX*0.4, y+HEX*0.35, HEX*0.8, 4);
+    ctx.fillStyle='#d44a4a'; ctx.fillRect(x-HEX*0.4, y+HEX*0.35, HEX*0.8*(city.hp/city.maxHp), 4);
+  }
+}
+function drawBarbCamp(x,y){
+  ctx.fillStyle='#3a3020'; ctx.beginPath(); ctx.arc(x,y,HEX*0.3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#d44a4a'; ctx.font=`${HEX*0.35}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('💀', x, y);
+}
+function drawUnit(u,x,y){
+  const def=UNITS[u.type]; const civ=u.civObj;
+  // 阴影
+  ctx.fillStyle='rgba(0,0,0,.4)';
+  ctx.beginPath(); ctx.ellipse(x,y+HEX*0.35,HEX*0.3,HEX*0.1,0,0,Math.PI*2); ctx.fill();
+  // 底盘
+  ctx.fillStyle=civ.color;
+  ctx.beginPath(); ctx.arc(x,y+HEX*0.05,HEX*0.34,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=u===G.selected?'#fff':'rgba(255,255,255,.5)';
+  ctx.lineWidth=(u===G.selected?2.5:1.2)/G.cam.zoom; ctx.stroke();
+  // 图标
+  ctx.fillStyle='#fff'; ctx.font=`bold ${HEX*0.42}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(def.ic, x, y+HEX*0.02);
+  // 行动力环(未行动)
+  if(u.civ===G.playerCivId && u.mp>0){
+    ctx.strokeStyle='#7fae3a'; ctx.lineWidth=2.5/G.cam.zoom;
+    ctx.beginPath(); ctx.arc(x,y+HEX*0.05,HEX*0.38,0,Math.PI*2); ctx.stroke();
+  }
+  // HP条
+  if(u.hp<100){
+    ctx.fillStyle='#3a1414'; ctx.fillRect(x-HEX*0.3,y-HEX*0.4,HEX*0.6,4/G.cam.zoom+1);
+    ctx.fillStyle = u.hp>50?'#6fbf3a':(u.hp>25?'#e8c547':'#d44a4a');
+    ctx.fillRect(x-HEX*0.3,y-HEX*0.4,HEX*0.6*(u.hp/100),4/G.cam.zoom+1);
+  }
+  // 驻防标记
+  if(u.fortified){
+    ctx.fillStyle='#d4af37'; ctx.font=`${HEX*0.25}px sans-serif`; ctx.fillText('🛡', x+HEX*0.28, y-HEX*0.28);
+  }
+}
+function drawSelection(){
+  const u=G.selected;
+  const {x,y}=hexToPixel(u.q,u.r);
+  // 高亮当前格
+  ctx.strokeStyle='#fff'; ctx.lineWidth=3/G.cam.zoom;
+  drawHexPath(x,y); ctx.stroke();
+  // 可移动范围
+  if(u.mp>0 && UNITS[u.type].cat!=='civ' || UNITS[u.type].cat==='civ'){
+    const reach = movableReach(u);
+    for(const k in reach){
+      const [rq,rr]=k.split(',').map(Number);
+      const t=tile(rq,rr); if(!t) continue;
+      if(t.city && G.cities.find(c=>c.id===t.city).civ!==u.civ) continue;
+      const occ=unitAt(rq,rr);
+      const {x:mx,y:my}=hexToPixel(rq,rr);
+      if(occ && occ.civ!==u.civ){
+        // 可攻击
+        ctx.fillStyle='rgba(212,74,74,.35)';
+      } else if(!occ){
+        ctx.fillStyle='rgba(127,174,58,.28)';
+      } else continue;
+      drawHexPath(mx,my); ctx.fill();
+    }
+  }
+}
+function movableReach(u){
+  // BFS mp范围
+  const start=key(u.q,u.r);
+  const dist={[start]:0}; const q=[{q:u.q,r:u.r,d:0}];
+  while(q.length){
+    const cur=q.shift();
+    for(const nb of neighbors(cur.q,cur.r)){
+      const t=tile(nb.q,nb.r); if(!t) continue;
+      if(!isExploredBy(t,u.civ)) { // 没探索过也算可移动(战争迷雾下)
+      }
+      const occ=unitAt(nb.q,nb.r);
+      if(occ && occ.civ!==u.civ) continue;
+      const c=pathCost(u,t); if(c===Infinity) continue;
+      const nd=cur.d+c;
+      if(nd>u.mp) continue;
+      const nk=key(nb.q,nb.r);
+      if(dist[nk]===undefined||nd<dist[nk]){ dist[nk]=nd; q.push({q:nb.q,r:nb.r,d:nd}); }
+    }
+  }
+  // 也标记可直接攻击的(相邻敌方)
+  for(const nb of neighbors(u.q,u.r)){
+    const t=tile(nb.q,nb.r); if(!t) continue;
+    const occ=unitAt(nb.q,nb.r);
+    if(occ && occ.civ!==u.civ){ dist[key(nb.q,nb.r)]=-1; }
+    if(t.city && G.cities.find(c=>c.id===t.city).civ!==u.civ){ dist[key(nb.q,nb.r)]=-1; }
+    // 远程:2格内
+    if(UNITS[u.type].range){
+      for(const nb2 of neighbors(nb.q,nb.r)){
+        const occ2=unitAt(nb2.q,nb2.r);
+        if(occ2 && occ2.civ!==u.civ) dist[key(nb2.q,nb2.r)]=-1;
+        const t2=tile(nb2.q,nb2.r); if(t2&&t2.city&&G.cities.find(c=>c.id===t2.city).civ!==u.civ) dist[key(nb2.q,nb2.r)]=-1;
+      }
+    }
+  }
+  delete dist[start];
+  return dist;
+}
+function isExploredBy(t,civId){ return t.explored.has(civId); }
+
+function drawMinimap(){
+  const W=G.mapW, H=G.mapH;
+  const cw=mmCanvas.width, ch=mmCanvas.height;
+  mmCtx.fillStyle='#0a0805'; mmCtx.fillRect(0,0,cw,ch);
+  const sx=cw/W, sy=ch/H;
+  for(const k in G.tiles){
+    const t=G.tiles[k];
+    if(!isExplored(t)) continue;
+    const td=T[t.terrain];
+    mmCtx.fillStyle=isVisible(t)?td.c:shade(td.c,-40);
+    mmCtx.fillRect(t.q*sx, t.r*sy, sx+1, sy+1);
+    if(t.owner!==null&&t.owner!==undefined){ mmCtx.fillStyle=G.civs[t.owner].color; mmCtx.fillRect(t.q*sx+t.r, t.r*sy, 2,2); }
+  }
+  for(const c of G.cities){ if(!isExplored(tile(c.q,c.r)))continue;
+    mmCtx.fillStyle='#fff'; mmCtx.fillRect(c.q*sx-1,c.r*sy-1,3,3); }
+  // 视口框
+  const tl=pixelToHex((-G.cam.x)/G.cam.zoom,(-G.cam.y)/G.cam.zoom);
+  const br=pixelToHex((canvas.width-G.cam.x)/G.cam.zoom,(canvas.height-G.cam.y)/G.cam.zoom);
+  mmCtx.strokeStyle='#d4af37'; mmCtx.lineWidth=1;
+  mmCtx.strokeRect(Math.max(0,tl.q*sx), Math.max(0,tl.r*sy), (br.q-tl.q)*sx, (br.r-tl.r)*sy);
+}
+
+// -------------------- 交互 --------------------
+function centerCamera(){
+  const t=G.cities.find(c=>c.civ===G.playerCivId);
+  if(t){ const {x,y}=hexToPixel(t.q,t.r);
+    G.cam.x=canvas.width/2 - x*G.cam.zoom;
+    G.cam.y=canvas.height/2 - y*G.cam.zoom;
+  }
+}
+canvas.addEventListener('mousedown',e=>{
+  if(G.over||!G) return;
+  if(e.button===0){
+    G.dragging=true; G.dragStart={x:e.clientX,y:e.clientY}; G.camStart={x:G.cam.x,y:G.cam.y}; G.moved=false;
+    canvas.classList.add('dragging');
+  }
+});
+canvas.addEventListener('mousemove',e=>{
+  if(!G) return;
+  if(G.dragging){
+    const dx=e.clientX-G.dragStart.x, dy=e.clientY-G.dragStart.y;
+    if(Math.abs(dx)+Math.abs(dy)>4) G.moved=true;
+    G.cam.x=G.camStart.x+dx; G.cam.y=G.camStart.y+dy;
+  }
+  // hover hex
+  const wx=(e.clientX-G.cam.x)/G.cam.zoom, wy=(e.clientY-G.cam.y)/G.cam.zoom;
+  G.mouseHex=pixelToHex(wx,wy);
+  updateTooltip(e);
+});
+canvas.addEventListener('mouseup',e=>{
+  if(!G) return;
+  if(e.button===0){
+    canvas.classList.remove('dragging');
+    if(!G.moved){ handleClick(e); }
+    G.dragging=false;
+  }
+});
+canvas.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  if(!G||G.over) return;
+  if(G.curCiv!==G.playerCivId) return;
+  const wx=(e.clientX-G.cam.x)/G.cam.zoom, wy=(e.clientY-G.cam.y)/G.cam.zoom;
+  const h=pixelToHex(wx,wy);
+  if(G.selected){
+    const dest={q:h.q,r:h.r};
+    if(hexDist({q:G.selected.q,r:G.selected.r},dest)===1){
+      stepMove(G.selected,dest);
+      afterAction();
+    } else {
+      if(moveUnit(G.selected,dest)) afterAction();
+    }
+  }
+});
+canvas.addEventListener('wheel',e=>{
+  if(!G) return; e.preventDefault();
+  const delta = e.deltaY>0?0.9:1.1;
+  const oldz=G.cam.zoom;
+  G.cam.zoom=Math.max(0.4,Math.min(2.5,G.cam.zoom*delta));
+  // 以鼠标为中心缩放
+  const wx=(e.clientX-G.cam.x)/oldz, wy=(e.clientY-G.cam.y)/oldz;
+  G.cam.x=e.clientX-wx*G.cam.zoom; G.cam.y=e.clientY-wy*G.cam.zoom;
+},{passive:false});
+
+function handleClick(e){
+  const wx=(e.clientX-G.cam.x)/G.cam.zoom, wy=(e.clientY-G.cam.y)/G.cam.zoom;
+  const h=pixelToHex(wx,wy);
+  const t=tile(h.q,h.r);
+  if(!t) return;
+  // 优先:己方单位
+  const u=unitAt(h.q,h.r);
+  if(u && u.civ===G.playerCivId){ selectUnit(u); return; }
+  // 敌方单位或城市:点选查看
+  if(u && isVisible(t)){ selectUnit(u); return; }
+  if(t.city){ const c=G.cities.find(c=>c.id===t.city); if(c && isVisible(t)){ openCityScreen(c); return; } }
+  // 否则:有选中单位则尝试移动到该格
+  if(G.selected && G.curCiv===G.playerCivId){
+    // 移动
+    if(hexDist({q:G.selected.q,r:G.selected.r},h)===1){
+      stepMove(G.selected,h); afterAction();
+    } else {
+      if(moveUnit(G.selected,h)) afterAction();
+    }
+  }
+}
+function selectUnit(u){
+  G.selected=u; G.selectedCity=null;
+  if(u.civ===G.playerCivId) u.fortified=false;
+  updateUnitPanel(); updateAllUI();
+}
+function afterAction(){
+  if(G.selected && (G.selected.hp<=0)) G.selected=null;
+  updateUnitPanel(); updateAllUI();
+}
+
+function updateTooltip(e){
+  if(!G.mouseHex){ document.getElementById('tooltip').style.display='none'; return; }
+  const t=tile(G.mouseHex.q,G.mouseHex.r);
+  const tip=document.getElementById('tooltip');
+  if(!t || !isExplored(t)){ tip.style.display='none'; return; }
+  let html=`<b>${T[t.terrain].n}</b>`;
+  if(t.hill) html+=' · 丘陵';
+  if(t.feature) html+=' · '+FEAT[t.feature].n;
+  if(t.resource) html+=' · <span style="color:#d4af37">'+RES[t.resource].n+'</span>';
+  if(t.improvement) html+=' · '+IMPROVE[t.improvement].n;
+  if(t.river) html+=' · 河流';
+  const y=tileYield(t,G.civs[G.playerCivId]);
+  const parts=[];
+  if(y.food)parts.push(`粮${y.food}`); if(y.prod)parts.push(`产${y.prod}`); if(y.gold)parts.push(`金${y.gold}`);
+  if(parts.length) html+='<br><span style="color:#9a8a60">'+parts.join(' ')+'</span>';
+  const u=unitAt(t.q,t.r);
+  if(u && isVisible(t)){ html+=`<br><b style="color:${G.civs[u.civ].color}">●</b> ${UNITS[u.type].n} ${u.civ===G.playerCivId?'(HP'+u.hp+')':''}`; }
+  if(t.city){ const c=G.cities.find(c=>c.id===t.city); html+=`<br><b>${c.name}</b> (人口${c.pop})`; }
+  tip.innerHTML=html;
+  tip.style.display='block';
+  tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY+14)+'px';
+}
+
+// -------------------- UI更新 --------------------
+function updateAllUI(){
+  const civ=G.civs[G.playerCivId];
+  const y = aggregateYields(civ);
+  document.getElementById('sSci').textContent=Math.floor(civ.sci/10)||civ.sci;
+  document.getElementById('sSci').textContent=Math.round(y.sci);
+  document.getElementById('sSciD').textContent='+'+Math.round(y.sci);
+  document.getElementById('sGold').textContent=Math.round(civ.gold);
+  document.getElementById('sGoldD').textContent='+'+Math.round(y.gold);
+  document.getElementById('sGoldD').className='d'+(y.gold<0?' neg':'');
+  document.getElementById('sCul').textContent=Math.round(y.culture);
+  document.getElementById('sCulD').textContent='+'+Math.round(y.culture);
+  document.getElementById('sFaith').textContent=Math.round(civ.faith);
+  document.getElementById('sHap').textContent=Math.max(0, 5 - G.units.filter(u=>u.civ===G.playerCivId&&UNITS[u.type].cat!=='civ').length*0.2).toFixed(0);
+  document.getElementById('turnLabel').textContent='回合 '+G.turn;
+  const era = civ.researching? TECHS[civ.researching].era : 0;
+  const maxEra = Object.keys(civ.researched).map(k=>TECHS[k].era).reduce((a,b)=>Math.max(a,b),0);
+  document.getElementById('eraLabel').textContent=ERAS[Math.max(era,maxEra)];
+  // 下一回合按钮文字
+  const nt=document.getElementById('nextTurnBtn');
+  if(G.curCiv!==G.playerCivId){ nt.innerHTML='<span class="spinner"></span>AI思考中...'; nt.disabled=true; }
+  else { nt.innerHTML='下一回合 ▶'; nt.disabled=false; }
+  updateUnitPanel();
+}
+function aggregateYields(civ){
+  let food=0,prod=0,sci=0,gold=0,culture=0,faith=0;
+  for(const c of G.cities.filter(c=>c.civ===civ.id)){
+    const y=cityYields(c);
+    sci+=y.sci;gold+=y.gold;culture+=y.culture;faith+=y.faith;food+=y.food;prod+=y.prod;
+  }
+  return {food,prod,sci,gold,culture,faith};
+}
+function updateUnitPanel(){
+  const panel=document.getElementById('unitpanel');
+  const u=G.selected;
+  if(!u || u.hp<=0){ panel.classList.remove('show'); return; }
+  panel.classList.add('show');
+  const def=UNITS[u.type];
+  document.getElementById('upIco').textContent=def.ic;
+  document.getElementById('upIco').style.background=G.civs[u.civ].color;
+  document.getElementById('upName').textContent=def.n;
+  document.getElementById('upSub').textContent=`移动 ${u.mp}/${u.maxmp}` + (def.cs?` · 战力 ${combatStrength(u,def.range?false:true)}`:'') + (def.rs?` · 远程 ${def.rs}`:'');
+  document.getElementById('upHp').style.width=(u.hp)+'%';
+  document.getElementById('upHp').style.background = u.hp>50?'linear-gradient(90deg,#6fbf3a,#3a8a2a)':(u.hp>25?'linear-gradient(90deg,#e8c547,#c9a449)':'linear-gradient(90deg,#d44a4a,#a83030)');
+  const stats=document.getElementById('upStats');
+  stats.innerHTML = `<span><b>HP</b> ${u.hp}</span><span><b>MP</b> ${u.mp}/${u.maxmp}</span>` +
+    (def.cs?`<span><b>战力</b> ${combatStrength(u,false)}</span>`:'') +
+    (def.rs?`<span><b>远程</b> ${def.rs}</span>`:'') +
+    (def.cat==='civ'&&u.charges?`<span><b>次数</b> ${u.charges}</span>`:'');
+  // 动作
+  const acts=document.getElementById('upActions');
+  acts.innerHTML='';
+  if(u.civ!==G.playerCivId){ acts.innerHTML='<div style="font-size:12px;color:#9a8a60;width:100%;text-align:center">敌方单位</div>'; return; }
+  const addAct=(label,fn,dis,key)=>{
+    const b=document.createElement('button'); b.className='act'+(dis?' dis':'')+(key?' key':'');
+    b.textContent=label; if(!dis) b.onclick=fn; acts.appendChild(b);
+  };
+  if(u.type==='settler'){
+    const t=tile(u.q,u.r);
+    const canFound = isPassable(t) && !t.city && cityDistanceOK(t);
+    addAct('🏛 建城', ()=>{ if(canFound){ foundCity(t,G.civs[G.playerCivId]); killUnit(u); G.selected=null; afterAction(); } }, !canFound);
+  }
+  if(u.type==='builder'){
+    const t=tile(u.q,u.r);
+    addAct('🔨 改良', ()=>{ if(canImprove(t,G.civs[G.playerCivId])){ doImprove(u,t); afterAction(); } }, !canImprove(t,G.civs[G.playerCivId])||u.charges<=0);
+  }
+  if(def.cat!=='civ'){
+    addAct('🛡 驻防', ()=>{ u.fortified=!u.fortified; u.mp=0; afterAction(); });
+  }
+  addAct('⏭ 待命', ()=>{ u.mp=0; afterAction(); });
+  addAct('💤 沉睡', ()=>{ u.slept=true; u.mp=0; afterAction(); });
+  addAct('✖ 解散', ()=>{ if(confirm('解散该单位？')){ killUnit(u); G.selected=null; afterAction(); } });
+  // 下一单位
+  addAct('▶ 下个', ()=>{ selectNextUnit(); },false,true);
+}
+function cityDistanceOK(t){
+  return G.cities.every(c=>hexDist(c,t)>=4) || G.cities.length===0;
+}
+function selectNextUnit(){
+  const mine=G.units.filter(u=>u.civ===G.playerCivId&&u.mp>0&&u.hp>0&&!u.slept);
+  if(!mine.length){ G.selected=null; updateUnitPanel(); return; }
+  let idx=mine.indexOf(G.selected); idx=(idx+1)%mine.length;
+  selectUnit(mine[idx]);
+  // 居中
+  const {x,y}=hexToPixel(G.selected.q,G.selected.r);
+  G.cam.x=canvas.width/2-x*G.cam.zoom; G.cam.y=canvas.height/2-y*G.cam.zoom;
+}
+
+function canImprove(t,civ){
+  if(!t || t.city || t.improvement) return false;
+  if(t.owner && t.owner!==civ.id) return false;
+  if(T[t.terrain].water) return t.resource==='FISH' && hasTech(civ,'sailing');
+  // 山丘/资源专属
+  if(t.resource==='HORSES') return hasTech(civ,'animalHusbandry');
+  if(t.resource==='FISH') return false;
+  if(['GOLD_R','GEMS','MARBLE','IRON'].includes(t.resource)) return hasTech(civ,'mining');
+  if(t.hill) return hasTech(civ,'mining');
+  if(t.feature==='FOREST'||t.feature==='RAINFOREST') return false; // 需砍伐,简化不允许
+  return ['GRASSLAND','PLAINS','DESERT','TUNDRA'].includes(t.terrain);
+}
+function hasTech(civ,k){ return civ.researched[k]; }
+function doImprove(u,t){
+  let imp=null;
+  if(t.resource==='HORSES') imp='PASTURE';
+  else if(['GOLD_R','GEMS','MARBLE','IRON'].includes(t.resource)) imp='MINE';
+  else if(t.hill) imp='MINE';
+  else imp='FARM';
+  t.improvement=imp; if(t.owner===null) t.owner=u.civ;
+  u.charges--; u.mp=0;
+  logEvent(`建造者建造了 ${IMPROVE[imp].n}`,'lg');
+  if(u.charges<=0){ killUnit(u); if(G.selected===u)G.selected=null; }
+}
+
+// -------------------- 城市界面 --------------------
+function openCityScreen(city){
+  G.selectedCity=city;
+  const body=document.getElementById('cityBody');
+  const y=cityYields(city);
+  document.getElementById('cityTitle').textContent = `${city.name} ${city.isCapital?'★':''} - ${G.civs[city.civ].name}`;
+  const def = city.production?(city.production.type==='unit'?UNITS[city.production.key]:BUILDINGS[city.production.key]):null;
+  const pct = def? Math.min(100,Math.round(city.prodBucket/def.cost*100)):0;
+  let html = `<div class="city-yields">
+    <div class="cyield pop"><div class="yv">${city.pop}</div><div class="yl">人口</div></div>
+    <div class="cyield food"><div class="yv">${y.food}</div><div class="yl">粮食/回</div></div>
+    <div class="cyield prod"><div class="yv">${y.prod}</div><div class="yl">产能/回</div></div>
+    <div class="cyield sci"><div class="yv">${y.sci}</div><div class="yl">科技/回</div></div>
+    <div class="cyield gold"><div class="yv">${y.gold}</div><div class="yl">金币/回</div></div>
+    <div class="cyield cul"><div class="yv">${y.culture}</div><div class="yl">文化/回</div></div>
+  </div>`;
+  html += `<div class="build-hdr"><span>住房 ${city.housing} · 城防 ${cityDefense(city)} · HP ${city.hp}${city.hasWalls?`+城墙${city.wallHp}`:''}</span>
+    <span>增长: ${Math.round(15+8*(city.pop-1)+Math.pow(city.pop-1,1.8))} 粮 (当前${city.foodBucket})</span></div>`;
+  html += `<div class="build-hdr"><span>当前生产: ${def?def.n:'—'}</span><span>${def?pct+'%':''}</span></div>`;
+  if(def){ html += `<div class="build-progress"><div style="width:${pct}%"></div></div>`; }
+  html += `<div class="build-list">`;
+  const civ=G.civs[city.civ];
+  // 单位
+  for(const [k,v] of Object.entries(UNITS)){
+    if(!isTechReady(civ,v.tech)) continue;
+    const sel = city.production && city.production.type==='unit' && city.production.key===k;
+    html += `<div class="bitem ${sel?'sel':''}" onclick="setProduction(${city.id},'unit','${k}')">
+      <span class="bi">${v.ic}</span><div><div class="bn">${v.n}</div><div class="bc">${v.cost}产能 · ${v.desc||''}</div></div></div>`;
+  }
+  // 建筑
+  for(const [k,v] of Object.entries(BUILDINGS)){
+    if(city.buildings[k]) continue;
+    if(v.tech && !isTechReady(civ,v.tech)) continue;
+    const sel = city.production && city.production.type==='building' && city.production.key===k;
+    html += `<div class="bitem ${sel?'sel':''}" onclick="setProduction(${city.id},'building','${k}')">
+      <span class="bi">${v.ic}</span><div><div class="bn">${v.n}</div><div class="bc">${v.cost}产能 · ${v.desc||''}</div></div></div>`;
+  }
+  html += `</div>`;
+  body.innerHTML=html;
+  document.getElementById('cityModal').classList.add('show');
+}
+function setProduction(cityId,type,key){
+  const city=G.cities.find(c=>c.id===cityId); if(!city) return;
+  city.production={type,key}; city.prodBucket=0;
+  openCityScreen(city); updateAllUI();
+}
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+// -------------------- 科技/市政界面 --------------------
+function openTechTree(){
+  const civ=G.civs[G.playerCivId];
+  const body=document.getElementById('techBody');
+  let html='<div class="tech-tabs"><div class="tech-tab active" onclick="switchTechTab(\'tech\',this)">科技树</div><div class="tech-tab" onclick="switchTechTab(\'civic\',this)">市政树</div></div>';
+  html+='<div id="techContent"></div>';
+  body.innerHTML=html;
+  renderTechContent('tech');
+  document.getElementById('techModal').classList.add('show');
+}
+function switchTechTab(kind,el){
+  document.querySelectorAll('.tech-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderTechContent(kind);
+}
+function renderTechContent(kind){
+  const civ=G.civs[G.playerCivId];
+  const tree=kind==='tech'?TECHS:CIVICS;
+  const done=kind==='tech'?civ.researched:civ.civicsResearched;
+  const researching=kind==='tech'?civ.researching:civ.civicResearching;
+  const prog=kind==='tech'?civ.researchProg:civ.civicProg;
+  const cont=document.getElementById('techContent');
+  let html='';
+  // 当前研究
+  if(researching){
+    const t=tree[researching];
+    const pct=Math.min(100,Math.round(prog/t.cost*100));
+    html+=`<div style="background:#1a2418;border:1px solid #4a9ad4;padding:8px;border-radius:4px;margin-bottom:10px;">
+      <b style="color:#4a9ad4">研究中: ${t.n}</b> <span style="float:right">${prog}/${t.cost} (${pct}%)</span>
+      <div class="build-progress" style="margin-top:4px"><div style="width:${pct}%;background:linear-gradient(90deg,#2d7fb8,#4a9ad4)"></div></div></div>`;
+  } else {
+    html+=`<div style="background:#2a2419;border:1px solid #8b6f3a;padding:8px;border-radius:4px;margin-bottom:10px;color:#d4af37">⚠ 未选择研究项目，请点击下方任意可研究项</div>`;
+  }
+  // 按时代分组
+  for(let era=0;era<ERAS.length;era++){
+    const items=Object.entries(tree).filter(([k,v])=>v.era===era);
+    if(!items.length) continue;
+    html+=`<div class="era-row"><div class="era-name">${ERAS[era]}</div><div class="tech-grid">`;
+    for(const [k,v] of items){
+      const reqDone=v.req.every(r=>done[r]);
+      const isDone=done[k];
+      const isRes=researching===k;
+      const avail=reqDone&&!isDone;
+      let cls=isRes?'researching':(isDone?'done':(avail?'avail':'locked'));
+      const pct=isRes?Math.min(100,Math.round(prog/v.cost*100)):(isDone?100:0);
+      html+=`<div class="tech ${cls}" ${avail?`onclick="setResearch('${kind}','${k}')"`:''}>
+        <div class="tn">${v.n} ${isDone?'✓':''}</div>
+        <div class="tc">${v.cost}${kind==='tech'?'科技':'文化'} · ${v.req.length?('需: '+v.req.map(r=>tree[r].n).join(',')):'起始'}</div>
+        <div class="tdesc">${v.e||''}</div>
+        ${isRes?`<div class="build-progress" style="margin-top:4px;height:6px"><div style="width:${pct}%"></div></div>`:''}
+      </div>`;
+    }
+    html+='</div></div>';
+  }
+  cont.innerHTML=html;
+}
+function setResearch(kind,k){
+  const civ=G.civs[G.playerCivId];
+  if(kind==='tech') civ.researching=k; else civ.civicResearching=k;
+  renderTechContent(kind); updateAllUI();
+}
+
+// -------------------- 日志/通知 --------------------
+function logEvent(msg,cls){
+  const log=document.getElementById('log');
+  const d=document.createElement('div'); if(cls) d.className=cls;
+  d.textContent=msg; log.prepend(d);
+  while(log.children.length>40) log.removeChild(log.lastChild);
+}
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',2000);
+}
+
+// -------------------- 游戏结束 --------------------
+function showEnd(win){
+  const body=document.getElementById('endBody');
+  const civ=G.civs[G.playerCivId];
+  body.innerHTML=`<div class="end-result ${win?'end-win':'end-lose'}">${win?'胜 利':'败 亡'}</div>
+    <div style="text-align:center;font-size:15px;color:#b8a878;margin-bottom:14px">${win?'你的文明屹立于世界之巅！':'你的文明消逝在历史长河中...'}</div>
+    <div style="background:#1a1610;padding:12px;border-radius:4px;font-size:13px;color:#c9b890;line-height:1.8">
+      <b style="color:#d4af37">${civ.name} (${civ.leader})</b><br>
+      回合: ${G.turn}<br>
+      城市: ${G.cities.filter(c=>c.civ===G.playerCivId).length}<br>
+      研发科技: ${Object.keys(civ.researched).length} / ${Object.keys(TECHS).length}
+    </div>
+    <button class="start-btn" onclick="location.reload()">▶ 再 来 一 局</button>`;
+  document.getElementById('endModal').classList.add('show');
+}
+
+// -------------------- 按钮事件 --------------------
+document.getElementById('nextTurnBtn').onclick=()=>{
+  if(G.curCiv===G.playerCivId && !G.over){
+    if(G.selected) G.selected.mp=Math.max(0,G.selected.mp);
+    // 异步处理AI(让UI刷新)
+    processAITurns();
+  }
+};
+function processAITurns(){
+  const btn=document.getElementById('nextTurnBtn');
+  btn.innerHTML='<span class="spinner"></span>AI思考中...';
+  setTimeout(()=>{
+    G.curCiv=(G.curCiv+1)%G.civs.length;
+    // 处理当前civ的回合结算
+    processCivTurn(G.civs[G.curCiv]);
+    while(G.curCiv!==G.playerCivId && !G.over){
+      const civ=G.civs[G.curCiv];
+      if(!civ.eliminated){ aiTurn(civ); }
+      processCivTurnEnd(civ);
+      G.curCiv=(G.curCiv+1)%G.civs.length;
+      if(G.civs[G.curCiv] && !G.civs[G.curCiv].eliminated){
+        processCivTurn(G.civs[G.curCiv]);
+      } else { break; }
+    }
+    barbTurn();
+    G.turn++;
+    refreshPlayerUnits();
+    revealAroundPlayer();
+    updateAllUI();
+    checkWin();
+    btn.innerHTML='下一回合 ▶';
+  },80);
+}
+document.getElementById('techBtn').onclick=openTechTree;
+document.getElementById('civicBtn').onclick=openTechTree;
+
+// -------------------- 启动界面 --------------------
+function initStart(){
+  const cont=document.getElementById('civOptions');
+  let sel=0;
+  CIVS_DEF.forEach((c,i)=>{
+    const d=document.createElement('div'); d.className='civ-opt'+(i===0?' sel':'');
+    d.innerHTML=`<span class="cflag" style="background:${c.color}"></span><span class="cnm">${c.name}</span>
+      <div class="cl">领袖：${c.leader} · ${c.ability}</div>`;
+    d.onclick=()=>{ document.querySelectorAll('.civ-opt').forEach(x=>x.classList.remove('sel')); d.classList.add('sel'); sel=i; };
+    cont.appendChild(d);
+  });
+  document.getElementById('startBtn').onclick=()=>{
+    const diff=parseInt(document.getElementById('diffSel').value);
+    const size=parseInt(document.getElementById('sizeSel').value);
+    const aiCount = size===0?3:(size===1?4:5);
+    document.getElementById('startModal').classList.remove('show');
+    newGame(sel, aiCount, diff, size);
+    resize(); centerCamera(); updateAllUI();
+    requestAnimationFrame(loop);
+  };
+}
+
+// -------------------- 主循环 --------------------
+function loop(){
+  if(G) render();
+  requestAnimationFrame(loop);
+}
+initStart();
+resize();
+</script>
+</body>
+</html>

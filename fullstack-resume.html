@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>陈墨 · 全栈工程师 / Resume</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   The developer-environment metaphor carries real semantics:
+   - mono face = system / paths / data / labels
+   - sans face = the human voice (narrative, headings)
+   - accent = a single point of emphasis, used like syntax
+   ============================================================ */
+:root{
+  --bg:#0d1117;          /* editor canvas */
+  --surface:#161b22;    /* panel */
+  --surface-2:#1c2330;  /* raised panel */
+  --line:#262d38;       /* hairline rule */
+  --line-2:#323a48;
+  --text:#e6edf3;       /* primary text */
+  --text-2:#adbac7;     /* secondary */
+  --text-3:#768390;     /* muted / caption */
+  --text-4:#4b5567;     /* very muted / dim code */
+
+  /* single accent — the page's one "loud" voice */
+  --accent:#ff7a45;     /* warm vermilion — NOT acid green (the default) */
+  --accent-soft:rgba(255,122,69,.14);
+
+  /* syntax-tinted neutrals (only used where category matters) */
+  --kw:#79c0ff;         /* keyword  : role / category tag */
+  --str:#7ee787;        /* string   : tech stack */
+  --num:#d2a8ff;        /* number   : stats / metrics */
+  --fn:#e3b341;         /* function : names of systems */
+  --com:#768390;        /* comment  : captions */
+
+  --serif:"Instrument Serif", Georgia, serif;
+  --sans:"Space Grotesk", system-ui, sans-serif;
+  --mono:"JetBrains Mono", "SF Mono", Menlo, monospace;
+
+  --maxw:1080px;
+  --gutter:clamp(20px, 4vw, 48px);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--accent);color:#0d1117}
+a{color:inherit;text-decoration:none}
+
+/* subtle film-grain atmosphere, very faint — earned by the metaphor */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:1;
+  background-image:
+    radial-gradient(circle at 18% 12%, rgba(255,122,69,.05), transparent 40%),
+    radial-gradient(circle at 88% 88%, rgba(121,192,255,.04), transparent 42%);
+  opacity:.9;
+}
+/* ============================================================
+   EDITOR CHROME — the "window" wrapping the whole resume
+   ============================================================ */
+.editor{
+  max-width:var(--maxw);
+  margin:32px auto;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 30px 90px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.02);
+  position:relative;
+  z-index:2;
+}
+.titlebar{
+  display:flex;align-items:center;gap:14px;
+  padding:11px 16px;
+  background:linear-gradient(180deg,#1b2129,#161b22);
+  border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:12.5px;color:var(--text-3);
+}
+.traffic{display:flex;gap:8px}
+.traffic span{width:12px;height:12px;border-radius:50%;display:block}
+.traffic span:nth-child(1){background:#ff5f57}
+.traffic span:nth-child(2){background:#febc2e}
+.traffic span:nth-child(3){background:#28c840}
+.titlebar .path{letter-spacing:.2px}
+.titlebar .path .seg{color:var(--text-2)}
+.titlebar .path .file{color:var(--text)}
+.titlebar .path .ext{color:var(--accent)}
+.titlebar .status{margin-left:auto;display:flex;gap:18px}
+.titlebar .status i{font-style:normal;color:var(--text-4)}
+.titlebar .status b{color:var(--str);font-weight:400}
+
+/* tab strip */
+.tabs{display:flex;background:#11161d;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12.5px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:9px 16px;color:var(--text-3);border-right:1px solid var(--line);white-space:nowrap;cursor:pointer;position:relative;transition:color .15s}
+.tab:hover{color:var(--text-2)}
+.tab.active{background:var(--surface);color:var(--text)}
+.tab.active::before{content:"";position:absolute;left:0;top:-1px;width:100%;height:2px;background:var(--accent)}
+
+/* ============================================================
+   BODY GRID — gutter line numbers + content
+   ============================================================ */
+.body-grid{display:grid;grid-template-columns:46px 1fr;min-height:80vh}
+.gutter{
+  background:#11161d;border-right:1px solid var(--line);
+  font-family:var(--mono);font-size:12px;color:var(--text-4);
+  text-align:right;padding:34px 12px 60px;user-select:none;line-height:1.95;
+}
+.gutter span{display:block}
+.content{padding:34px clamp(20px,4vw,52px) 60px;min-width:0}
+
+/* eyebrow comment line — encodes the section, not decoration */
+.eyebrow{
+  font-family:var(--mono);font-size:12.5px;color:var(--com);
+  letter-spacing:.02em;margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.eyebrow::before{content:"//";color:var(--accent)}
+.eyebrow .anchor{color:var(--text-4)}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{padding:18px 0 40px;border-bottom:1px solid var(--line);margin-bottom:40px}
+.hero .name{
+  font-family:var(--sans);font-weight:700;
+  font-size:clamp(40px,7vw,76px);line-height:.98;letter-spacing:-.03em;
+  margin-bottom:8px;
+}
+.hero .name .accent{color:var(--accent)}
+.hero .role{
+  font-family:var(--mono);font-size:14px;color:var(--text-2);
+  margin-bottom:26px;
+}
+.hero .role .kw{color:var(--kw)}
+.hero .role .str{color:var(--str)}
+.hero .lede{
+  font-family:var(--serif);font-style:italic;
+  font-size:clamp(20px,2.4vw,26px);line-height:1.45;
+  color:var(--text-2);max-width:38ch;font-weight:400;
+}
+.hero .lede em{color:var(--accent);font-style:italic}
+
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:30px;font-family:var(--mono);font-size:12.5px;color:var(--text-3)}
+.hero-meta a{display:inline-flex;align-items:center;gap:7px;transition:color .15s}
+.hero-meta a:hover{color:var(--accent)}
+.hero-meta .dot{width:6px;height:6px;border-radius:50%;background:var(--str);box-shadow:0 0 8px var(--str)}
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+.section{padding:30px 0;border-bottom:1px solid var(--line)}
+.section:last-child{border-bottom:none}
+.section-head{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:28px;
+}
+.section-head h2{
+  font-family:var(--sans);font-weight:600;
+  font-size:clamp(22px,3vw,30px);letter-spacing:-.02em;
+}
+.section-head .index{
+  font-family:var(--mono);font-size:13px;color:var(--accent);
+}
+
+/* EXPERIENCE — entries */
+.exp{display:grid;grid-template-columns:120px 1fr;gap:16px 32px;padding:22px 0;border-top:1px dashed var(--line)}
+.exp:first-of-type{border-top:none;padding-top:6px}
+.exp .when{
+  font-family:var(--mono);font-size:12.5px;color:var(--text-3);
+  line-height:1.7;padding-top:4px;
+}
+.exp .when .now{color:var(--str)}
+.exp h3{font-size:18px;font-weight:600;letter-spacing:-.01em;margin-bottom:2px}
+.exp .org{font-family:var(--mono);font-size:12.5px;color:var(--kw);margin-bottom:12px}
+.exp .org .loc{color:var(--text-4)}
+.exp ul{list-style:none}
+.exp li{position:relative;padding-left:18px;color:var(--text-2);font-size:14.5px;line-height:1.65;margin-bottom:7px}
+.exp li::before{content:"›";position:absolute;left:0;color:var(--accent);font-family:var(--mono);font-weight:600}
+.exp li b{color:var(--text);font-weight:500}
+.exp li code{font-family:var(--mono);font-size:12.5px;color:var(--fn);background:var(--surface-2);padding:1px 6px;border-radius:4px}
+
+/* SKILLS — the stack diagram is the SIGNATURE */
+.stack{
+  display:flex;flex-direction:column;gap:6px;
+  font-family:var(--mono);font-size:13.5px;
+  max-width:680px;
+}
+.layer{
+  display:grid;grid-template-columns:140px 1fr;gap:18px;
+  padding:14px 16px;border:1px solid var(--line);border-radius:6px;
+  background:linear-gradient(180deg,var(--surface-2),#19202b);
+  transition:border-color .2s, transform .2s;
+}
+.layer:hover{border-color:var(--line-2);transform:translateX(4px)}
+.layer .l-name{color:var(--text-3);display:flex;align-items:center;gap:8px}
+.layer .l-name::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.layer:nth-child(1) .l-name::before{background:#ff7a45}
+.layer:nth-child(2) .l-name::before{background:#d2a8ff}
+.layer:nth-child(3) .l-name::before{background:#79c0ff}
+.layer:nth-child(4) .l-name::before{background:#7ee787}
+.layer:nth-child(5) .l-name::before{background:#e3b341}
+.layer .l-tags{color:var(--str);line-height:1.7}
+.layer .l-tags .sep{color:var(--text-4);margin:0 6px}
+.stack-note{font-family:var(--mono);font-size:12px;color:var(--text-4);margin-top:14px;padding-left:16px;border-left:2px solid var(--line)}
+
+/* PROJECTS */
+.proj{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.proj-card{
+  border:1px solid var(--line);border-radius:8px;padding:18px;
+  background:var(--surface-2);transition:border-color .2s, background .2s;
+  display:flex;flex-direction:column;
+}
+.proj-card:hover{border-color:var(--accent);background:#1f2733}
+.proj-card .pname{font-family:var(--mono);font-size:14px;color:var(--fn);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.proj-card .pname .arrow{color:var(--text-4)}
+.proj-card p{font-size:13.5px;color:var(--text-2);line-height:1.55;flex:1}
+.proj-card .stack-line{font-family:var(--mono);font-size:11.5px;color:var(--text-4);margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.proj-card .stack-line span{color:var(--str)}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:18px 16px;background:var(--surface-2)}
+.stat .num{font-family:var(--sans);font-weight:700;font-size:clamp(26px,3.4vw,36px);letter-spacing:-.02em;color:var(--num);line-height:1}
+.stat .num .u{font-size:.5em;color:var(--text-4);margin-left:2px}
+.stat .lab{font-family:var(--mono);font-size:11.5px;color:var(--text-3);margin-top:8px;letter-spacing:.02em}
+
+/* EDUCATION */
+.edu{display:grid;grid-template-columns:120px 1fr;gap:16px 32px;padding:18px 0}
+.edu .when{font-family:var(--mono);font-size:12.5px;color:var(--text-3)}
+.edu h3{font-size:16px;font-weight:600;margin-bottom:3px}
+.edu .meta{font-family:var(--mono);font-size:12.5px;color:var(--text-3)}
+
+/* terminal footer */
+.term{
+  margin-top:40px;border:1px solid var(--line);border-radius:8px;
+  background:#0a0e14;overflow:hidden;font-family:var(--mono);font-size:13px;
+}
+.term-head{padding:8px 14px;border-bottom:1px solid var(--line);color:var(--text-4);font-size:11.5px;display:flex;align-items:center;gap:8px}
+.term-head .d{width:9px;height:9px;border-radius:50%;background:var(--line-2)}
+.term-body{padding:16px 18px;line-height:1.85}
+.term-body .ln{display:block}
+.term-body .p{color:var(--accent)}
+.term-body .o{color:var(--text-2)}
+.term-body .s{color:var(--str)}
+.term-body .k{color:var(--kw)}
+.term-body .cursor{display:inline-block;width:8px;height:15px;background:var(--accent);vertical-align:-2px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:760px){
+  .editor{margin:0;border-radius:0}
+  .body-grid{grid-template-columns:34px 1fr}
+  .gutter{padding:28px 8px 50px;font-size:11px}
+  .content{padding:26px 18px 50px}
+  .exp,.edu{grid-template-columns:1fr;gap:6px}
+  .exp .when,.edu .when{padding-top:0;color:var(--accent)}
+  .proj{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .layer{grid-template-columns:1fr;gap:6px}
+  .layer .l-name{font-size:12px}
+  .titlebar .status{display:none}
+}
+
+/* accessibility: visible focus, reduced motion */
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+
+<div class="editor" role="main">
+
+  <!-- ===== TITLE BAR ===== -->
+  <div class="titlebar">
+    <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="path">
+      <span class="seg">~/</span><span class="seg">resume</span><span class="seg">/</span><span class="file">chen-mo</span><span class="ext">.tsx</span>
+    </div>
+    <div class="status">
+      <span><i>branch</i> <b>main</b></span>
+      <span><i>utf-8</i></span>
+      <span><i>ln</i> 1—214</span>
+    </div>
+  </div>
+
+  <!-- ===== TABS = real navigation ===== -->
+  <nav class="tabs" aria-label="目录">
+    <a class="tab active" href="#overview">overview</a>
+    <a class="tab" href="#experience">experience</a>
+    <a class="tab" href="#stack">stack.ts</a>
+    <a class="tab" href="#work">work</a>
+    <a class="tab" href="#signal">signal</a>
+    <a class="tab" href="#edu">edu</a>
+  </nav>
+
+  <div class="body-grid">
+    <!-- gutter line numbers, purely atmospheric -->
+    <aside class="gutter" aria-hidden="true">
+      <span>01</span><span>02</span><span>03</span><span>04</span><span>05</span>
+      <span>06</span><span>07</span><span>08</span><span>09</span><span>10</span>
+      <span>11</span><span>12</span><span>13</span><span>14</span><span>15</span>
+      <span>16</span><span>17</span><span>18</span><span>19</span><span>20</span>
+      <span>21</span><span>22</span><span>23</span><span>24</span>
+    </aside>
+
+    <div class="content">
+
+      <!-- ==================== HERO ==================== -->
+      <header class="hero" id="overview">
+        <p class="eyebrow">resume.v3 <span class="anchor">— last commit: 2026.06</span></p>
+        <h1 class="name">陈墨<span class="accent">.</span></h1>
+        <p class="role"><span class="kw">const</span> engineer <span style="color:var(--text-4)">=</span> <span class="str">"Full-Stack"</span> <span style="color:var(--text-4)">//</span> 8 yrs · 上海</p>
+        <p class="lede">
+          把<em>后端的确定性</em>、<em>前端的体感</em>、和<em>基础设施的稳定</em>缝在同一条交付线上的人。
+          写代码像写文章 —— 能读，能改，能扛住凌晨三点的告警。
+        </p>
+
+        <div class="hero-meta">
+          <a href="mailto:chenmo@example.dev"><span class="dot"></span> chenmo@example.dev</a>
+          <a href="#">↗ github.com/chenmo</a>
+          <a href="#">↗ 个人博客 · chenmo.dev</a>
+          <a href="#">↗ 微信 / Phone: +86 138 ████</a>
+        </div>
+      </header>
+
+      <!-- ==================== EXPERIENCE ==================== -->
+      <section class="section" id="experience">
+        <div class="section-head">
+          <span class="index">01</span>
+          <h2>职业经历</h2>
+        </div>
+
+        <div class="exp">
+          <div class="when">2023.03 — <span class="now">至今</span></div>
+          <div>
+            <h3>高级全栈工程师 · 技术负责人</h3>
+            <p class="org">流墨科技 Liumo Inc. <span class="loc">/ 上海</span></p>
+            <ul>
+              <li>主导 <b>SaaS 数据中台</b> 从 0 到 1，覆盖采集、清洗、可视化全链路，DAU <b>12w+</b>，P99 延迟从 <code>820ms</code> 降至 <code>140ms</code>。</li>
+              <li>设计基于 <code>PostgreSQL + Redis + Kafka</code> 的实时管线，单日处理事件 <b>2.3 亿</b>条，零数据丢失。</li>
+              <li>带 6 人小组推行 <b>Code Review + Trunk-based</b> 流程，线上事故率季度环比下降 <b>62%</b>。</li>
+              <li>前端从老旧 jQuery 迁移至 <code>Next.js + TypeScript</code>，首屏 LCP 提升 <b>3.4×</b>，可访问性达 WCAG AA。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="exp">
+          <div class="when">2020.07 — 2023.02</div>
+          <div>
+            <h3>全栈工程师</h3>
+            <p class="org">云栈 CloudStack <span class="loc">/ 杭州</span></p>
+            <ul>
+              <li>负责 <b>多租户计费系统</b>，支持 17 种计费模型，结算精度 <code>±0.01元</code>，月流水 <b>8000w</b>。</li>
+              <li>用 <code>Go</code> 重写核心订单服务，QPS 从 <code>1.2k</code> 提到 <code>9.8k</code>，内存占用减少 <b>40%</b>。</li>
+              <li>搭建 <code>K8s + ArgoCD</code> 的 GitOps 发布体系，部署频率从每周 1 次到每日 <b>12 次</b>。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="exp">
+          <div class="when">2018.07 — 2020.06</div>
+          <div>
+            <h3>后端工程师</h3>
+            <p class="org">初象科技 Chuxiang <span class="loc">/ 北京</span></p>
+            <ul>
+              <li>维护百万级用户 IM 后端（<code>Netty + 自研协议</code>），消息送达率 <b>99.97%</b>。</li>
+              <li>独立完成后台运营系统全栈开发，节省运营人力 <b>3 人/月</b>。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== STACK (SIGNATURE) ==================== -->
+      <section class="section" id="stack">
+        <div class="section-head">
+          <span class="index">02</span>
+          <h2>技术栈 <span style="font-family:var(--mono);font-size:14px;color:var(--text-4);font-weight:400">— 一层一层，从顶到底</span></h2>
+        </div>
+
+        <div class="stack">
+          <div class="layer">
+            <div class="l-name">// 前端 · Frontend</div>
+            <div class="l-tags">TypeScript<span class="sep">·</span>React<span class="sep">·</span>Next.js<span class="sep">·</span>Vue 3<span class="sep">·</span>TailwindCSS<span class="sep">·</span>Vite<span class="sep">·</span>Three.js</div>
+          </div>
+          <div class="layer">
+            <div class="l-name">// 后端 · Backend</div>
+            <div class="l-tags">Node.js<span class="sep">·</span>Go<span class="sep">·</span>Python<span class="sep">·</span>NestJS<span class="sep">·</span>gRPC<span class="sep">·</span>GraphQL</div>
+          </div>
+          <div class="layer">
+            <div class="l-name">// 数据 · Data</div>
+            <div class="l-tags">PostgreSQL<span class="sep">·</span>MySQL<span class="sep">·</span>Redis<span class="sep">·</span>MongoDB<span class="sep">·</span>ClickHouse<span class="sep">·</span>Elasticsearch</div>
+          </div>
+          <div class="layer">
+            <div class="l-name">// 基础设施 · Infra</div>
+            <div class="l-tags">Docker<span class="sep">·</span>Kubernetes<span class="sep">·</span>Terraform<span class="sep">·</span>ArgoCD<span class="sep">·</span>AWS<span class="sep">·</span>阿里云</div>
+          </div>
+          <div class="layer">
+            <div class="l-name">// 工程化 · DevOps</div>
+            <div class="l-tags">GitHub Actions<span class="sep">·</span>Prometheus<span class="sep">·</span>Grafana<span class="sep">·</span>OpenTelemetry<span class="sep">·</span>Jest<span class="sep">·</span>Playwright</div>
+          </div>
+        </div>
+        <p class="stack-note">// 信条：工具是手段，交付是目的。能在白板上讲清架构，也能在终端里把告警按下去。</p>
+      </section>
+
+      <!-- ==================== PROJECTS ==================== -->
+      <section class="section" id="work">
+        <div class="section-head">
+          <span class="index">03</span>
+          <h2>代表项目</h2>
+        </div>
+        <div class="proj">
+          <div class="proj-card">
+            <div class="pname"><span class="arrow">▸</span> inkdown</div>
+            <p>开源的 Markdown 协作编辑器，支持 CRDT 实时协作与白板。GitHub <b>4.2k★</b>，月活作者 <b>2.3k</b>。</p>
+            <div class="stack-line">stack: <span>Yjs · Next.js · WebSocket · Rust(wasm)</span></div>
+          </div>
+          <div class="proj-card">
+            <div class="pname"><span class="arrow">▸</span> tiny-flux</div>
+            <p>单文件、零依赖的状态管理库，<b>1.8KB</b> gzip，被 30+ 项目引用。强调可读性，核心 <b>96 行</b>。</p>
+            <div class="stack-line">stack: <span>TypeScript · 无运行时依赖</span></div>
+          </div>
+          <div class="proj-card">
+            <div class="pname"><span class="arrow">▸</span> shipper</div>
+            <p>自托管的轻量 CI/CD，YAML 即代码，<b>5 分钟</b>从 0 到第一条流水线。已稳定运行 600+ 天。</p>
+            <div class="stack-line">stack: <span>Go · Docker · SQLite</span></div>
+          </div>
+          <div class="proj-card">
+            <div class="pname"><span class="arrow">▸</span> chenmo.dev</div>
+            <p>个人技术博客，坚持每周一篇深度文，累计 <b>180k</b> 字。其中《从零写一个 React 调度器》单篇 <b>12w</b> 阅读。</p>
+            <div class="stack-line">stack: <span>Astro · MDX · Vercel</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== STATS ==================== -->
+      <section class="section" id="signal">
+        <div class="section-head">
+          <span class="index">04</span>
+          <h2>一些可量化的信号</h2>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <div class="num">8<span class="u">年</span></div>
+            <div class="lab">// 全栈交付经验</div>
+          </div>
+          <div class="stat">
+            <div class="num">4.2<span class="u">k★</span></div>
+            <div class="lab">// GitHub 累计 Star</div>
+          </div>
+          <div class="stat">
+            <div class="num">2.3<span class="u">亿</span></div>
+            <div class="lab">// 单日处理事件峰值</div>
+          </div>
+          <div class="stat">
+            <div class="num">62<span class="u">%</span></div>
+            <div class="lab">// 线上事故率下降</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== EDUCATION ==================== -->
+      <section class="section" id="edu">
+        <div class="section-head">
+          <span class="index">05</span>
+          <h2>教育背景</h2>
+        </div>
+        <div class="edu">
+          <div class="when">2014 — 2018</div>
+          <div>
+            <h3>浙江大学 · 计算机科学与技术</h3>
+            <p class="meta">本科 / GPA 3.8 · 校 ACM 集训队队员 · 浙江省程序设计竞赛 银奖</p>
+          </div>
+        </div>
+        <div class="edu" style="border-top:1px dashed var(--line)">
+          <div class="when">持续</div>
+          <div>
+            <h3>开源 & 写作</h3>
+            <p class="meta">CNCF 上海社区分享嘉宾 · 《前端真好玩》专栏作者 · 维护 3 个 1k★+ 开源库</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== TERMINAL FOOTER (sign-off) ===== -->
+      <div class="term" aria-hidden="true">
+        <div class="term-head"><span class="d"></span><span class="d"></span><span class="d"></span> chenmo@resume — zsh</div>
+        <div class="term-body">
+          <span class="ln"><span class="p">➜</span> <span class="o">~/resume</span> git log --oneline -1</span>
+          <span class="ln"><span class="k">8b02d9a</span> <span class="s">(HEAD -&gt; main)</span> feat: ready for the next thing</span>
+          <span class="ln"><span class="p">➜</span> <span class="o">~/resume</span> ./hire-me.sh<span class="cursor"></span></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // tabs double as smooth-scroll nav; active state follows the section in view
+  const tabs = document.querySelectorAll('.tab');
+  const sections = [...tabs].map(t => document.querySelector(t.getAttribute('href'))).filter(Boolean);
+
+  tabs.forEach(t => t.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelector(t.getAttribute('href'))?.scrollIntoView({behavior:'smooth', block:'start'});
+  }));
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if(en.isIntersecting){
+        const id = '#' + en.target.id;
+        tabs.forEach(t => t.classList.toggle('active', t.getAttribute('href') === id));
+      }
+    });
+  }, {rootMargin:'-30% 0px -60% 0px'});
+  sections.forEach(s => io.observe(s));
+</script>
+</body>
+</html>
